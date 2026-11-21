@@ -524,7 +524,7 @@ button.danger:hover {
 }
 
 .map-cell.fog {
-  background: rgba(23, 20, 16, 0.88);
+  background: #171410;
 }
 
 .map-cell.revealed {

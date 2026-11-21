@@ -266,6 +266,10 @@
     var invHtml = items.length
       ? '<ul class="inventory">' + items.map(function (i) { return "<li>" + escapeHtml(i) + "</li>"; }).join("") + "</ul>"
       : '<p class="empty">No items yet.</p>';
+    var skillItems = (c.skills || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+    var skillsHtml = skillItems.length
+      ? '<ul class="inventory">' + skillItems.map(function (s) { return "<li>" + escapeHtml(s) + "</li>"; }).join("") + "</ul>"
+      : '<p class="empty">No skills yet.</p>';
     return '<div class="card">' +
       '<div class="char-head"><span class="name">' + escapeHtml(c.name || "Unnamed") + '</span>' +
       '<span class="level">' + escapeHtml(p.label) + '</span></div>' +
@@ -279,6 +283,8 @@
       scoreCell("STR", c.str) + scoreCell("DEX", c.dex) + scoreCell("CON", c.con) +
       scoreCell("INT", c.int) + scoreCell("WIS", c.wis) + scoreCell("CHA", c.cha) +
       '</div>' +
+      (c.background ? '<p><strong>Background</strong></p><p>' + escapeHtml(c.background) + '</p>' : '') +
+      '<p><strong>Skills</strong></p>' + skillsHtml +
       '<p>Gold: ' + (c.gold === null || c.gold === undefined ? "-" : c.gold) + '</p>' +
       '<p><strong>Inventory</strong></p>' + invHtml +
       (c.notes ? '<p><strong>Notes</strong></p><p>' + escapeHtml(c.notes) + '</p>' : '') +
@@ -329,6 +335,7 @@
     $("char-name").value = c ? (c.name || "") : "";
     $("char-race").value = c ? (c.race || "") : "";
     $("char-class").value = c ? (c.class || "") : "";
+    $("char-background").value = c ? (c.background || "") : "";
     $("char-level").value = c && c.level !== null && c.level !== undefined ? c.level : 1;
     $("char-hp").value = c && c.hp !== null && c.hp !== undefined ? c.hp : "";
     $("char-max-hp").value = c && c.max_hp !== null && c.max_hp !== undefined ? c.max_hp : "";
@@ -340,6 +347,7 @@
     $("char-int").value = c && c.int !== null && c.int !== undefined ? c.int : "";
     $("char-wis").value = c && c.wis !== null && c.wis !== undefined ? c.wis : "";
     $("char-cha").value = c && c.cha !== null && c.cha !== undefined ? c.cha : "";
+    $("char-skills").value = c ? (c.skills || "") : "";
     $("char-inventory").value = c ? (c.inventory || "") : "";
     $("char-notes").value = c ? (c.notes || "") : "";
     $("char-modal").classList.remove("hidden");
@@ -357,6 +365,7 @@
       name: $("char-name").value.trim() || null,
       race: $("char-race").value.trim() || null,
       class: $("char-class").value.trim() || null,
+      background: $("char-background").value.trim() || null,
       level: numOrNull($("char-level").value),
       hp: numOrNull($("char-hp").value),
       max_hp: numOrNull($("char-max-hp").value),
@@ -367,6 +376,7 @@
       int: numOrNull($("char-int").value),
       wis: numOrNull($("char-wis").value),
       cha: numOrNull($("char-cha").value),
+      skills: $("char-skills").value.trim(),
       gold: numOrNull($("char-gold").value),
       inventory: $("char-inventory").value.trim(),
       notes: $("char-notes").value.trim(),

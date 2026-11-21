@@ -316,6 +316,20 @@ button.danger:hover {
   margin-bottom: 0.75rem;
 }
 
+.npc-img {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #4a3f2c;
+  float: left;
+  margin: 0 0.75rem 0.5rem 0;
+}
+
+.npc-card {
+  overflow: hidden;
+}
+
 .hp-row {
   display: flex;
   align-items: center;
@@ -498,6 +512,38 @@ button.danger:hover {
   color: #171410;
 }
 
+.map-viewport {
+  overflow: auto;
+  max-height: 75vh;
+  margin: 0.75rem 0;
+  border-radius: 12px;
+}
+
+.map-zoom {
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+}
+
+.zoom-label {
+  color: #a89a7c;
+}
+
+.zoom-btn {
+  margin-top: 0;
+  background: #241f18;
+  color: #ece5d3;
+  border: 1px solid #4a3f2c;
+  min-width: 2.5rem;
+}
+
+.zoom-level {
+  color: #e8c96a;
+  font-weight: 700;
+  min-width: 3rem;
+  text-align: center;
+}
+
 .map-wrap {
   position: relative;
   aspect-ratio: 3 / 2;
@@ -507,7 +553,7 @@ button.danger:hover {
   border: 1px solid #6b5a2e;
   border-radius: 12px;
   overflow: hidden;
-  margin: 0.75rem 0;
+  margin: 0;
 }
 
 .map-grid {
@@ -543,6 +589,8 @@ button.danger:hover {
   display: flex;
   flex-direction: column;
   align-items: center;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .map-marker .pin {
@@ -553,15 +601,80 @@ button.danger:hover {
   border-radius: 50%;
 }
 
-.map-marker .pin-label {
-  font-size: 0.7rem;
+.map-tooltip {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 14px));
+  background: rgba(23, 20, 16, 0.95);
+  border: 1px solid #6b5a2e;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  max-width: 220px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.map-tooltip.below {
+  transform: translate(-50%, 16px);
+}
+
+.map-tooltip .tip-title {
   font-weight: 700;
+  color: #e8c96a;
+  margin: 0 0 0.25rem;
+}
+
+.map-tooltip .tip-notes {
+  margin: 0;
+  font-size: 0.85rem;
   color: #ece5d3;
-  background: rgba(23, 20, 16, 0.85);
-  padding: 0.1rem 0.4rem;
-  border-radius: 999px;
-  margin-top: 2px;
-  white-space: nowrap;
+}
+
+.map-tooltip .tip-img {
+  width: 100%;
+  border-radius: 6px;
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+.map-measure-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.measure-line {
+  stroke: #c9a227;
+  stroke-width: 3;
+  stroke-dasharray: 6 4;
+}
+
+.measure-dot {
+  fill: #c9a227;
+  stroke: #171410;
+  stroke-width: 2;
+}
+
+.map-measure-result {
+  background: #241f18;
+  border: 1px solid #4a3f2c;
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.map-measure-result .map-scale {
+  display: block;
+  margin-top: 0.4rem;
+  color: #a89a7c;
+}
+
+.map-measure-result input[type="number"] {
+  width: 4rem;
+  display: inline-block;
 }
 
 /* Modal */

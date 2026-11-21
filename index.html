@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>D&amp;D Campaign Hub</title>
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=4">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=2"></script>
 </head>
@@ -26,13 +26,14 @@
 <div id="app" class="hidden">
   <header>
     <h1>D&amp;D Campaign Hub</h1>
-    <p class="subtitle">Nathan and Angela's campaign</p>
+    <p class="subtitle">Our shared campaign</p>
   </header>
 
   <nav id="tabs" class="tabs">
     <button type="button" data-tab="board" class="tab-btn active">Board</button>
     <button type="button" data-tab="log" class="tab-btn">Campaign Log</button>
     <button type="button" data-tab="characters" class="tab-btn">Characters</button>
+    <button type="button" data-tab="howto" class="tab-btn">How to Play</button>
     <button type="button" data-tab="quests" class="tab-btn">Quests</button>
     <button type="button" data-tab="npcs" class="tab-btn">NPCs &amp; Places</button>
     <button type="button" data-tab="dice" class="tab-btn">Dice</button>
@@ -42,7 +43,8 @@
   <main>
     <section id="tab-board" class="tab-panel active">
       <h2>Message Board</h2>
-      <p class="hint">Messages between Rick, Angela's Muse, Nathan, and Angela.</p>
+      <p class="hint">Messages between Rick, Angela's Muse, Nathan, and Angela. Pick Question when you need an answer, Decision when a choice is on the table.</p>
+      <p id="live-status" class="hint live-off">Live updates: connecting...</p>
       <div id="messages-list" class="list"></div>
       <form id="message-form" class="form">
         <label for="message-author">Posting as</label>
@@ -51,6 +53,13 @@
           <option value="Angela's Muse">Angela's Muse</option>
           <option value="Nathan">Nathan</option>
           <option value="Angela">Angela</option>
+          <option value="Guest">Guest</option>
+        </select>
+        <label for="message-type">Type</label>
+        <select id="message-type">
+          <option value="story">Story</option>
+          <option value="question">Question</option>
+          <option value="decision">Decision</option>
         </select>
         <label for="message-body">Message</label>
         <textarea id="message-body" rows="3" placeholder="Write a message"></textarea>
@@ -76,8 +85,46 @@
 
     <section id="tab-characters" class="tab-panel">
       <h2>Characters</h2>
-      <p class="hint">Both player characters. Tap Edit to build or change a character.</p>
+      <p class="hint">Player characters. Tap Edit to build or change a character. More players can join with the form below.</p>
       <div id="characters-list" class="list"></div>
+      <form id="add-player-form" class="form">
+        <label for="new-player-name">Add another player</label>
+        <input type="text" id="new-player-name" placeholder="Player's first name">
+        <button type="submit">Add player</button>
+      </form>
+    </section>
+
+    <section id="tab-howto" class="tab-panel">
+      <h2>How to Play</h2>
+      <p class="hint">The short version, for anyone new to Dungeons and Dragons.</p>
+      <div class="card">
+        <p class="title">What is this game?</p>
+        <p>We tell a story together. Rick is the Dungeon Master, which means he describes the world, plays the people you meet, and decides what happens when you try something risky. You play a hero in that world. You say what your hero does, and dice decide whether it works.</p>
+      </div>
+      <div class="card">
+        <p class="title">The d20</p>
+        <p>Most things are decided with a 20-sided die. Roll it, add the modifier Rick names (for example, plus 5 for a sneaky move), and compare it to a target number. Higher is better. A natural 20 is a critical success, something amazing happens. A natural 1 is a critical failure, something goes wrong.</p>
+      </div>
+      <div class="card">
+        <p class="title">Your character sheet</p>
+        <p>Your character has six ability scores: Strength, Dexterity, Constitution, Intelligence, Wisdom, and Charisma. Higher is better. HP is your health, when it hits zero you fall down. AC is your armor class, how hard you are to hit. Skills are the things you are good at, like Stealth or Persuasion.</p>
+      </div>
+      <div class="card">
+        <p class="title">Your turn in a fight</p>
+        <p>On your turn you can move up to your speed, take one action, and sometimes take a bonus action. An action is usually an attack, casting a spell, hiding, or helping a friend. If you are not sure what to do, ask Rick, he will give you options.</p>
+      </div>
+      <div class="card">
+        <p class="title">Advantage and disadvantage</p>
+        <p>Sometimes you roll two d20s instead of one. With advantage you keep the higher roll, things are going your way. With disadvantage you keep the lower roll, things are working against you.</p>
+      </div>
+      <div class="card">
+        <p class="title">How decisions work here</p>
+        <p>We play by message, not live, so the Message Board is how we talk. When Rick posts a Question, it means he is waiting on an answer before the story moves on. When he posts a Decision, it means there is a choice to make, like which road to take or whether to trust someone. Answer through your Muse, and it will post your answer on the board for Rick.</p>
+      </div>
+      <div class="card">
+        <p class="title">The one rule that matters</p>
+        <p>There are no wrong answers. Say what your hero would do, and the story will follow. If a rule confuses you, ignore it and just describe what you want to do, Rick will handle the numbers.</p>
+      </div>
     </section>
 
     <section id="tab-quests" class="tab-panel">
@@ -256,6 +303,6 @@
   </div>
 </div>
 
-<script src="app.js"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>

@@ -986,3 +986,43 @@ header {
   padding: 0.35rem 0.6rem;
   line-height: 1;
 }
+
+/* Temp HP and death saves */
+.temp-hp {
+  color: #7fb069;
+  font-size: 0.85rem;
+}
+
+.death-saves {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.5rem 0;
+  flex-wrap: wrap;
+}
+
+.ds-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ds-label {
+  font-size: 0.75rem;
+  color: #a89a7c;
+}
+
+.ds-dot {
+  background: none;
+  border: none;
+  padding: 0.1rem;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1;
+  color: #4a3f2c;
+  cursor: pointer;
+}
+
+.ds-dot.filled {
+  color: #e8c96a;
+}

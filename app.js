@@ -761,6 +761,7 @@
   var mapEdit = false;
   var npcsEdit = false;
   var placesEdit = false;
+  var questsEdit = false;
   var suppressMapClick = false;
   var npcsByName = {};
   var mapZoom = 1;
@@ -1202,6 +1203,16 @@
     if (btn) btn.textContent = on ? "Done" : "Edit list";
   }
 
+  function setQuestsEdit(on) {
+    questsEdit = on;
+    var tab = $("tab-quests");
+    if (tab) tab.classList.toggle("editing", on);
+    var form = $("quest-form");
+    if (form) form.classList.toggle("hidden", !on);
+    var btn = $("quests-edit-toggle");
+    if (btn) btn.textContent = on ? "Done" : "Edit list";
+  }
+
   // ---------- init ----------
 
   function initApp() {
@@ -1227,7 +1238,9 @@
     });
     $("npcs-edit-toggle").addEventListener("click", function () { setNpcsEdit(!npcsEdit); });
     $("places-edit-toggle").addEventListener("click", function () { setPlacesEdit(!placesEdit); });
+    $("quests-edit-toggle").addEventListener("click", function () { setQuestsEdit(!questsEdit); });
     $("npc-form").classList.add("hidden");
+    $("quest-form").classList.add("hidden");
 
     $("message-form").addEventListener("submit", postMessage);
     $("messages-refresh").addEventListener("click", loadMessages);

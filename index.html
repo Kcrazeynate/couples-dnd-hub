@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Hub">
-<link rel="stylesheet" href="styles.css?v=16">
+<link rel="stylesheet" href="styles.css?v=17">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=3"></script>
 </head>
@@ -97,6 +97,12 @@
         <input type="text" id="log-title" placeholder="Session title">
         <label for="log-body">Entry</label>
         <textarea id="log-body" rows="4" placeholder="What happened"></textarea>
+        <div id="log-effects" class="hidden">
+          <p class="title">Character changes from this entry (optional)</p>
+          <p class="hint">Each change applies to the sheet when the entry is saved. Pick the full party or one character.</p>
+          <div id="log-effect-rows"></div>
+          <button type="button" id="log-effect-add">Add a change</button>
+        </div>
         <button type="submit">Add entry</button>
       </form>
       <div id="log-list" class="list"></div>
@@ -362,6 +368,30 @@
       </div>
       <label for="char-background">Background</label>
       <input type="text" id="char-background">
+      <div class="row">
+        <div class="field">
+          <label for="char-xp">Experience points</label>
+          <input type="number" id="char-xp" min="0" step="1">
+        </div>
+        <div class="field">
+          <label for="char-alignment">Alignment</label>
+          <input type="text" id="char-alignment" placeholder="e.g. Neutral Good">
+        </div>
+      </div>
+      <label for="char-attacks">Attacks (one per line: name, attack bonus, damage, e.g. Shortsword, +7, 1d6+5 piercing)</label>
+      <textarea id="char-attacks" rows="3"></textarea>
+      <label for="char-spells">Spells (one per line, e.g. 1st: Healing Word)</label>
+      <textarea id="char-spells" rows="3"></textarea>
+      <label for="char-features">Features &amp; traits (one per line)</label>
+      <textarea id="char-features" rows="3"></textarea>
+      <label for="char-personality">Personality traits</label>
+      <textarea id="char-personality" rows="2"></textarea>
+      <label for="char-ideals">Ideals</label>
+      <textarea id="char-ideals" rows="2"></textarea>
+      <label for="char-bonds">Bonds</label>
+      <textarea id="char-bonds" rows="2"></textarea>
+      <label for="char-flaws">Flaws</label>
+      <textarea id="char-flaws" rows="2"></textarea>
       <label for="char-skills">Skills (one per line)</label>
       <textarea id="char-skills" rows="4"></textarea>
       <label for="char-inventory">Inventory (one item per line)</label>
@@ -381,6 +411,6 @@
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<script src="app.js?v=14"></script>
+<script src="app.js?v=15"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>D&amp;D Campaign Hub</title>
-<link rel="stylesheet" href="styles.css?v=6">
+<link rel="stylesheet" href="styles.css?v=7">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=2"></script>
 </head>
@@ -154,6 +154,8 @@
         </select>
         <label for="npc-notes">Notes</label>
         <textarea id="npc-notes" rows="3" placeholder="Notes"></textarea>
+        <label for="npc-image">Image URL (optional)</label>
+        <input type="url" id="npc-image" placeholder="https://...">
         <button type="submit">Add</button>
       </form>
       <div id="npcs-list" class="list"></div>
@@ -235,11 +237,27 @@
           <button type="button" id="map-mode-reveal" class="mode-btn selected">Reveal</button>
           <button type="button" id="map-mode-hide" class="mode-btn">Hide</button>
           <button type="button" id="map-mode-marker" class="mode-btn">Add Place</button>
+          <button type="button" id="map-mode-measure" class="mode-btn">Measure</button>
         </div>
         <p class="hint" id="map-mode-hint">Tap a dark square to reveal it.</p>
-        <div id="map-wrap" class="map-wrap">
-          <div id="map-grid" class="map-grid"></div>
-          <div id="map-markers" class="map-markers"></div>
+        <div class="row map-zoom">
+          <span class="zoom-label">Zoom</span>
+          <button type="button" id="map-zoom-out" class="zoom-btn" aria-label="Zoom out">-</button>
+          <span id="map-zoom-level" class="zoom-level">1.0x</span>
+          <button type="button" id="map-zoom-in" class="zoom-btn" aria-label="Zoom in">+</button>
+          <button type="button" id="map-zoom-reset" class="zoom-btn">Reset</button>
+        </div>
+        <div id="map-viewport" class="map-viewport">
+          <div id="map-wrap" class="map-wrap">
+            <div id="map-grid" class="map-grid"></div>
+            <div id="map-markers" class="map-markers"></div>
+            <svg id="map-measure-svg" class="map-measure-svg" aria-hidden="true"></svg>
+            <div id="map-tooltip" class="map-tooltip hidden"></div>
+          </div>
+        </div>
+        <div id="map-measure-result" class="map-measure-result">
+          <span id="map-measure-text">Tap Measure, then tap two squares to see distance and travel time.</span>
+          <span class="map-scale">1 square = <input type="number" id="map-scale-input" value="12" min="1" step="1"> miles</span>
         </div>
         <h3>Places on this map</h3>
         <div id="map-markers-list" class="list"></div>
@@ -332,6 +350,6 @@
   </div>
 </div>
 
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

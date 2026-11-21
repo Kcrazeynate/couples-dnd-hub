@@ -827,3 +827,13 @@ header {
 .npc-img, .place-thumb, .tip-img, .char-img {
   cursor: pointer;
 }
+
+/* Edit-list mode: hide delete buttons until editing */
+#tab-npcs .actions,
+#map-view .actions {
+  display: none;
+}
+#tab-npcs.editing .actions,
+#map-view.editing .actions {
+  display: block;
+}

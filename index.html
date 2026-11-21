@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Hub">
-<link rel="stylesheet" href="styles.css?v=15">
+<link rel="stylesheet" href="styles.css?v=14">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=2"></script>
 </head>
@@ -43,7 +43,6 @@
     <button type="button" data-tab="log" class="tab-btn">Campaign Log</button>
     <button type="button" data-tab="characters" class="tab-btn">Characters</button>
     <button type="button" data-tab="howto" class="tab-btn">How to Play</button>
-    <button type="button" data-tab="rules" class="tab-btn">Rules</button>
     <button type="button" data-tab="quests" class="tab-btn">Quests</button>
     <button type="button" data-tab="npcs" class="tab-btn">NPCs</button>
     <button type="button" data-tab="dice" class="tab-btn">Dice</button>
@@ -135,27 +134,6 @@
       <div class="card">
         <p class="title">The one rule that matters</p>
         <p>There are no wrong answers. Say what your hero would do, and the story will follow. If a rule confuses you, ignore it and just describe what you want to do, Rick will handle the numbers.</p>
-      </div>
-    </section>
-
-    <section id="tab-rules" class="tab-panel">
-      <h2>Rules</h2>
-      <p class="hint">The System Reference Document 5.2.1, the free rules of the game. Tap a section to read it. Search the section list below, then search inside the section you open.</p>
-      <p class="rules-attribution">This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.</p>
-      <input type="search" id="rules-filter" placeholder="Search sections, for example Fireball or Grappled" autocomplete="off">
-      <div id="rules-list" class="list"></div>
-      <div id="rules-view" class="hidden">
-        <div class="row">
-          <button type="button" id="rules-back">All sections</button>
-        </div>
-        <h3 id="rules-view-title"></h3>
-        <div class="row rules-find-row">
-          <input type="search" id="rules-find" placeholder="Find in this section" autocomplete="off">
-          <button type="button" id="rules-find-prev">Prev</button>
-          <button type="button" id="rules-find-next">Next</button>
-        </div>
-        <p class="hint" id="rules-find-count"></p>
-        <div id="rules-view-body" class="rules-body"></div>
       </div>
     </section>
 
@@ -394,6 +372,6 @@
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<script src="app.js?v=13"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>

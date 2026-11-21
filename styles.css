@@ -434,6 +434,31 @@ button.danger:hover {
   text-transform: uppercase;
 }
 
+.live-on {
+  color: #a8d5a8;
+  font-weight: 600;
+}
+
+.live-off {
+  color: #a89a7c;
+}
+
+.badge.tag-question {
+  background: #c9a227;
+  color: #171410;
+}
+
+.badge.tag-decision {
+  background: #2e4a2e;
+  color: #a8d5a8;
+}
+
+/* How to Play */
+
+#tab-howto .card {
+  margin-bottom: 0.75rem;
+}
+
 /* Modal */
 
 .modal {

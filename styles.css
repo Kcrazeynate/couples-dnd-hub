@@ -846,3 +846,10 @@ header {
   display: inline-block;
 }
 
+
+/* Push notifications card on the Board tab */
+#push-card .row input {
+  flex: 1 1 180px;
+  width: auto;
+  min-width: 0;
+}

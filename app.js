@@ -759,6 +759,8 @@
   var mapMarkers = [];
   var mapMode = "view";
   var mapEdit = false;
+  var npcsEdit = false;
+  var placesEdit = false;
   var suppressMapClick = false;
   var npcsByName = {};
   var mapZoom = 1;
@@ -1180,6 +1182,26 @@
     if (img) img.src = "";
   }
 
+  // ---------- edit-list mode ----------
+
+  function setNpcsEdit(on) {
+    npcsEdit = on;
+    var tab = $("tab-npcs");
+    if (tab) tab.classList.toggle("editing", on);
+    var form = $("npc-form");
+    if (form) form.classList.toggle("hidden", !on);
+    var btn = $("npcs-edit-toggle");
+    if (btn) btn.textContent = on ? "Done" : "Edit list";
+  }
+
+  function setPlacesEdit(on) {
+    placesEdit = on;
+    var view = $("map-view");
+    if (view) view.classList.toggle("editing", on);
+    var btn = $("places-edit-toggle");
+    if (btn) btn.textContent = on ? "Done" : "Edit list";
+  }
+
   // ---------- init ----------
 
   function initApp() {
@@ -1203,6 +1225,9 @@
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape") closeLightbox();
     });
+    $("npcs-edit-toggle").addEventListener("click", function () { setNpcsEdit(!npcsEdit); });
+    $("places-edit-toggle").addEventListener("click", function () { setPlacesEdit(!placesEdit); });
+    $("npc-form").classList.add("hidden");
 
     $("message-form").addEventListener("submit", postMessage);
     $("messages-refresh").addEventListener("click", loadMessages);

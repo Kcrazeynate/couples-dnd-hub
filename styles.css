@@ -837,3 +837,11 @@ header {
 #map-view.editing .actions {
   display: block;
 }
+
+/* Quests edit-list mode: hide only the delete button, keep Mark Done visible */
+#tab-quests .small-danger {
+  display: none;
+}
+#tab-quests.editing .small-danger {
+  display: inline-block;
+}

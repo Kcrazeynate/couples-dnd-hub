@@ -142,6 +142,13 @@
 
   // ---------- Board ----------
 
+  function messageTag(body) {
+    if (!body) return null;
+    if (body.indexOf("[Question] ") === 0) return { tag: "Question", cls: "tag-question", text: body.slice(11) };
+    if (body.indexOf("[Decision] ") === 0) return { tag: "Decision", cls: "tag-decision", text: body.slice(11) };
+    return null;
+  }
+
   async function loadMessages() {
     var list = $("messages-list");
     if (!configured) {
@@ -158,9 +165,12 @@
       return;
     }
     list.innerHTML = res.data.map(function (m) {
+      var tag = messageTag(m.body);
+      var bodyText = tag ? tag.text : m.body;
       return '<div class="card">' +
         '<p class="meta">' + escapeHtml(m.author) + ' - ' + escapeHtml(fmtTime(m.created_at)) + '</p>' +
-        '<p>' + escapeHtml(m.body) + '</p>' +
+        (tag ? '<p><span class="badge ' + tag.cls + '">' + tag.tag + '</span></p>' : '') +
+        '<p>' + escapeHtml(bodyText) + '</p>' +
         '</div>';
     }).join("");
     list.scrollTop = list.scrollHeight;
@@ -172,6 +182,9 @@
     var author = $("message-author").value;
     var body = $("message-body").value.trim();
     if (!body) return;
+    var type = $("message-type").value;
+    if (type === "question") body = "[Question] " + body;
+    if (type === "decision") body = "[Decision] " + body;
     var res = await db.from("messages").insert({ author: author, body: body });
     if (res.error) {
       alert("Could not post the message. Check the connection and try again.");
@@ -243,12 +256,36 @@
     }
     var byPlayer = {};
     res.data.forEach(function (c) { byPlayer[c.player] = c; });
-    list.innerHTML = PLAYERS.map(function (p) {
+    var players = PLAYERS.slice();
+    var seen = {};
+    players.forEach(function (p) { seen[p.player] = true; });
+    res.data.forEach(function (c) {
+      if (c.player && !seen[c.player]) {
+        seen[c.player] = true;
+        players.push({ player: c.player, label: labelFromPlayer(c.player) });
+      }
+    });
+    list.innerHTML = players.map(function (p) {
       var c = byPlayer[p.player];
       if (!c) return emptyCharCard(p);
       return charCard(p, c);
     }).join("");
     bindCharCards();
+  }
+
+  function labelFromPlayer(player) {
+    var words = String(player).split(/[-_ ]+/).filter(Boolean).map(function (w) {
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    });
+    var name = words.join(" ") || String(player);
+    return name + "'s character";
+  }
+
+  function playerLabel(player) {
+    for (var i = 0; i < PLAYERS.length; i++) {
+      if (PLAYERS[i].player === player) return PLAYERS[i].label;
+    }
+    return labelFromPlayer(player);
   }
 
   function emptyCharCard(p) {
@@ -332,7 +369,7 @@
       if (!res.error && res.data) c = res.data;
     }
     $("char-player").value = player;
-    $("char-modal-title").textContent = player === "nathan" ? "Nathan's character" : "Angela's character";
+    $("char-modal-title").textContent = playerLabel(player);
     $("char-name").value = c ? (c.name || "") : "";
     $("char-image").value = c ? (c.image_url || "") : "";
     $("char-race").value = c ? (c.race || "") : "";
@@ -672,10 +709,54 @@
     loadCombatants();
   }
 
+  // ---------- live updates ----------
+
+  var liveChannel = null;
+
+  function setLiveStatus(text, ok) {
+    var el = $("live-status");
+    if (!el) return;
+    el.textContent = "Live updates: " + text;
+    el.classList.toggle("live-on", !!ok);
+    el.classList.toggle("live-off", !ok);
+  }
+
+  function subscribeLive() {
+    if (!configured || !db) {
+      setLiveStatus("off (setup not finished)", false);
+      return;
+    }
+    var tables = {
+      messages: loadMessages,
+      log_entries: loadLogEntries,
+      characters: loadCharacters,
+      quests: loadQuests,
+      npcs: loadNpcs,
+      rolls: loadRolls,
+      combatants: loadCombatants
+    };
+    liveChannel = db.channel("hub-live");
+    Object.keys(tables).forEach(function (table) {
+      ["INSERT", "UPDATE", "DELETE"].forEach(function (event) {
+        liveChannel.on("postgres_changes", { event: event, schema: "public", table: table }, function () {
+          tables[table]();
+        });
+      });
+    });
+    liveChannel.subscribe(function (status) {
+      if (status === "SUBSCRIBED") {
+        setLiveStatus("on", true);
+      } else {
+        setLiveStatus("off (refreshing every 15 seconds)", false);
+      }
+    });
+  }
+
   // ---------- init ----------
 
   function initApp() {
     initDb();
+    subscribeLive();
 
     document.querySelectorAll(".tab-btn").forEach(function (btn) {
       btn.addEventListener("click", function () { switchTab(btn.dataset.tab); });
@@ -686,6 +767,16 @@
     $("log-form").addEventListener("submit", addLogEntry);
     $("char-form").addEventListener("submit", saveChar);
     $("char-cancel").addEventListener("click", closeCharModal);
+    $("add-player-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (!configured) return setupNeeded();
+      var name = $("new-player-name").value.trim();
+      if (!name) return;
+      var id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      if (!id) return;
+      $("new-player-name").value = "";
+      openCharModal(id, null);
+    });
     $("quest-form").addEventListener("submit", addQuest);
     $("npc-form").addEventListener("submit", addNpc);
     $("dice-form").addEventListener("submit", doRoll);

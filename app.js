@@ -1696,11 +1696,22 @@
       btn.addEventListener("click", function () { switchTab(btn.dataset.tab); });
     });
 
-    document.querySelectorAll(".back-top").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      });
-    });
+    var backToTop = document.querySelector(".back-to-top");
+    var scrollUpdatePending = false;
+    var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    function updateBackToTop() {
+      var visible = window.scrollY >= Math.max(window.innerHeight, document.documentElement.clientHeight);
+      backToTop.classList.toggle("is-visible", visible);
+      backToTop.setAttribute("aria-hidden", visible ? "false" : "true");
+      backToTop.tabIndex = visible ? 0 : -1;
+      scrollUpdatePending = false;
+    }
+    window.addEventListener("scroll", function () {
+      if (!scrollUpdatePending) { scrollUpdatePending = true; window.requestAnimationFrame(updateBackToTop); }
+    }, { passive: true });
+    window.addEventListener("resize", updateBackToTop);
+    backToTop.addEventListener("click", function () { window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }); });
+    updateBackToTop();
 
     document.addEventListener("click", function (e) {
       var t = e.target;

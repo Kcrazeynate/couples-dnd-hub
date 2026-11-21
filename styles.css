@@ -853,3 +853,135 @@ header {
   width: auto;
   min-width: 0;
 }
+
+/* Character sheet layout (real 5E sheet style) */
+.sheet-scores {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.sheet-score {
+  background: #171410;
+  border: 1px solid #4a3f2c;
+  border-radius: 8px;
+  text-align: center;
+  padding: 0.35rem 0;
+}
+
+.sheet-score .mod {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #e8c96a;
+}
+
+.sheet-score .score-name {
+  display: block;
+  font-size: 0.75rem;
+  color: #a89a7c;
+}
+
+.sheet-score .score-val {
+  display: block;
+  font-size: 0.85rem;
+}
+
+.combat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.combat-stat {
+  background: #171410;
+  border: 1px solid #4a3f2c;
+  border-radius: 8px;
+  text-align: center;
+  padding: 0.35rem 0;
+}
+
+.combat-stat span {
+  display: block;
+  font-size: 0.7rem;
+  color: #a89a7c;
+}
+
+.combat-stat strong {
+  font-size: 1rem;
+}
+
+.sheet-list {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.sheet-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.15rem 0;
+  border-bottom: 1px solid #2e2718;
+}
+
+.sheet-line .dot {
+  color: #a89a7c;
+  font-size: 0.8rem;
+}
+
+.sheet-line.prof .dot {
+  color: #e8c96a;
+}
+
+.sheet-line .num {
+  margin-left: auto;
+  font-weight: 700;
+}
+
+.sheet-attacks {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.sheet-attacks th,
+.sheet-attacks td {
+  text-align: left;
+  padding: 0.25rem 0.4rem;
+  border-bottom: 1px solid #2e2718;
+}
+
+.sheet-attacks th {
+  color: #a89a7c;
+  font-size: 0.75rem;
+}
+
+/* Log entry effects */
+.effect-row {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.effect-row select,
+.effect-row input {
+  flex: 1 1 90px;
+  min-width: 0;
+  width: auto;
+  margin-bottom: 0;
+}
+
+.effect-row .effect-value {
+  flex: 1 1 110px;
+}
+
+.effect-remove {
+  flex: 0 0 auto;
+  margin-top: 0;
+  padding: 0.35rem 0.6rem;
+  line-height: 1;
+}

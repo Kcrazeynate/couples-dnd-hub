@@ -741,3 +741,47 @@ header {
   color: #c9a227;
   border-color: #c9a227;
 }
+
+/* Map places list + edit toggle + gestures */
+.place-card {
+  cursor: pointer;
+  overflow: hidden;
+}
+.place-card:hover {
+  border-color: #c9a227;
+}
+.place-thumb {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  float: left;
+  margin: 0 0.75rem 0.5rem 0;
+}
+.edit-toggle-btn {
+  background: #241f18;
+  color: #e8c96a;
+  border: 1px solid #c9a227;
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 0;
+}
+.edit-toggle-btn.selected {
+  background: #c9a227;
+  color: #171410;
+}
+.map-viewport {
+  touch-action: none;
+}
+.map-marker.highlight .pin {
+  width: 16px;
+  height: 16px;
+  box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.35), 0 0 14px 5px rgba(201, 162, 39, 0.65);
+  animation: pin-pulse 1s ease-in-out infinite;
+}
+@keyframes pin-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+}

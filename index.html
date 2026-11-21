@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Hub">
-<link rel="stylesheet" href="styles.css?v=9">
+<link rel="stylesheet" href="styles.css?v=10">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=2"></script>
 </head>
@@ -243,12 +243,13 @@
       </form>
       <div id="map-view" class="hidden">
         <div class="row map-modes">
-          <button type="button" id="map-mode-reveal" class="mode-btn selected">Reveal</button>
-          <button type="button" id="map-mode-hide" class="mode-btn">Hide</button>
-          <button type="button" id="map-mode-marker" class="mode-btn">Add Place</button>
+          <button type="button" id="map-edit-toggle" class="edit-toggle-btn">Edit map</button>
+          <button type="button" id="map-mode-reveal" class="mode-btn edit-mode-btn hidden">Reveal</button>
+          <button type="button" id="map-mode-hide" class="mode-btn edit-mode-btn hidden">Hide</button>
+          <button type="button" id="map-mode-marker" class="mode-btn edit-mode-btn hidden">Add Place</button>
           <button type="button" id="map-mode-measure" class="mode-btn">Measure</button>
         </div>
-        <p class="hint" id="map-mode-hint">Tap a dark square to reveal it.</p>
+        <p class="hint" id="map-mode-hint">Tap a place to see it. Tap Edit map to change the map.</p>
         <div class="row map-zoom">
           <span class="zoom-label">Zoom</span>
           <button type="button" id="map-zoom-out" class="zoom-btn" aria-label="Zoom out">-</button>
@@ -359,6 +360,6 @@
   </div>
 </div>
 
-<script src="app.js?v=6"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

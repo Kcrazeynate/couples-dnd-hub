@@ -754,7 +754,9 @@
   var currentMapId = null;
   var mapCells = {};
   var mapMarkers = [];
-  var mapMode = "reveal";
+  var mapMode = "view";
+  var mapEdit = false;
+  var suppressMapClick = false;
   var npcsByName = {};
   var mapZoom = 1;
   var measureA = null;
@@ -900,6 +902,7 @@
     layer.querySelectorAll(".map-marker").forEach(function (el) {
       el.addEventListener("click", function (e) {
         e.stopPropagation();
+        if (suppressMapClick) return;
         if (mapMode === "measure") {
           var mk = mapMarkers.find(function (m) { return m.id === el.dataset.markerId; });
           if (mk) onMapCellClick(mk.x, mk.y);
@@ -914,12 +917,21 @@
       return;
     }
     list.innerHTML = mapMarkers.map(function (mk) {
-      return '<div class="card"><p class="title">' + escapeHtml(mk.label) + '</p>' +
+      var entry = npcsByName[(mk.label || "").toLowerCase()];
+      var img = entry && entry.image_url ? '<img class="place-thumb" src="' + escapeHtml(entry.image_url) + '" alt="">' : "";
+      return '<div class="card place-card" data-marker-id="' + mk.id + '">' + img +
+        '<p class="title">' + escapeHtml(mk.label) + '</p>' +
         '<p class="meta">' + escapeHtml(mk.kind || "Place") + '</p>' +
         '<div class="actions"><button type="button" class="small-danger" data-marker-delete="' + mk.id + '">Delete</button></div></div>';
     }).join("");
+    list.querySelectorAll(".place-card").forEach(function (card) {
+      card.addEventListener("click", function () {
+        highlightMapMarker(card.dataset.markerId);
+      });
+    });
     document.querySelectorAll("[data-marker-delete]").forEach(function (btn) {
-      btn.addEventListener("click", async function () {
+      btn.addEventListener("click", async function (e) {
+        e.stopPropagation();
         if (!confirm("Delete this place?")) return;
         await db.from("map_markers").delete().eq("id", btn.dataset.markerDelete);
         loadMapView();
@@ -927,10 +939,28 @@
     });
   }
 
+  var highlightTimer = null;
+
+  function highlightMapMarker(markerId) {
+    var mk = mapMarkers.find(function (m) { return m.id === markerId; });
+    if (!mk) return;
+    var el = document.querySelector('.map-marker[data-marker-id="' + markerId + '"]');
+    if (el) {
+      el.scrollIntoView({ block: "center", inline: "center" });
+      document.querySelectorAll(".map-marker.highlight").forEach(function (m) { m.classList.remove("highlight"); });
+      el.classList.add("highlight");
+      if (highlightTimer) clearTimeout(highlightTimer);
+      highlightTimer = setTimeout(function () { el.classList.remove("highlight"); }, 3000);
+    }
+    if (openTooltipMarker !== markerId) toggleMapTooltip(markerId);
+  }
+
   async function onMapCellClick(x, y) {
     if (!configured) return setupNeeded();
     var key = x + "," + y;
     closeMapTooltip();
+    if (suppressMapClick) return;
+    if ((mapMode === "reveal" || mapMode === "hide" || mapMode === "marker") && !mapEdit) return;
     if (mapMode === "measure") {
       if (!measureA || measureB) {
         measureA = { x: x, y: y };
@@ -1023,8 +1053,8 @@
     if (label) label.textContent = mapZoom.toFixed(1) + "x";
   }
 
-  function setMapZoom(z) {
-    mapZoom = Math.min(3, Math.max(1, Math.round(z * 2) / 2));
+  function setMapZoom(z, smooth) {
+    mapZoom = Math.min(3, Math.max(1, smooth ? z : Math.round(z * 2) / 2));
     applyMapZoom();
   }
 
@@ -1146,6 +1176,95 @@
       e.preventDefault();
       setMapZoom(mapZoom + (e.deltaY < 0 ? 0.5 : -0.5));
     }, { passive: false });
+    $("map-edit-toggle").addEventListener("click", function () {
+      mapEdit = !mapEdit;
+      var toggle = $("map-edit-toggle");
+      toggle.textContent = mapEdit ? "Done" : "Edit map";
+      toggle.classList.toggle("selected", mapEdit);
+      document.querySelectorAll(".edit-mode-btn").forEach(function (b) {
+        b.classList.toggle("hidden", !mapEdit);
+      });
+      document.querySelectorAll(".map-modes .mode-btn").forEach(function (b) {
+        b.classList.remove("selected");
+      });
+      closeMapTooltip();
+      if (mapEdit) {
+        mapMode = "reveal";
+        $("map-mode-reveal").classList.add("selected");
+        $("map-mode-hint").textContent = "Tap a dark square to reveal it.";
+      } else {
+        mapMode = "view";
+        $("map-mode-hint").textContent = "Tap a place to see it. Tap Edit map to change the map.";
+      }
+    });
+    initMapGestures();
+
+    function initMapGestures() {
+      var viewport = $("map-viewport");
+      var pointers = new Map();
+      var panStart = null;
+      var pinchStart = null;
+      var dragged = false;
+      viewport.addEventListener("pointerdown", function (e) {
+        try { viewport.setPointerCapture(e.pointerId); } catch (err) {}
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pointers.size === 1) {
+          panStart = { x: e.clientX, y: e.clientY, scrollLeft: viewport.scrollLeft, scrollTop: viewport.scrollTop };
+          dragged = false;
+        } else if (pointers.size === 2) {
+          var pts = Array.from(pointers.values());
+          pinchStart = {
+            dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+            zoom: mapZoom,
+            midX: (pts[0].x + pts[1].x) / 2 - viewport.getBoundingClientRect().left,
+            midY: (pts[0].y + pts[1].y) / 2 - viewport.getBoundingClientRect().top,
+            scrollLeft: viewport.scrollLeft,
+            scrollTop: viewport.scrollTop
+          };
+          panStart = null;
+        }
+      });
+      viewport.addEventListener("pointermove", function (e) {
+        if (!pointers.has(e.pointerId)) return;
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (pointers.size === 1 && panStart) {
+          var dx = e.clientX - panStart.x;
+          var dy = e.clientY - panStart.y;
+          if (Math.abs(dx) + Math.abs(dy) > 8) dragged = true;
+          if (dragged) {
+            viewport.scrollLeft = panStart.scrollLeft - dx;
+            viewport.scrollTop = panStart.scrollTop - dy;
+          }
+        } else if (pointers.size === 2 && pinchStart) {
+          var pts2 = Array.from(pointers.values());
+          var dist = Math.hypot(pts2[0].x - pts2[1].x, pts2[0].y - pts2[1].y);
+          if (dist > 0) {
+            var rect = viewport.getBoundingClientRect();
+            var midX = (pts2[0].x + pts2[1].x) / 2 - rect.left;
+            var midY = (pts2[0].y + pts2[1].y) / 2 - rect.top;
+            var contentX = (pinchStart.scrollLeft + pinchStart.midX) / pinchStart.zoom;
+            var contentY = (pinchStart.scrollTop + pinchStart.midY) / pinchStart.zoom;
+            dragged = true;
+            setMapZoom(pinchStart.zoom * dist / pinchStart.dist, true);
+            viewport.scrollLeft = contentX * mapZoom - midX;
+            viewport.scrollTop = contentY * mapZoom - midY;
+          }
+        }
+      });
+      function endPointer(e) {
+        pointers.delete(e.pointerId);
+        if (pointers.size < 2) pinchStart = null;
+        if (pointers.size === 0) {
+          panStart = null;
+          if (dragged) {
+            suppressMapClick = true;
+            setTimeout(function () { suppressMapClick = false; }, 150);
+          }
+        }
+      }
+      viewport.addEventListener("pointerup", endPointer);
+      viewport.addEventListener("pointercancel", endPointer);
+    }
     var scaleInput = $("map-scale-input");
     scaleInput.value = milesPerSquare;
     scaleInput.addEventListener("change", function () {

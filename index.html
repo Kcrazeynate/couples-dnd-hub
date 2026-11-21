@@ -44,7 +44,7 @@
     <button type="button" data-tab="characters" class="tab-btn">Characters</button>
     <button type="button" data-tab="howto" class="tab-btn">How to Play</button>
     <button type="button" data-tab="quests" class="tab-btn">Quests</button>
-    <button type="button" data-tab="npcs" class="tab-btn">NPCs &amp; Places</button>
+    <button type="button" data-tab="npcs" class="tab-btn">NPCs</button>
     <button type="button" data-tab="dice" class="tab-btn">Dice</button>
     <button type="button" data-tab="battle" class="tab-btn">Battle</button>
     <button type="button" data-tab="maps" class="tab-btn">Maps</button>
@@ -151,8 +151,8 @@
     </section>
 
     <section id="tab-npcs" class="tab-panel">
-      <h2>NPCs &amp; Places</h2>
-      <p class="hint">People met and places visited.</p>
+      <h2>NPCs</h2>
+      <p class="hint">People met along the way.</p>
       <form id="npc-form" class="form">
         <label for="npc-name">Name</label>
         <input type="text" id="npc-name" placeholder="Name">
@@ -271,6 +271,10 @@
         </div>
         <h3>Places on this map</h3>
         <div id="map-markers-list" class="list"></div>
+        <div id="map-places-unmarked-wrap" class="hidden">
+          <h3>Other places</h3>
+          <div id="map-places-unmarked" class="list"></div>
+        </div>
       </div>
       <p id="map-empty" class="empty">No maps yet. Add the first one above.</p>
     </section>
@@ -360,6 +364,6 @@
   </div>
 </div>
 
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>

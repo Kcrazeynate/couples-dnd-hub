@@ -271,6 +271,7 @@
       ? '<ul class="inventory">' + skillItems.map(function (s) { return "<li>" + escapeHtml(s) + "</li>"; }).join("") + "</ul>"
       : '<p class="empty">No skills yet.</p>';
     return '<div class="card">' +
+      (c.image_url ? '<img class="char-img" src="' + escapeHtml(c.image_url) + '" alt="">' : '') +
       '<div class="char-head"><span class="name">' + escapeHtml(c.name || "Unnamed") + '</span>' +
       '<span class="level">' + escapeHtml(p.label) + '</span></div>' +
       '<p class="meta">' + escapeHtml(c.race || "") + (c.race && c.class ? " " : "") + escapeHtml(c.class || "") +
@@ -333,6 +334,7 @@
     $("char-player").value = player;
     $("char-modal-title").textContent = player === "nathan" ? "Nathan's character" : "Angela's character";
     $("char-name").value = c ? (c.name || "") : "";
+    $("char-image").value = c ? (c.image_url || "") : "";
     $("char-race").value = c ? (c.race || "") : "";
     $("char-class").value = c ? (c.class || "") : "";
     $("char-background").value = c ? (c.background || "") : "";
@@ -363,6 +365,7 @@
     var row = {
       player: $("char-player").value,
       name: $("char-name").value.trim() || null,
+      image_url: $("char-image").value.trim() || null,
       race: $("char-race").value.trim() || null,
       class: $("char-class").value.trim() || null,
       background: $("char-background").value.trim() || null,

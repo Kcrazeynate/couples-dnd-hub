@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Hub">
-<link rel="stylesheet" href="styles.css?v=20">
+<link rel="stylesheet" href="styles.css?v=21">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=3"></script>
 </head>
@@ -88,7 +88,6 @@
           <button type="button" id="messages-refresh">Refresh</button>
         </div>
       </form>
-      <div class="back-top-wrap"><button type="button" class="back-top">↑ Back to top</button></div>
     </section>
 
     <section id="tab-log" class="tab-panel">
@@ -108,7 +107,6 @@
         <button type="submit">Add entry</button>
       </form>
       <div id="log-list" class="list"></div>
-      <div class="back-top-wrap"><button type="button" class="back-top">↑ Back to top</button></div>
     </section>
 
     <section id="tab-characters" class="tab-panel">
@@ -120,7 +118,6 @@
         <input type="text" id="new-player-name" placeholder="Player's first name">
         <button type="submit">Add player</button>
       </form>
-      <div class="back-top-wrap"><button type="button" class="back-top">↑ Back to top</button></div>
     </section>
 
     <section id="tab-howto" class="tab-panel">
@@ -154,7 +151,6 @@
         <p class="title">The one rule that matters</p>
         <p>There are no wrong answers. Say what your hero would do, and the story will follow. If a rule confuses you, ignore it and just describe what you want to do, Rick will handle the numbers.</p>
       </div>
-      <div class="back-top-wrap"><button type="button" class="back-top">↑ Back to top</button></div>
     </section>
 
     <section id="tab-aiguide" class="tab-panel">
@@ -200,7 +196,6 @@
         <p class="title">Talking to the DM</p>
         <p>Post on the board. The DM's Muse reads it and answers there. Do not assume the DM saw something unless it is on the board.</p>
       </div>
-      <div class="back-top-wrap"><button type="button" class="back-top">↑ Back to top</button></div>
     </section>
 
     <section id="tab-quests" class="tab-panel">
@@ -215,7 +210,6 @@
         <button type="submit">Add quest</button>
       </form>
       <div id="quests-list" class="list"></div>
-      <div class="back-top-wrap"><button type="button" class="back-top">↑ Back to top</button></div>
     </section>
 
     <section id="tab-npcs" class="tab-panel">
@@ -237,7 +231,6 @@
         <button type="submit">Add</button>
       </form>
       <div id="npcs-list" class="list"></div>
-      <div class="back-top-wrap"><button type="button" class="back-top">↑ Back to top</button></div>
     </section>
 
     <section id="tab-dice" class="tab-panel">
@@ -267,7 +260,6 @@
       <div id="dice-result" class="dice-result hidden"></div>
       <h3>Roll log</h3>
       <div id="rolls-list" class="list"></div>
-      <div class="back-top-wrap"><button type="button" class="back-top">↑ Back to top</button></div>
     </section>
 
     <section id="tab-battle" class="tab-panel">
@@ -299,7 +291,6 @@
         <button type="button" id="clear-battle-btn" class="danger">Clear Battle</button>
       </div>
       <div id="combatants-list" class="list"></div>
-      <div class="back-top-wrap"><button type="button" class="back-top">↑ Back to top</button></div>
     </section>
 
     <section id="tab-maps" class="tab-panel">
@@ -350,7 +341,6 @@
         </div>
       </div>
       <p id="map-empty" class="empty">No maps yet. Add the first one above.</p>
-      <div class="back-top-wrap"><button type="button" class="back-top">↑ Back to top</button></div>
     </section>
   </main>
 </div>
@@ -480,11 +470,15 @@
   </div>
 </div>
 
+<button class="back-to-top" type="button" aria-label="Back to top" aria-hidden="true" tabindex="-1">
+  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 11l7-7 7 7M12 4v16" /></svg>
+</button>
+
 <div id="image-lightbox" class="lightbox hidden">
   <button type="button" id="lightbox-close" class="lightbox-close" aria-label="Close">✕</button>
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<script src="app.js?v=17"></script>
+<script src="app.js?v=18"></script>
 </body>
 </html>

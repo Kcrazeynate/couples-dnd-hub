@@ -871,12 +871,23 @@
     tip.innerHTML = html;
     var wrap = $("map-wrap");
     var px = (mk.x + 0.5) / MAP_COLS * wrap.clientWidth;
-    var clamped = Math.min(Math.max(px, 115), Math.max(115, wrap.clientWidth - 115));
-    tip.style.left = clamped + "px";
-    var topPct = (mk.y + 0.5) / MAP_ROWS * 100;
-    tip.style.top = topPct.toFixed(2) + "%";
-    tip.classList.toggle("below", topPct < 35);
+    var pinY = (mk.y + 0.5) / MAP_ROWS * wrap.clientHeight;
     tip.classList.remove("hidden");
+    tip.classList.remove("below");
+    tip.style.transform = "";
+    var tipH = tip.offsetHeight;
+    var tipW = tip.offsetWidth;
+    tip.style.left = Math.min(Math.max(px, tipW / 2 + 6), Math.max(tipW / 2 + 6, wrap.clientWidth - tipW / 2 - 6)) + "px";
+    if (pinY - tipH - 14 >= 0) {
+      tip.style.top = pinY + "px";
+    } else if (pinY + 16 + tipH <= wrap.clientHeight) {
+      tip.style.top = pinY + "px";
+      tip.classList.add("below");
+    } else {
+      tip.style.top = Math.max(8, wrap.clientHeight - tipH - 8) + "px";
+      tip.style.transform = "translate(-50%, 0)";
+    }
+    tip.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 
   function renderMapMarkers() {
@@ -889,6 +900,11 @@
     layer.querySelectorAll(".map-marker").forEach(function (el) {
       el.addEventListener("click", function (e) {
         e.stopPropagation();
+        if (mapMode === "measure") {
+          var mk = mapMarkers.find(function (m) { return m.id === el.dataset.markerId; });
+          if (mk) onMapCellClick(mk.x, mk.y);
+          return;
+        }
         toggleMapTooltip(el.dataset.markerId);
       });
     });
@@ -974,7 +990,7 @@
     if (!svg || !text) return;
     if (!measureA) {
       svg.innerHTML = "";
-      text.textContent = "Tap Measure, then tap two squares to see distance and travel time.";
+      text.textContent = "Tap Measure, then tap two squares or places to see distance and travel time.";
       return;
     }
     var ax = ((measureA.x + 0.5) / MAP_COLS * 100).toFixed(2);
@@ -993,7 +1009,7 @@
         Math.round(miles) + " miles (" + squares.toFixed(1) + " squares). On foot by road: " + (miles / 24).toFixed(1) +
         " days. Rough country: " + (miles / 12).toFixed(1) + " days. On horseback: " + (miles / 30).toFixed(1) + " days.";
     } else {
-      text.textContent = pointName(measureA) + " set. Tap a second square.";
+      text.textContent = pointName(measureA) + " set. Tap a second square or place.";
     }
     svg.innerHTML = shapes;
   }
@@ -1117,7 +1133,7 @@
         $("map-mode-hint").textContent =
           mapMode === "reveal" ? "Tap a dark square to reveal it." :
           mapMode === "hide" ? "Tap a revealed square to cover it with fog again." :
-          mapMode === "measure" ? "Tap two squares to measure the distance between them." :
+          mapMode === "measure" ? "Tap two squares or places to measure the distance between them." :
           "Tap a revealed square to mark a place there.";
       });
     });

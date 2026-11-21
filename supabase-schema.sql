@@ -210,3 +210,17 @@ create policy "Public delete" on map_markers for delete using (true);
 alter publication supabase_realtime add table maps;
 alter publication supabase_realtime add table map_cells;
 alter publication supabase_realtime add table map_markers;
+-- Push subscriptions for hub notifications (added 2026-11-21)
+-- Run this in the Supabase SQL editor, same as the other hub blocks.
+create table if not exists push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  label text not null,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+alter table push_subscriptions enable row level security;
+grant select, insert, update, delete on push_subscriptions to anon;
+drop policy if exists "anon all" on push_subscriptions;
+create policy "anon all" on push_subscriptions for all using (true) with check (true);

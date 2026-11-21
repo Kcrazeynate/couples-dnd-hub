@@ -249,3 +249,7 @@ alter table log_effects enable row level security;
 grant select, insert, update, delete on log_effects to anon;
 drop policy if exists "anon all" on log_effects;
 create policy "anon all" on log_effects for all using (true) with check (true);
+alter table characters add column if not exists temp_hp integer;
+alter table characters add column if not exists hit_dice_used integer;
+alter table characters add column if not exists death_save_successes integer;
+alter table characters add column if not exists death_save_failures integer;

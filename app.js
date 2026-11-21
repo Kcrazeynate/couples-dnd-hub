@@ -213,6 +213,101 @@
     loadMessages();
   }
 
+  // ---------- Push notifications ----------
+
+  var pushRegistration = null;
+
+  function urlBase64ToUint8Array(base64) {
+    var padding = "=".repeat((4 - base64.length % 4) % 4);
+    var base64url = (base64 + padding).replace(/\-/g, "+").replace(/_/g, "/");
+    var raw = window.atob(base64url);
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  function pushSupported() {
+    return "serviceWorker" in navigator && "PushManager" in window &&
+      "Notification" in window && !!CONFIG.VAPID_PUBLIC_KEY;
+  }
+
+  async function setupPush() {
+    var status = $("push-status");
+    var btn = $("push-toggle");
+    if (!pushSupported()) {
+      status.textContent = "Notifications are not supported in this browser. On iPhone, open the hub from the home screen app and try again.";
+      btn.disabled = true;
+      return;
+    }
+    try {
+      pushRegistration = await navigator.serviceWorker.register("sw.js");
+    } catch (e) {
+      status.textContent = "Could not set up notifications on this phone.";
+      btn.disabled = true;
+      return;
+    }
+    btn.addEventListener("click", togglePush);
+    await refreshPushStatus();
+  }
+
+  async function refreshPushStatus() {
+    var status = $("push-status");
+    var btn = $("push-toggle");
+    var sub = await pushRegistration.pushManager.getSubscription();
+    if (!sub) {
+      status.textContent = "Notifications are off on this phone.";
+      btn.textContent = "Turn on notifications";
+      return;
+    }
+    var res = await db.from("push_subscriptions").select("label").eq("endpoint", sub.endpoint).limit(1);
+    var label = res.data && res.data.length ? res.data[0].label : "this phone";
+    status.textContent = "Notifications are on for " + label + " on this phone.";
+    btn.textContent = "Turn off notifications";
+  }
+
+  async function togglePush() {
+    var status = $("push-status");
+    var btn = $("push-toggle");
+    var sub = await pushRegistration.pushManager.getSubscription();
+    if (sub) {
+      await sub.unsubscribe();
+      await db.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+      await refreshPushStatus();
+      return;
+    }
+    var label = ($("push-label").value || "").trim();
+    if (!label) {
+      status.textContent = "Type a name first, for example Angela, so new posts do not notify you about your own messages.";
+      return;
+    }
+    if (Notification.permission === "denied") {
+      status.textContent = "Notifications are blocked for this site. Allow them in the phone settings, then try again.";
+      return;
+    }
+    var permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      status.textContent = "Notifications need permission to work.";
+      return;
+    }
+    try {
+      var newSub = await pushRegistration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(CONFIG.VAPID_PUBLIC_KEY)
+      });
+      var json = newSub.toJSON();
+      var res = await db.from("push_subscriptions").insert({
+        label: label,
+        endpoint: json.endpoint,
+        p256dh: json.keys.p256dh,
+        auth: json.keys.auth
+      });
+      if (res.error) throw new Error(res.error.message);
+      await refreshPushStatus();
+    } catch (e) {
+      status.textContent = "Could not turn on notifications. Check the connection and try again.";
+    }
+  }
+
   // ---------- Campaign Log ----------
 
   async function loadLogEntries() {
@@ -1241,6 +1336,7 @@
     $("quests-edit-toggle").addEventListener("click", function () { setQuestsEdit(!questsEdit); });
     $("npc-form").classList.add("hidden");
     $("quest-form").classList.add("hidden");
+    setupPush();
 
     $("message-form").addEventListener("submit", postMessage);
     $("messages-refresh").addEventListener("click", loadMessages);

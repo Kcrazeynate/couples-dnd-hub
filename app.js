@@ -77,14 +77,24 @@
       return;
     }
 
-    if (sessionStorage.getItem("dnd_hub_unlocked") === "1") {
+    function storedUnlocked() {
+      try { if (localStorage.getItem("dnd_hub_unlocked") === "1") return true; } catch (e) {}
+      try { if (sessionStorage.getItem("dnd_hub_unlocked") === "1") return true; } catch (e) {}
+      return false;
+    }
+
+    if (storedUnlocked()) {
       unlock();
       return;
     }
 
     function tryUnlock() {
       if (input.value === CONFIG.CAMPAIGN_PASSPHRASE) {
-        sessionStorage.setItem("dnd_hub_unlocked", "1");
+        if ($("remember-device") && $("remember-device").checked) {
+          try { localStorage.setItem("dnd_hub_unlocked", "1"); } catch (e) {}
+        } else {
+          sessionStorage.setItem("dnd_hub_unlocked", "1");
+        }
         unlock();
       } else {
         error.classList.remove("hidden");
@@ -101,6 +111,14 @@
     function unlock() {
       gate.classList.add("hidden");
       app.classList.remove("hidden");
+      var lockBtn = $("lock-btn");
+      if (lockBtn) {
+        lockBtn.addEventListener("click", function () {
+          try { localStorage.removeItem("dnd_hub_unlocked"); } catch (e) {}
+          try { sessionStorage.removeItem("dnd_hub_unlocked"); } catch (e) {}
+          location.reload();
+        });
+      }
       initApp();
     }
   }

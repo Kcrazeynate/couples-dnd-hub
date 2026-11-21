@@ -44,6 +44,7 @@ create table if not exists characters (
   gold integer,
   inventory text,
   notes text,
+  image_url text,
   updated_at timestamptz not null default now()
 );
 

@@ -306,8 +306,8 @@ button.danger:hover {
 }
 
 .char-img {
-  width: 100%;
-  max-width: 320px;
+  width: 160px;
+  max-width: 45%;
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: 12px;

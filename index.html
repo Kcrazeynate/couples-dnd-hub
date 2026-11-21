@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>D&amp;D Campaign Hub</title>
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=5">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=2"></script>
 </head>
@@ -38,6 +38,7 @@
     <button type="button" data-tab="npcs" class="tab-btn">NPCs &amp; Places</button>
     <button type="button" data-tab="dice" class="tab-btn">Dice</button>
     <button type="button" data-tab="battle" class="tab-btn">Battle</button>
+    <button type="button" data-tab="maps" class="tab-btn">Maps</button>
   </nav>
 
   <main>
@@ -217,6 +218,34 @@
       </div>
       <div id="combatants-list" class="list"></div>
     </section>
+
+    <section id="tab-maps" class="tab-panel">
+      <h2>Maps</h2>
+      <p class="hint">The world as you have explored it. Dark squares are still covered by fog. Tap a map to switch, for example when the story jumps to another place or plane.</p>
+      <div id="map-tabs" class="map-tabs"></div>
+      <form id="add-map-form" class="form">
+        <label for="new-map-name">Add a map</label>
+        <input type="text" id="new-map-name" placeholder="Map name, for example The Feywild">
+        <label for="new-map-image">Map image URL (optional)</label>
+        <input type="url" id="new-map-image" placeholder="https://...">
+        <button type="submit">Add map</button>
+      </form>
+      <div id="map-view" class="hidden">
+        <div class="row map-modes">
+          <button type="button" id="map-mode-reveal" class="mode-btn selected">Reveal</button>
+          <button type="button" id="map-mode-hide" class="mode-btn">Hide</button>
+          <button type="button" id="map-mode-marker" class="mode-btn">Add Place</button>
+        </div>
+        <p class="hint" id="map-mode-hint">Tap a dark square to reveal it.</p>
+        <div id="map-wrap" class="map-wrap">
+          <div id="map-grid" class="map-grid"></div>
+          <div id="map-markers" class="map-markers"></div>
+        </div>
+        <h3>Places on this map</h3>
+        <div id="map-markers-list" class="list"></div>
+      </div>
+      <p id="map-empty" class="empty">No maps yet. Add the first one above.</p>
+    </section>
   </main>
 </div>
 
@@ -303,6 +332,6 @@
   </div>
 </div>
 
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/* D&D Campaign Hub: clean, simple, readable on phone and desktop. */
+/* D&D Campaign Hub: dark tavern theme, warm gold on charcoal, readable on phone and desktop. */
 
 * {
   box-sizing: border-box;
@@ -9,8 +9,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 1.5;
-  color: #1f2430;
-  background: #f4f1ea;
+  color: #ece5d3;
+  background: #171410;
 }
 
 .hidden {
@@ -20,10 +20,13 @@ body {
 h1, h2, h3 {
   margin: 0 0 0.5em;
   line-height: 1.25;
+  font-family: Georgia, "Palatino Linotype", "Book Antiqua", serif;
+  color: #e8c96a;
 }
 
 h1 {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
+  letter-spacing: 0.02em;
 }
 
 h2 {
@@ -40,12 +43,12 @@ p {
 }
 
 .hint {
-  color: #5a5f6a;
+  color: #a89a7c;
   font-size: 0.95rem;
 }
 
 .error {
-  color: #b3261e;
+  color: #e88a7a;
   font-weight: 600;
 }
 
@@ -62,11 +65,11 @@ p {
 .gate-box {
   width: 100%;
   max-width: 380px;
-  background: #fffdf8;
-  border: 1px solid #d8d2c4;
-  border-radius: 10px;
+  background: #241f18;
+  border: 1px solid #6b5a2e;
+  border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
 }
 
 /* App frame */
@@ -78,43 +81,44 @@ p {
 }
 
 header {
-  padding: 1.25rem 0 0.5rem;
+  padding: 1.5rem 0 0.75rem;
   text-align: center;
+  border-bottom: 1px solid #6b5a2e;
+  margin-bottom: 0.25rem;
 }
 
 .subtitle {
-  color: #5a5f6a;
+  color: #a89a7c;
   margin: 0;
 }
 
 /* Tabs */
 
 .tabs {
-  display: flex;
-  gap: 0.4rem;
-  overflow-x: auto;
-  padding: 0.5rem 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  padding: 0.75rem 0;
   margin-bottom: 1rem;
-  border-bottom: 2px solid #d8d2c4;
-  -webkit-overflow-scrolling: touch;
+  border-bottom: 1px solid #6b5a2e;
 }
 
 .tab-btn {
-  flex: 0 0 auto;
-  background: transparent;
-  color: #1f2430;
-  border: 1px solid #c9c2b0;
-  border-radius: 999px;
-  padding: 0.45rem 0.9rem;
+  background: #241f18;
+  color: #ece5d3;
+  border: 1px solid #4a3f2c;
+  border-radius: 8px;
+  padding: 0.6rem 0.4rem;
   font-size: 0.95rem;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .tab-btn.active {
-  background: #3b4a6b;
-  border-color: #3b4a6b;
-  color: #fff;
+  background: #c9a227;
+  border-color: #c9a227;
+  color: #171410;
+  font-weight: 700;
 }
 
 .tab-panel {
@@ -128,9 +132,9 @@ header {
 /* Forms */
 
 .form {
-  background: #fffdf8;
-  border: 1px solid #d8d2c4;
-  border-radius: 10px;
+  background: #241f18;
+  border: 1px solid #4a3f2c;
+  border-radius: 12px;
   padding: 1rem;
   margin: 1rem 0;
 }
@@ -139,6 +143,7 @@ header {
   display: block;
   font-weight: 600;
   font-size: 0.9rem;
+  color: #d8c690;
   margin: 0.75rem 0 0.25rem;
 }
 
@@ -151,10 +156,10 @@ input, select, textarea {
   padding: 0.6rem;
   font-size: 1rem;
   font-family: inherit;
-  border: 1px solid #b9b2a0;
-  border-radius: 6px;
-  background: #fff;
-  color: #1f2430;
+  border: 1px solid #4a3f2c;
+  border-radius: 8px;
+  background: #171410;
+  color: #ece5d3;
 }
 
 textarea {
@@ -162,22 +167,24 @@ textarea {
 }
 
 button {
-  background: #3b4a6b;
-  color: #fff;
+  background: #c9a227;
+  color: #171410;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 0.6rem 1.1rem;
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
   margin-top: 0.75rem;
 }
 
 button:hover {
-  background: #2f3c57;
+  background: #dbb63a;
 }
 
 button.danger {
   background: #a33327;
+  color: #fff;
 }
 
 button.danger:hover {
@@ -209,14 +216,14 @@ button.danger:hover {
 }
 
 .card {
-  background: #fffdf8;
-  border: 1px solid #d8d2c4;
-  border-radius: 10px;
+  background: #241f18;
+  border: 1px solid #4a3f2c;
+  border-radius: 12px;
   padding: 1rem;
 }
 
 .card .meta {
-  color: #5a5f6a;
+  color: #a89a7c;
   font-size: 0.85rem;
   margin: 0 0 0.25rem;
 }
@@ -224,6 +231,7 @@ button.danger:hover {
 .card .title {
   font-weight: 700;
   margin: 0 0 0.25rem;
+  color: #ece5d3;
 }
 
 .card p {
@@ -237,7 +245,7 @@ button.danger:hover {
 }
 
 .empty {
-  color: #5a5f6a;
+  color: #a89a7c;
   font-style: italic;
   padding: 0.75rem 0;
 }
@@ -248,13 +256,13 @@ button.danger:hover {
   font-weight: 700;
   padding: 0.15rem 0.6rem;
   border-radius: 999px;
-  background: #e4ddc9;
-  color: #4a4436;
+  background: #3a3222;
+  color: #d8c690;
 }
 
 .badge.done {
-  background: #cfe3cf;
-  color: #2f5d2f;
+  background: #2e4a2e;
+  color: #a8d5a8;
 }
 
 .card .actions {
@@ -272,6 +280,7 @@ button.danger:hover {
 
 .card .actions button.small-danger {
   background: #a33327;
+  color: #fff;
 }
 
 /* Character cards */
@@ -287,10 +296,12 @@ button.danger:hover {
 .char-head .name {
   font-size: 1.15rem;
   font-weight: 700;
+  font-family: Georgia, "Palatino Linotype", "Book Antiqua", serif;
+  color: #e8c96a;
 }
 
 .char-head .level {
-  color: #5a5f6a;
+  color: #a89a7c;
   font-size: 0.9rem;
 }
 
@@ -321,9 +332,9 @@ button.danger:hover {
 }
 
 .score {
-  background: #f4f1ea;
-  border: 1px solid #d8d2c4;
-  border-radius: 6px;
+  background: #171410;
+  border: 1px solid #4a3f2c;
+  border-radius: 8px;
   text-align: center;
   padding: 0.35rem 0;
   font-size: 0.9rem;
@@ -332,7 +343,7 @@ button.danger:hover {
 .score strong {
   display: block;
   font-size: 0.75rem;
-  color: #5a5f6a;
+  color: #a89a7c;
 }
 
 .inventory {
@@ -357,10 +368,15 @@ button.danger:hover {
   margin-top: 0;
   flex: 1 1 60px;
   padding: 0.6rem 0.4rem;
+  background: #241f18;
+  color: #ece5d3;
+  border: 1px solid #4a3f2c;
 }
 
 .dice-buttons button.selected {
-  background: #7a5c1e;
+  background: #c9a227;
+  border-color: #c9a227;
+  color: #171410;
 }
 
 .roll-btn {
@@ -370,9 +386,9 @@ button.danger:hover {
 }
 
 .dice-result {
-  background: #fffdf8;
-  border: 2px solid #3b4a6b;
-  border-radius: 10px;
+  background: #241f18;
+  border: 2px solid #c9a227;
+  border-radius: 12px;
   padding: 1rem;
   margin: 1rem 0;
   text-align: center;
@@ -382,17 +398,18 @@ button.danger:hover {
   font-size: 2rem;
   font-weight: 700;
   display: block;
+  color: #e8c96a;
 }
 
 .dice-result .detail {
-  color: #5a5f6a;
+  color: #a89a7c;
 }
 
 /* Battle */
 
 .combatant.current {
-  border: 2px solid #7a5c1e;
-  background: #fdf6e3;
+  border: 2px solid #c9a227;
+  background: #2e2718;
 }
 
 .combatant .init {
@@ -402,7 +419,7 @@ button.danger:hover {
 .turn-tag {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #7a5c1e;
+  color: #e8c96a;
   text-transform: uppercase;
 }
 
@@ -411,7 +428,7 @@ button.danger:hover {
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -423,8 +440,9 @@ button.danger:hover {
 .modal-box {
   width: 100%;
   max-width: 560px;
-  background: #fffdf8;
-  border-radius: 10px;
+  background: #241f18;
+  border: 1px solid #6b5a2e;
+  border-radius: 12px;
   padding: 1.25rem;
   margin: 1rem 0;
 }

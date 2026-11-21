@@ -1026,3 +1026,9 @@ header {
 .ds-dot.filled {
   color: #e8c96a;
 }
+
+/* Back to top button at the bottom of each tab */
+.back-top-wrap {
+  text-align: center;
+  margin: 1.5rem 0 0.5rem;
+}

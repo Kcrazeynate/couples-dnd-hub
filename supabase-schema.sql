@@ -151,3 +151,62 @@ alter publication supabase_realtime add table quests;
 alter publication supabase_realtime add table npcs;
 alter publication supabase_realtime add table rolls;
 alter publication supabase_realtime add table combatants;
+
+-- Maps, fog of war, and place markers.
+-- A map is one world or plane (for example The World, or The Feywild).
+-- map_cells stores which grid squares have been revealed; any square with
+-- no row, or revealed false, stays covered by fog. map_markers are the
+-- places found on a map.
+create table if not exists maps (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  image_url text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists map_cells (
+  id uuid primary key default gen_random_uuid(),
+  map_id uuid not null references maps(id) on delete cascade,
+  x int not null,
+  y int not null,
+  revealed boolean not null default false,
+  created_at timestamptz not null default now(),
+  unique (map_id, x, y)
+);
+
+create table if not exists map_markers (
+  id uuid primary key default gen_random_uuid(),
+  map_id uuid not null references maps(id) on delete cascade,
+  x int not null,
+  y int not null,
+  label text not null,
+  kind text not null default 'Place',
+  created_at timestamptz not null default now()
+);
+
+grant select, insert, update, delete on maps to anon;
+grant select, insert, update, delete on map_cells to anon;
+grant select, insert, update, delete on map_markers to anon;
+
+alter table maps enable row level security;
+alter table map_cells enable row level security;
+alter table map_markers enable row level security;
+
+create policy "Public read" on maps for select using (true);
+create policy "Public insert" on maps for insert with check (true);
+create policy "Public update" on maps for update using (true) with check (true);
+create policy "Public delete" on maps for delete using (true);
+
+create policy "Public read" on map_cells for select using (true);
+create policy "Public insert" on map_cells for insert with check (true);
+create policy "Public update" on map_cells for update using (true) with check (true);
+create policy "Public delete" on map_cells for delete using (true);
+
+create policy "Public read" on map_markers for select using (true);
+create policy "Public insert" on map_markers for insert with check (true);
+create policy "Public update" on map_markers for update using (true) with check (true);
+create policy "Public delete" on map_markers for delete using (true);
+
+alter publication supabase_realtime add table maps;
+alter publication supabase_realtime add table map_cells;
+alter publication supabase_realtime add table map_markers;

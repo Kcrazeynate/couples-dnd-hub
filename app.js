@@ -524,14 +524,17 @@
     }
     var res = await db.from("npcs").select("*").order("created_at", { ascending: false });
     if (res.error) {
-      list.innerHTML = '<p class="error">Could not load NPCs and places.</p>';
+      list.innerHTML = '<p class="error">Could not load NPCs.</p>';
       return;
     }
-    if (!res.data.length) {
+    var rows = (res.data || []).filter(function (n) {
+      return (n.kind || "").toLowerCase() !== "place";
+    });
+    if (!rows.length) {
       list.innerHTML = '<p class="empty">Nothing here yet.</p>';
       return;
     }
-    list.innerHTML = res.data.map(function (n) {
+    list.innerHTML = rows.map(function (n) {
       var img = n.image_url ? '<img class="npc-img" src="' + escapeHtml(n.image_url) + '" alt="">' : "";
       return '<div class="card npc-card">' + img +
         '<p class="title">' + escapeHtml(n.name) + ' <span class="badge">' + escapeHtml(n.kind) + '</span></p>' +
@@ -835,6 +838,7 @@
     measureB = null;
     renderMapGrid();
     renderMapMarkers();
+    renderUnmarkedPlaces();
     renderMeasure();
   }
 
@@ -960,6 +964,37 @@
       highlightTimer = setTimeout(function () { el.classList.remove("highlight"); }, 3000);
     }
     if (openTooltipMarker !== markerId) toggleMapTooltip(markerId);
+  }
+
+  function renderUnmarkedPlaces() {
+    var wrap = $("map-places-unmarked-wrap");
+    var list = $("map-places-unmarked");
+    if (!wrap || !list) return;
+    var marked = {};
+    mapMarkers.forEach(function (mk) { marked[normName(mk.label)] = true; });
+    var rows = Object.keys(npcsByName).map(function (k) { return npcsByName[k]; }).filter(function (n) {
+      return (n.kind || "").toLowerCase() === "place" && !marked[normName(n.name)];
+    });
+    if (!rows.length) {
+      wrap.classList.add("hidden");
+      list.innerHTML = "";
+      return;
+    }
+    wrap.classList.remove("hidden");
+    list.innerHTML = rows.map(function (n) {
+      var img = n.image_url ? '<img class="place-thumb" src="' + escapeHtml(n.image_url) + '" alt="">' : "";
+      return '<div class="card place-card">' + img +
+        '<p class="title">' + escapeHtml(n.name) + '</p>' +
+        '<p>' + escapeHtml(n.notes || "") + '</p>' +
+        '<div class="actions"><button type="button" class="small-danger" data-place-delete="' + n.id + '">Delete</button></div></div>';
+    }).join("");
+    list.querySelectorAll("[data-place-delete]").forEach(function (btn) {
+      btn.addEventListener("click", async function () {
+        if (!confirm("Delete this place?")) return;
+        await db.from("npcs").delete().eq("id", btn.dataset.placeDelete);
+        loadMapView();
+      });
+    });
   }
 
   async function onMapCellClick(x, y) {

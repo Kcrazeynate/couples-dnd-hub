@@ -1163,6 +1163,23 @@
     });
   }
 
+  // ---------- image lightbox ----------
+
+  function openLightbox(src) {
+    var box = $("image-lightbox");
+    var img = $("lightbox-img");
+    if (!box || !img || !src) return;
+    img.src = src;
+    box.classList.remove("hidden");
+  }
+
+  function closeLightbox() {
+    var box = $("image-lightbox");
+    if (box) box.classList.add("hidden");
+    var img = $("lightbox-img");
+    if (img) img.src = "";
+  }
+
   // ---------- init ----------
 
   function initApp() {
@@ -1171,6 +1188,20 @@
 
     document.querySelectorAll(".tab-btn").forEach(function (btn) {
       btn.addEventListener("click", function () { switchTab(btn.dataset.tab); });
+    });
+
+    document.addEventListener("click", function (e) {
+      var t = e.target;
+      if (t && t.tagName === "IMG" && !t.closest("#image-lightbox")) {
+        e.stopPropagation();
+        openLightbox(t.src);
+      }
+    }, true);
+    $("image-lightbox").addEventListener("click", function (e) {
+      if (e.target === this || e.target.id === "lightbox-close") closeLightbox();
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeLightbox();
     });
 
     $("message-form").addEventListener("submit", postMessage);

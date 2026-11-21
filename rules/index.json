@@ -1,0 +1,242 @@
+[
+  {
+    "slug": "playing-the-game",
+    "title": "Playing the Game",
+    "blurb": "How play works: d20 tests, actions, exploration, combat, damage and healing.",
+    "pages": "5-18",
+    "file": "rules/playing-the-game.txt",
+    "bytes": 58391
+  },
+  {
+    "slug": "character-creation",
+    "title": "Character Creation",
+    "blurb": "Building a character, level advancement, starting at higher levels, multiclassing, trinkets.",
+    "pages": "19-27",
+    "file": "rules/character-creation.txt",
+    "bytes": 36141
+  },
+  {
+    "slug": "barbarian",
+    "title": "Barbarian",
+    "blurb": "Class: Path of the Berserker.",
+    "pages": "28-30",
+    "file": "rules/barbarian.txt",
+    "bytes": 11012
+  },
+  {
+    "slug": "bard",
+    "title": "Bard",
+    "blurb": "Class: College of Lore. Includes the Bard spell list.",
+    "pages": "31-35",
+    "file": "rules/bard.txt",
+    "bytes": 15578
+  },
+  {
+    "slug": "cleric",
+    "title": "Cleric",
+    "blurb": "Class: Life Domain. Includes the Cleric spell list.",
+    "pages": "36-40",
+    "file": "rules/cleric.txt",
+    "bytes": 16316
+  },
+  {
+    "slug": "druid",
+    "title": "Druid",
+    "blurb": "Class: Circle of the Land. Includes the Druid spell list.",
+    "pages": "41-46",
+    "file": "rules/druid.txt",
+    "bytes": 20144
+  },
+  {
+    "slug": "fighter",
+    "title": "Fighter",
+    "blurb": "Class: Champion.",
+    "pages": "47-48",
+    "file": "rules/fighter.txt",
+    "bytes": 6133
+  },
+  {
+    "slug": "monk",
+    "title": "Monk",
+    "blurb": "Class: Warrior of the Open Hand.",
+    "pages": "49-52",
+    "file": "rules/monk.txt",
+    "bytes": 13716
+  },
+  {
+    "slug": "paladin",
+    "title": "Paladin",
+    "blurb": "Class: Oath of Devotion. Includes the Paladin spell list.",
+    "pages": "53-56",
+    "file": "rules/paladin.txt",
+    "bytes": 14529
+  },
+  {
+    "slug": "ranger",
+    "title": "Ranger",
+    "blurb": "Class: Hunter. Includes the Ranger spell list.",
+    "pages": "57-60",
+    "file": "rules/ranger.txt",
+    "bytes": 11317
+  },
+  {
+    "slug": "rogue",
+    "title": "Rogue",
+    "blurb": "Class: Thief.",
+    "pages": "61-63",
+    "file": "rules/rogue.txt",
+    "bytes": 10273
+  },
+  {
+    "slug": "sorcerer",
+    "title": "Sorcerer",
+    "blurb": "Class: Draconic Sorcery. Includes the Sorcerer spell list.",
+    "pages": "64-69",
+    "file": "rules/sorcerer.txt",
+    "bytes": 19813
+  },
+  {
+    "slug": "warlock",
+    "title": "Warlock",
+    "blurb": "Class: Fiend Patron. Includes the Warlock spell list.",
+    "pages": "70-76",
+    "file": "rules/warlock.txt",
+    "bytes": 23981
+  },
+  {
+    "slug": "wizard",
+    "title": "Wizard",
+    "blurb": "Class: Evoker. Includes the Wizard spell list.",
+    "pages": "77-82",
+    "file": "rules/wizard.txt",
+    "bytes": 19378
+  },
+  {
+    "slug": "character-origins",
+    "title": "Character Origins",
+    "blurb": "Backgrounds, species, and feats.",
+    "pages": "83-88",
+    "file": "rules/character-origins.txt",
+    "bytes": 23075
+  },
+  {
+    "slug": "equipment",
+    "title": "Equipment",
+    "blurb": "Coins, weapons, armor, adventuring gear, tools, mounts and vehicles.",
+    "pages": "89-103",
+    "file": "rules/equipment.txt",
+    "bytes": 53311
+  },
+  {
+    "slug": "casting-spells",
+    "title": "Casting Spells",
+    "blurb": "Gaining spells, spell slots, casting, and spell components.",
+    "pages": "104-106",
+    "file": "rules/casting-spells.txt",
+    "bytes": 13142
+  },
+  {
+    "slug": "spells-1",
+    "title": "Spell Descriptions: Acid Arrow \u2013 False Life",
+    "blurb": "Spell descriptions, Acid Arrow through False Life.",
+    "pages": "107-129",
+    "file": "rules/spells-1.txt",
+    "bytes": 97693
+  },
+  {
+    "slug": "spells-2",
+    "title": "Spell Descriptions: Fear \u2013 Planar Binding",
+    "blurb": "Spell descriptions, Fear through Planar Binding.",
+    "pages": "130-152",
+    "file": "rules/spells-2.txt",
+    "bytes": 98982
+  },
+  {
+    "slug": "spells-3",
+    "title": "Spell Descriptions: Plane Shift \u2013 Zone of Truth",
+    "blurb": "Spell descriptions, Plane Shift through Zone of Truth.",
+    "pages": "153-175",
+    "file": "rules/spells-3.txt",
+    "bytes": 98821
+  },
+  {
+    "slug": "rules-glossary",
+    "title": "Rules Glossary",
+    "blurb": "Definitions of rules terms, A to Z.",
+    "pages": "176-191",
+    "file": "rules/rules-glossary.txt",
+    "bytes": 66106
+  },
+  {
+    "slug": "gameplay-toolbox",
+    "title": "Gameplay Toolbox",
+    "blurb": "Travel pace, backgrounds, curses, environmental effects, fear, poison, traps, combat encounters.",
+    "pages": "192-203",
+    "file": "rules/gameplay-toolbox.txt",
+    "bytes": 45035
+  },
+  {
+    "slug": "magic-items",
+    "title": "Magic Items",
+    "blurb": "Categories, rarity, attunement, activating and crafting magic items.",
+    "pages": "204-208",
+    "file": "rules/magic-items.txt",
+    "bytes": 19841
+  },
+  {
+    "slug": "magic-items-1",
+    "title": "Magic Items: Apparatus of the Crab \u2013 Mirror of Life Trapping",
+    "blurb": "Magic items, Apparatus of the Crab through Mirror of Life Trapping.",
+    "pages": "209-231",
+    "file": "rules/magic-items-1.txt",
+    "bytes": 101060
+  },
+  {
+    "slug": "magic-items-2",
+    "title": "Magic Items: Oil of Etherealness \u2013 Well of Many Worlds",
+    "blurb": "Magic items, Oil of Etherealness through Well of Many Worlds.",
+    "pages": "232-253",
+    "file": "rules/magic-items-2.txt",
+    "bytes": 92930
+  },
+  {
+    "slug": "monsters-overview",
+    "title": "Monsters",
+    "blurb": "How to read a stat block and run a monster.",
+    "pages": "254-257",
+    "file": "rules/monsters-overview.txt",
+    "bytes": 16314
+  },
+  {
+    "slug": "monsters-1",
+    "title": "Monsters: Aboleth \u2013 Gelatinous Cube",
+    "blurb": "Monster stat blocks, Aboleth through Gelatinous Cube.",
+    "pages": "258-286",
+    "file": "rules/monsters-1.txt",
+    "bytes": 101681
+  },
+  {
+    "slug": "monsters-2",
+    "title": "Monsters: Ghast \u2013 Phase Spider",
+    "blurb": "Monster stat blocks, Ghast through Phase Spider.",
+    "pages": "287-315",
+    "file": "rules/monsters-2.txt",
+    "bytes": 100741
+  },
+  {
+    "slug": "monsters-3",
+    "title": "Monsters: Pseudodragon \u2013 Xorn",
+    "blurb": "Monster stat blocks, Pseudodragon through Xorn.",
+    "pages": "316-343",
+    "file": "rules/monsters-3.txt",
+    "bytes": 100719
+  },
+  {
+    "slug": "animals",
+    "title": "Animals",
+    "blurb": "Animal stat blocks, A to Z.",
+    "pages": "344-364",
+    "file": "rules/animals.txt",
+    "bytes": 59365
+  }
+]

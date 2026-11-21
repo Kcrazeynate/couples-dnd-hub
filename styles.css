@@ -459,6 +459,111 @@ button.danger:hover {
   margin-bottom: 0.75rem;
 }
 
+/* Maps */
+
+.map-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.75rem 0;
+}
+
+.map-tab {
+  margin-top: 0;
+  background: #241f18;
+  color: #ece5d3;
+  border: 1px solid #4a3f2c;
+}
+
+.map-tab.active {
+  background: #c9a227;
+  border-color: #c9a227;
+  color: #171410;
+}
+
+.map-modes {
+  margin: 0.75rem 0 0.25rem;
+}
+
+.mode-btn {
+  margin-top: 0;
+  background: #241f18;
+  color: #ece5d3;
+  border: 1px solid #4a3f2c;
+}
+
+.mode-btn.selected {
+  background: #c9a227;
+  border-color: #c9a227;
+  color: #171410;
+}
+
+.map-wrap {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  background-color: #241f18;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid #6b5a2e;
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 0.75rem 0;
+}
+
+.map-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+}
+
+.map-cell {
+  border: 1px solid rgba(23, 20, 16, 0.25);
+  cursor: pointer;
+}
+
+.map-cell.fog {
+  background: rgba(23, 20, 16, 0.88);
+}
+
+.map-cell.revealed {
+  background: transparent;
+}
+
+.map-markers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.map-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.map-marker .pin {
+  width: 12px;
+  height: 12px;
+  background: #c9a227;
+  border: 2px solid #171410;
+  border-radius: 50%;
+}
+
+.map-marker .pin-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #ece5d3;
+  background: rgba(23, 20, 16, 0.85);
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
 /* Modal */
 
 .modal {

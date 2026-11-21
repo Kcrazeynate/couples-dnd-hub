@@ -126,7 +126,8 @@
     quests: loadQuests,
     npcs: loadNpcs,
     dice: loadRolls,
-    battle: loadCombatants
+    battle: loadCombatants,
+    maps: loadMaps
   };
 
   function switchTab(name) {
@@ -709,6 +710,166 @@
     loadCombatants();
   }
 
+  // ---------- Maps ----------
+
+  var MAP_COLS = 12;
+  var MAP_ROWS = 8;
+  var mapsList = [];
+  var currentMapId = null;
+  var mapCells = {};
+  var mapMarkers = [];
+  var mapMode = "reveal";
+
+  async function loadMaps() {
+    var tabs = $("map-tabs");
+    if (!configured) {
+      tabs.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
+      return;
+    }
+    var res = await db.from("maps").select("*").order("created_at", { ascending: true });
+    if (res.error) {
+      tabs.innerHTML = '<p class="error">Could not load maps.</p>';
+      return;
+    }
+    mapsList = res.data || [];
+    if (!mapsList.length) {
+      tabs.innerHTML = "";
+      $("map-view").classList.add("hidden");
+      $("map-empty").classList.remove("hidden");
+      return;
+    }
+    $("map-empty").classList.add("hidden");
+    if (!currentMapId || !mapsList.some(function (m) { return m.id === currentMapId; })) {
+      currentMapId = mapsList[0].id;
+    }
+    tabs.innerHTML = mapsList.map(function (m) {
+      return '<button type="button" class="map-tab' + (m.id === currentMapId ? " active" : "") + '" data-map="' + m.id + '">' + escapeHtml(m.name) + '</button>';
+    }).join("");
+    document.querySelectorAll(".map-tab").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        currentMapId = btn.dataset.map;
+        loadMaps();
+      });
+    });
+    $("map-view").classList.remove("hidden");
+    loadMapView();
+  }
+
+  async function loadMapView() {
+    var map = mapsList.find(function (m) { return m.id === currentMapId; });
+    if (!map) return;
+    var wrap = $("map-wrap");
+    wrap.style.backgroundImage = map.image_url ? 'url("' + map.image_url + '")' : "none";
+    var cellsRes = await db.from("map_cells").select("*").eq("map_id", map.id);
+    mapCells = {};
+    if (!cellsRes.error && cellsRes.data) {
+      cellsRes.data.forEach(function (c) {
+        if (c.revealed) mapCells[c.x + "," + c.y] = true;
+      });
+    }
+    var markersRes = await db.from("map_markers").select("*").eq("map_id", map.id).order("created_at", { ascending: true });
+    mapMarkers = markersRes.error ? [] : (markersRes.data || []);
+    renderMapGrid();
+    renderMapMarkers();
+  }
+
+  function renderMapGrid() {
+    var grid = $("map-grid");
+    var html = "";
+    for (var y = 0; y < MAP_ROWS; y++) {
+      for (var x = 0; x < MAP_COLS; x++) {
+        var revealed = !!mapCells[x + "," + y];
+        html += '<div class="map-cell' + (revealed ? " revealed" : " fog") + '" data-x="' + x + '" data-y="' + y + '"></div>';
+      }
+    }
+    grid.innerHTML = html;
+    grid.querySelectorAll(".map-cell").forEach(function (cell) {
+      cell.addEventListener("click", function () {
+        onMapCellClick(parseInt(cell.dataset.x, 10), parseInt(cell.dataset.y, 10));
+      });
+    });
+  }
+
+  function renderMapMarkers() {
+    var layer = $("map-markers");
+    layer.innerHTML = mapMarkers.map(function (mk) {
+      var left = ((mk.x + 0.5) / MAP_COLS * 100).toFixed(2);
+      var top = ((mk.y + 0.5) / MAP_ROWS * 100).toFixed(2);
+      return '<div class="map-marker" style="left:' + left + '%;top:' + top + '%"><span class="pin"></span><span class="pin-label">' + escapeHtml(mk.label) + '</span></div>';
+    }).join("");
+    var list = $("map-markers-list");
+    if (!mapMarkers.length) {
+      list.innerHTML = '<p class="empty">No places marked on this map yet.</p>';
+      return;
+    }
+    list.innerHTML = mapMarkers.map(function (mk) {
+      return '<div class="card"><p class="title">' + escapeHtml(mk.label) + '</p>' +
+        '<p class="meta">' + escapeHtml(mk.kind || "Place") + '</p>' +
+        '<div class="actions"><button type="button" class="small-danger" data-marker-delete="' + mk.id + '">Delete</button></div></div>';
+    }).join("");
+    document.querySelectorAll("[data-marker-delete]").forEach(function (btn) {
+      btn.addEventListener("click", async function () {
+        if (!confirm("Delete this place?")) return;
+        await db.from("map_markers").delete().eq("id", btn.dataset.markerDelete);
+        loadMapView();
+      });
+    });
+  }
+
+  async function onMapCellClick(x, y) {
+    if (!configured) return setupNeeded();
+    var key = x + "," + y;
+    if (mapMode === "reveal") {
+      if (mapCells[key]) return;
+      var res = await db.from("map_cells").upsert({ map_id: currentMapId, x: x, y: y, revealed: true }, { onConflict: "map_id,x,y" });
+      if (res.error) {
+        alert("Could not reveal that square. Check the connection and try again.");
+        return;
+      }
+      mapCells[key] = true;
+      renderMapGrid();
+    } else if (mapMode === "hide") {
+      if (!mapCells[key]) return;
+      var resHide = await db.from("map_cells").upsert({ map_id: currentMapId, x: x, y: y, revealed: false }, { onConflict: "map_id,x,y" });
+      if (resHide.error) {
+        alert("Could not hide that square. Check the connection and try again.");
+        return;
+      }
+      delete mapCells[key];
+      renderMapGrid();
+    } else if (mapMode === "marker") {
+      if (!mapCells[key]) {
+        alert("Reveal this area first, then you can mark a place on it.");
+        return;
+      }
+      var label = prompt("Place name:");
+      if (!label || !label.trim()) return;
+      var resMark = await db.from("map_markers").insert({ map_id: currentMapId, x: x, y: y, label: label.trim(), kind: "Place" });
+      if (resMark.error) {
+        alert("Could not add the place. Check the connection and try again.");
+        return;
+      }
+      loadMapView();
+    }
+  }
+
+  async function addMap(e) {
+    e.preventDefault();
+    if (!configured) return setupNeeded();
+    var name = $("new-map-name").value.trim();
+    if (!name) return;
+    var imageUrl = $("new-map-image").value.trim() || null;
+    var res = await db.from("maps").insert({ name: name, image_url: imageUrl }).select().single();
+    if (res.error || !res.data) {
+      alert("Could not add the map. Check the connection and try again.");
+      return;
+    }
+    $("new-map-name").value = "";
+    $("new-map-image").value = "";
+    currentMapId = res.data.id;
+    loadMaps();
+  }
+
   // ---------- live updates ----------
 
   var liveChannel = null;
@@ -733,7 +894,10 @@
       quests: loadQuests,
       npcs: loadNpcs,
       rolls: loadRolls,
-      combatants: loadCombatants
+      combatants: loadCombatants,
+      maps: loadMaps,
+      map_cells: loadMapView,
+      map_markers: loadMapView
     };
     liveChannel = db.channel("hub-live");
     Object.keys(tables).forEach(function (table) {
@@ -783,6 +947,20 @@
     $("combatant-form").addEventListener("submit", addCombatant);
     $("next-turn-btn").addEventListener("click", nextTurn);
     $("clear-battle-btn").addEventListener("click", clearBattle);
+    $("add-map-form").addEventListener("submit", addMap);
+    document.querySelectorAll(".map-modes .mode-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll(".map-modes .mode-btn").forEach(function (b) {
+          b.classList.remove("selected");
+        });
+        btn.classList.add("selected");
+        mapMode = btn.id.replace("map-mode-", "");
+        $("map-mode-hint").textContent =
+          mapMode === "reveal" ? "Tap a dark square to reveal it." :
+          mapMode === "hide" ? "Tap a revealed square to cover it with fog again." :
+          "Tap a revealed square to mark a place there.";
+      });
+    });
 
     document.querySelectorAll("#dice-buttons button").forEach(function (btn) {
       btn.addEventListener("click", function () {

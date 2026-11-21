@@ -1696,6 +1696,12 @@
       btn.addEventListener("click", function () { switchTab(btn.dataset.tab); });
     });
 
+    document.querySelectorAll(".back-top").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    });
+
     document.addEventListener("click", function (e) {
       var t = e.target;
       if (t && t.tagName === "IMG" && !t.closest("#image-lightbox")) {

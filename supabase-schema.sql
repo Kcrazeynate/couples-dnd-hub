@@ -224,3 +224,28 @@ alter table push_subscriptions enable row level security;
 grant select, insert, update, delete on push_subscriptions to anon;
 drop policy if exists "anon all" on push_subscriptions;
 create policy "anon all" on push_subscriptions for all using (true) with check (true);
+-- Character sheet rework (2026-11-21): real-sheet fields + log entry effects
+-- Run this in the Supabase SQL editor, same as the other hub blocks.
+alter table characters add column if not exists attacks text;
+alter table characters add column if not exists spells text;
+alter table characters add column if not exists features text;
+alter table characters add column if not exists personality_traits text;
+alter table characters add column if not exists ideals text;
+alter table characters add column if not exists bonds text;
+alter table characters add column if not exists flaws text;
+alter table characters add column if not exists xp integer;
+alter table characters add column if not exists alignment text;
+
+create table if not exists log_effects (
+  id uuid primary key default gen_random_uuid(),
+  log_id uuid not null references log_entries(id),
+  target text not null,
+  kind text not null,
+  amount integer,
+  item text,
+  created_at timestamptz not null default now()
+);
+alter table log_effects enable row level security;
+grant select, insert, update, delete on log_effects to anon;
+drop policy if exists "anon all" on log_effects;
+create policy "anon all" on log_effects for all using (true) with check (true);

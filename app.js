@@ -325,13 +325,140 @@
       list.innerHTML = '<p class="empty">No log entries yet.</p>';
       return;
     }
+    var effectsByLog = {};
+    var effRes = await db.from("log_effects").select("*").order("created_at", { ascending: true });
+    if (!effRes.error && effRes.data) {
+      effRes.data.forEach(function (fx) {
+        (effectsByLog[fx.log_id] = effectsByLog[fx.log_id] || []).push(fx);
+      });
+    }
     list.innerHTML = res.data.map(function (entry) {
+      var fxs = effectsByLog[entry.id] || [];
+      var fxHtml = fxs.length
+        ? '<p class="meta">Changes: ' + fxs.map(function (fx) { return escapeHtml(effectText(fx)); }).join(" · ") + '</p>'
+        : '';
       return '<div class="card">' +
         '<p class="meta">' + escapeHtml(fmtTime(entry.created_at)) + '</p>' +
         '<p class="title">' + escapeHtml(entry.title) + '</p>' +
-        '<p>' + escapeHtml(entry.body) + '</p>' +
+        '<p>' + escapeHtml(entry.body) + '</p>' + fxHtml +
         '</div>';
     }).join("");
+  }
+
+  // ---------- Log entry effects ----------
+
+  var logEffectsReady = false;
+
+  function signedNum(n) {
+    n = n || 0;
+    return (n >= 0 ? "+" : "") + n;
+  }
+
+  function effectTargetName(target) {
+    if (target === "party") return "Party";
+    if (charByPlayer[target] && charByPlayer[target].name) return charByPlayer[target].name;
+    return playerLabel(target);
+  }
+
+  function effectText(fx) {
+    var who = effectTargetName(fx.target);
+    if (fx.kind === "xp") return who + " " + signedNum(fx.amount) + " XP";
+    if (fx.kind === "gold") return who + " " + signedNum(fx.amount) + " gold";
+    if (fx.kind === "hp") return who + " " + signedNum(fx.amount) + " HP";
+    if (fx.kind === "level") return who + " is now level " + fx.amount;
+    if (fx.kind === "add_item") return who + " gained: " + fx.item;
+    if (fx.kind === "remove_item") return who + " lost: " + fx.item;
+    return who + " " + fx.kind;
+  }
+
+  async function setupLogEffects() {
+    var box = $("log-effects");
+    if (!box) return;
+    var res = await db.from("log_effects").select("id").limit(1);
+    if (res.error) return; // table not there yet (SQL not run): leave the section hidden
+    logEffectsReady = true;
+    box.classList.remove("hidden");
+    $("log-effect-add").addEventListener("click", addLogEffectRow);
+  }
+
+  function addLogEffectRow() {
+    var row = document.createElement("div");
+    row.className = "effect-row";
+    var sources = charPlayers.length ? charPlayers : PLAYERS;
+    var targetOpts = '<option value="party">Full party</option>' + sources.map(function (p) {
+      return '<option value="' + p.player + '">' + escapeHtml(effectTargetName(p.player)) + '</option>';
+    }).join("");
+    row.innerHTML =
+      '<select class="effect-target">' + targetOpts + '</select>' +
+      '<select class="effect-kind">' +
+        '<option value="xp">XP</option>' +
+        '<option value="gold">Gold</option>' +
+        '<option value="hp">HP</option>' +
+        '<option value="add_item">Add item</option>' +
+        '<option value="remove_item">Remove item</option>' +
+        '<option value="level">Set level</option>' +
+      '</select>' +
+      '<input type="number" class="effect-value" placeholder="+/- amount">' +
+      '<button type="button" class="effect-remove" title="Remove this change">x</button>';
+    row.querySelector(".effect-kind").addEventListener("change", function (ev) {
+      var v = row.querySelector(".effect-value");
+      var itemKind = ev.target.value === "add_item" || ev.target.value === "remove_item";
+      var next = document.createElement("input");
+      next.className = "effect-value";
+      if (itemKind) { next.type = "text"; next.placeholder = "Item name"; }
+      else { next.type = "number"; next.placeholder = "+/- amount"; }
+      v.replaceWith(next);
+    });
+    row.querySelector(".effect-remove").addEventListener("click", function () { row.remove(); });
+    $("log-effect-rows").appendChild(row);
+  }
+
+  function clearLogEffectRows() { $("log-effect-rows").innerHTML = ""; }
+
+  function readLogEffectRows() {
+    var rows = document.querySelectorAll("#log-effect-rows .effect-row");
+    var out = [];
+    rows.forEach(function (row) {
+      var target = row.querySelector(".effect-target").value;
+      var kind = row.querySelector(".effect-kind").value;
+      var val = row.querySelector(".effect-value").value.trim();
+      if (!val) return;
+      var fx = { target: target, kind: kind, amount: null, item: null };
+      if (kind === "add_item" || kind === "remove_item") fx.item = val;
+      else fx.amount = parseInt(val, 10);
+      if (fx.amount !== null && isNaN(fx.amount)) return;
+      out.push(fx);
+    });
+    return out;
+  }
+
+  async function applyLogEffect(fx) {
+    var targets = fx.target === "party"
+      ? (charPlayers.length ? charPlayers.map(function (p) { return p.player; }) : PLAYERS.map(function (p) { return p.player; }))
+      : [fx.target];
+    for (var i = 0; i < targets.length; i++) {
+      var res = await db.from("characters").select("xp, gold, hp, max_hp, inventory, level").eq("player", targets[i]).single();
+      if (res.error || !res.data) continue;
+      var c = res.data, patch = {};
+      if (fx.kind === "xp") patch.xp = (c.xp || 0) + (fx.amount || 0);
+      if (fx.kind === "gold") patch.gold = (c.gold || 0) + (fx.amount || 0);
+      if (fx.kind === "hp") {
+        var hp = (c.hp || 0) + (fx.amount || 0);
+        if (hp < 0) hp = 0;
+        if (c.max_hp !== null && c.max_hp !== undefined && hp > c.max_hp) hp = c.max_hp;
+        patch.hp = hp;
+      }
+      if (fx.kind === "level") patch.level = fx.amount;
+      if (fx.kind === "add_item" && fx.item) {
+        patch.inventory = (c.inventory || "").trim() ? (c.inventory || "") + "\n" + fx.item : fx.item;
+      }
+      if (fx.kind === "remove_item" && fx.item) {
+        var lines = (c.inventory || "").split("\n").filter(function (l) { return l.trim().toLowerCase() !== fx.item.trim().toLowerCase(); });
+        patch.inventory = lines.join("\n");
+      }
+      patch.updated_at = new Date().toISOString();
+      await db.from("characters").update(patch).eq("player", targets[i]);
+    }
   }
 
   async function addLogEntry(e) {
@@ -340,14 +467,28 @@
     var title = $("log-title").value.trim();
     var body = $("log-body").value.trim();
     if (!title || !body) return;
-    var res = await db.from("log_entries").insert({ title: title, body: body });
-    if (res.error) {
+    var res = await db.from("log_entries").insert({ title: title, body: body }).select("id").single();
+    if (res.error || !res.data) {
       alert("Could not add the entry. Check the connection and try again.");
       return;
     }
+    var effects = logEffectsReady ? readLogEffectRows() : [];
+    if (effects.length) {
+      var ok = true;
+      for (var i = 0; i < effects.length; i++) {
+        var fx = effects[i];
+        fx.log_id = res.data.id;
+        var ins = await db.from("log_effects").insert(fx);
+        if (ins.error) { ok = false; break; }
+        await applyLogEffect(fx);
+      }
+      if (!ok) alert("Entry saved, but its character changes did not apply. Check the connection and try again.");
+    }
     $("log-title").value = "";
     $("log-body").value = "";
+    clearLogEffectRows();
     loadLogEntries();
+    loadCharacters();
   }
 
   // ---------- Characters ----------
@@ -356,6 +497,9 @@
     { player: "nathan", label: "Nathan's character" },
     { player: "angela", label: "Angela's character" }
   ];
+
+  var charPlayers = [];
+  var charByPlayer = {};
 
   async function loadCharacters() {
     var list = $("characters-list");
@@ -370,6 +514,7 @@
     }
     var byPlayer = {};
     res.data.forEach(function (c) { byPlayer[c.player] = c; });
+    charByPlayer = byPlayer;
     var players = PLAYERS.slice();
     var seen = {};
     players.forEach(function (p) { seen[p.player] = true; });
@@ -379,6 +524,7 @@
         players.push({ player: c.player, label: labelFromPlayer(c.player) });
       }
     });
+    charPlayers = players;
     list.innerHTML = players.map(function (p) {
       var c = byPlayer[p.player];
       if (!c) return emptyCharCard(p);
@@ -410,43 +556,163 @@
       '</div>';
   }
 
+  // ---------- Character sheet math (same as the real 5E sheet) ----------
+
+  function abilityMod(score) {
+    if (score === null || score === undefined || isNaN(score)) return 0;
+    return Math.floor((score - 10) / 2);
+  }
+
+  function fmtMod(mod) {
+    return (mod >= 0 ? "+" : "") + mod;
+  }
+
+  function profBonus(level) {
+    var l = level || 1;
+    if (l >= 17) return 6;
+    if (l >= 13) return 5;
+    if (l >= 9) return 4;
+    if (l >= 5) return 3;
+    return 2;
+  }
+
+  var SAVE_PROFS = {
+    barbarian: ["str", "con"], bard: ["dex", "cha"], cleric: ["wis", "cha"],
+    druid: ["int", "wis"], fighter: ["str", "con"], monk: ["str", "dex"],
+    paladin: ["wis", "cha"], ranger: ["str", "dex"], rogue: ["dex", "int"],
+    sorcerer: ["con", "cha"], warlock: ["wis", "cha"], wizard: ["int", "wis"]
+  };
+
+  function classKey(cls) {
+    var s = String(cls || "").toLowerCase().replace(/\(.*\)/, "").trim();
+    var words = s.split(/\s+/).filter(Boolean);
+    return words.length ? words[words.length - 1] : "";
+  }
+
+  var SKILLS = [
+    ["Acrobatics", "dex"], ["Animal Handling", "wis"], ["Arcana", "int"],
+    ["Athletics", "str"], ["Deception", "cha"], ["History", "int"],
+    ["Insight", "wis"], ["Intimidation", "cha"], ["Investigation", "int"],
+    ["Medicine", "wis"], ["Nature", "int"], ["Perception", "wis"],
+    ["Performance", "cha"], ["Persuasion", "cha"], ["Religion", "int"],
+    ["Sleight of Hand", "dex"], ["Stealth", "dex"], ["Survival", "wis"]
+  ];
+
+  function parseSkillNames(skillsText) {
+    return (skillsText || "").split("\n").map(function (s) {
+      return s.trim().replace(/\s*[+-]\d+\s*$/, "").trim().toLowerCase();
+    }).filter(Boolean);
+  }
+
+  function skillBonus(c, skillName, ability) {
+    var mod = abilityMod(c[ability]);
+    var prof = parseSkillNames(c.skills).indexOf(skillName.toLowerCase()) !== -1;
+    return { bonus: mod + (prof ? profBonus(c.level) : 0), proficient: prof };
+  }
+
+  var SPEEDS = { halfling: 25, gnome: 25, dwarf: 25 };
+
+  function speedFor(race) {
+    var s = String(race || "").toLowerCase();
+    for (var k in SPEEDS) { if (s.indexOf(k) !== -1) return SPEEDS[k]; }
+    return 30;
+  }
+
+  var CASTER_ABILITY = { bard: "cha", cleric: "wis", druid: "wis", sorcerer: "cha", warlock: "cha", wizard: "int" };
+
+  function spellStats(c) {
+    var ab = CASTER_ABILITY[classKey(c.class)];
+    if (!ab) return null;
+    var mod = abilityMod(c[ab]);
+    var pb = profBonus(c.level);
+    return { dc: 8 + pb + mod, attack: pb + mod };
+  }
+
+  function textLines(text) {
+    return (text || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+
+  function listHtml(lines) {
+    return '<ul class="inventory">' + lines.map(function (l) { return "<li>" + escapeHtml(l) + "</li>"; }).join("") + "</ul>";
+  }
+
   function charCard(p, c) {
+    var pb = profBonus(c.level);
     var hpText = (c.hp === null || c.hp === undefined ? "-" : c.hp) +
       " / " + (c.max_hp === null || c.max_hp === undefined ? "-" : c.max_hp);
-    var items = (c.inventory || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
-    var invHtml = items.length
-      ? '<ul class="inventory">' + items.map(function (i) { return "<li>" + escapeHtml(i) + "</li>"; }).join("") + "</ul>"
-      : '<p class="empty">No items yet.</p>';
-    var skillItems = (c.skills || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
-    var skillsHtml = skillItems.length
-      ? '<ul class="inventory">' + skillItems.map(function (s) { return "<li>" + escapeHtml(s) + "</li>"; }).join("") + "</ul>"
-      : '<p class="empty">No skills yet.</p>';
-    return '<div class="card">' +
+    var items = textLines(c.inventory);
+    var invHtml = items.length ? listHtml(items) : '<p class="empty">No items yet.</p>';
+    var saveProfs = SAVE_PROFS[classKey(c.class)] || [];
+    var saveNames = { str: "Strength", dex: "Dexterity", con: "Constitution", int: "Intelligence", wis: "Wisdom", cha: "Charisma" };
+    var savesHtml = ["str", "dex", "con", "int", "wis", "cha"].map(function (ab) {
+      var prof = saveProfs.indexOf(ab) !== -1;
+      var bonus = abilityMod(c[ab]) + (prof ? pb : 0);
+      return '<div class="sheet-line' + (prof ? ' prof' : '') + '"><span class="dot">' + (prof ? "●" : "○") + '</span><span>' + saveNames[ab] + '</span><span class="num">' + fmtMod(bonus) + '</span></div>';
+    }).join("");
+    var skillsHtml = SKILLS.map(function (sk) {
+      var r = skillBonus(c, sk[0], sk[1]);
+      return '<div class="sheet-line' + (r.proficient ? ' prof' : '') + '"><span class="dot">' + (r.proficient ? "●" : "○") + '</span><span>' + sk[0] + ' (' + sk[1].toUpperCase() + ')</span><span class="num">' + fmtMod(r.bonus) + '</span></div>';
+    }).join("");
+    var perc = skillBonus(c, "Perception", "wis");
+    var scoresHtml = ["str", "dex", "con", "int", "wis", "cha"].map(function (ab) {
+      return '<div class="sheet-score"><span class="mod">' + fmtMod(abilityMod(c[ab])) + '</span>' +
+        '<span class="score-name">' + ab.toUpperCase() + '</span>' +
+        '<span class="score-val">' + (c[ab] === null || c[ab] === undefined ? "-" : c[ab]) + '</span></div>';
+    }).join("");
+    var atkLines = textLines(c.attacks);
+    var attacksHtml = "";
+    if (atkLines.length) {
+      var rows = atkLines.map(function (line) {
+        var parts = line.split(",").map(function (s) { return s.trim(); });
+        return "<tr><td>" + escapeHtml(parts[0] || line) + "</td><td>" + escapeHtml(parts[1] || "-") + "</td><td>" + escapeHtml(parts.slice(2).join(", ") || "-") + "</td></tr>";
+      }).join("");
+      attacksHtml = '<p><strong>Attacks</strong></p><table class="sheet-attacks"><tr><th>Name</th><th>Attack</th><th>Damage</th></tr>' + rows + '</table>';
+    }
+    var spellLines = textLines(c.spells);
+    var sp = spellStats(c);
+    var spellsHtml = "";
+    if (spellLines.length) {
+      spellsHtml = '<p><strong>Spells</strong></p>' +
+        (sp ? '<p class="meta">Spell save DC ' + sp.dc + ' · Spell attack ' + fmtMod(sp.attack) + '</p>' : '') +
+        listHtml(spellLines);
+    }
+    var featLines = textLines(c.features);
+    var featuresHtml = featLines.length ? '<p><strong>Features &amp; Traits</strong></p>' + listHtml(featLines) : "";
+    var persHtml = "";
+    [["Personality traits", c.personality_traits], ["Ideals", c.ideals], ["Bonds", c.bonds], ["Flaws", c.flaws]].forEach(function (pair) {
+      if (pair[1]) persHtml += '<p><strong>' + pair[0] + '</strong></p><p>' + escapeHtml(pair[1]) + '</p>';
+    });
+    var subMeta = [];
+    if (c.background) subMeta.push(c.background);
+    if (c.alignment) subMeta.push(c.alignment);
+    if (c.xp !== null && c.xp !== undefined) subMeta.push(c.xp + " XP");
+    return '<div class="card sheet">' +
       (c.image_url ? '<img class="char-img" src="' + escapeHtml(c.image_url) + '" alt="">' : '') +
       '<div class="char-head"><span class="name">' + escapeHtml(c.name || "Unnamed") + '</span>' +
       '<span class="level">' + escapeHtml(p.label) + '</span></div>' +
       '<p class="meta">' + escapeHtml(c.race || "") + (c.race && c.class ? " " : "") + escapeHtml(c.class || "") +
       ' - Level ' + (c.level === null || c.level === undefined ? "-" : c.level) +
       ' - AC ' + (c.ac === null || c.ac === undefined ? "-" : c.ac) + '</p>' +
+      (subMeta.length ? '<p class="meta">' + subMeta.map(escapeHtml).join(" · ") + '</p>' : '') +
+      '<div class="combat-grid">' +
+      '<div class="combat-stat"><span>Armor Class</span><strong>' + (c.ac === null || c.ac === undefined ? "-" : c.ac) + '</strong></div>' +
+      '<div class="combat-stat"><span>Initiative</span><strong>' + fmtMod(abilityMod(c.dex)) + '</strong></div>' +
+      '<div class="combat-stat"><span>Speed</span><strong>' + speedFor(c.race) + ' ft</strong></div>' +
+      '<div class="combat-stat"><span>Prof. Bonus</span><strong>' + fmtMod(pb) + '</strong></div>' +
+      '</div>' +
       '<div class="hp-row"><span>HP</span><span class="hp">' + hpText + '</span>' +
       '<button type="button" class="hp-btn" data-hp-delta="-1" data-player="' + p.player + '">-</button>' +
       '<button type="button" class="hp-btn" data-hp-delta="1" data-player="' + p.player + '">+</button></div>' +
-      '<div class="scores">' +
-      scoreCell("STR", c.str) + scoreCell("DEX", c.dex) + scoreCell("CON", c.con) +
-      scoreCell("INT", c.int) + scoreCell("WIS", c.wis) + scoreCell("CHA", c.cha) +
-      '</div>' +
-      (c.background ? '<p><strong>Background</strong></p><p>' + escapeHtml(c.background) + '</p>' : '') +
-      '<p><strong>Skills</strong></p>' + skillsHtml +
+      '<div class="sheet-scores">' + scoresHtml + '</div>' +
+      '<p><strong>Saving Throws</strong></p><div class="sheet-list">' + savesHtml + '</div>' +
+      '<p><strong>Skills</strong></p><div class="sheet-list">' + skillsHtml + '</div>' +
+      '<p class="meta">Passive Perception ' + (10 + perc.bonus) + '</p>' +
+      attacksHtml + spellsHtml + featuresHtml + persHtml +
       '<p>Gold: ' + (c.gold === null || c.gold === undefined ? "-" : c.gold) + '</p>' +
       '<p><strong>Inventory</strong></p>' + invHtml +
       (c.notes ? '<p><strong>Notes</strong></p><p>' + escapeHtml(c.notes) + '</p>' : '') +
       '<div class="actions"><button type="button" data-edit="' + p.player + '">Edit</button></div>' +
       '</div>';
-  }
-
-  function scoreCell(label, value) {
-    return '<div class="score"><strong>' + label + '</strong>' +
-      (value === null || value === undefined ? "-" : value) + '</div>';
   }
 
   function bindCharCards() {
@@ -503,6 +769,15 @@
     $("char-skills").value = c ? (c.skills || "") : "";
     $("char-inventory").value = c ? (c.inventory || "") : "";
     $("char-notes").value = c ? (c.notes || "") : "";
+    $("char-attacks").value = c ? (c.attacks || "") : "";
+    $("char-spells").value = c ? (c.spells || "") : "";
+    $("char-features").value = c ? (c.features || "") : "";
+    $("char-personality").value = c ? (c.personality_traits || "") : "";
+    $("char-ideals").value = c ? (c.ideals || "") : "";
+    $("char-bonds").value = c ? (c.bonds || "") : "";
+    $("char-flaws").value = c ? (c.flaws || "") : "";
+    $("char-xp").value = c && c.xp !== null && c.xp !== undefined ? c.xp : "";
+    $("char-alignment").value = c ? (c.alignment || "") : "";
     $("char-modal").classList.remove("hidden");
   }
 
@@ -534,6 +809,15 @@
       gold: numOrNull($("char-gold").value),
       inventory: $("char-inventory").value.trim(),
       notes: $("char-notes").value.trim(),
+      attacks: $("char-attacks").value.trim(),
+      spells: $("char-spells").value.trim(),
+      features: $("char-features").value.trim(),
+      personality_traits: $("char-personality").value.trim(),
+      ideals: $("char-ideals").value.trim(),
+      bonds: $("char-bonds").value.trim(),
+      flaws: $("char-flaws").value.trim(),
+      xp: numOrNull($("char-xp").value),
+      alignment: $("char-alignment").value.trim() || null,
       updated_at: new Date().toISOString()
     };
     var res = await db.from("characters").upsert(row, { onConflict: "player" });
@@ -1337,6 +1621,7 @@
     $("npc-form").classList.add("hidden");
     $("quest-form").classList.add("hidden");
     setupPush();
+    setupLogEffects();
 
     $("message-form").addEventListener("submit", postMessage);
     $("messages-refresh").addEventListener("click", loadMessages);

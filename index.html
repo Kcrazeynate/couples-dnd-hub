@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Hub">
-<link rel="stylesheet" href="styles.css?v=13">
+<link rel="stylesheet" href="styles.css?v=14">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=2"></script>
 </head>
@@ -140,6 +140,7 @@
     <section id="tab-quests" class="tab-panel">
       <h2>Quests</h2>
       <p class="hint">Active hooks, leads, and finished quests.</p>
+      <button type="button" id="quests-edit-toggle" class="edit-toggle-btn">Edit list</button>
       <form id="quest-form" class="form">
         <label for="quest-title">Title</label>
         <input type="text" id="quest-title" placeholder="Quest title">
@@ -371,6 +372,6 @@
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<script src="app.js?v=11"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>

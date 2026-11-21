@@ -86,6 +86,16 @@ create table if not exists combatants (
   created_at timestamptz not null default now()
 );
 
+-- API access: let the anon role use these tables through the Data API.
+-- Without these grants the site cannot reach the tables at all.
+grant select, insert, update, delete on messages to anon;
+grant select, insert, update, delete on log_entries to anon;
+grant select, insert, update, delete on characters to anon;
+grant select, insert, update, delete on quests to anon;
+grant select, insert, update, delete on npcs to anon;
+grant select, insert, update, delete on rolls to anon;
+grant select, insert, update, delete on combatants to anon;
+
 -- Row Level Security: on for every table, open to the anon role.
 alter table messages enable row level security;
 alter table log_entries enable row level security;

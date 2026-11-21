@@ -143,7 +143,6 @@
     characters: loadCharacters,
     quests: loadQuests,
     npcs: loadNpcs,
-    rules: loadRulesIndex,
     dice: loadRolls,
     battle: loadCombatants,
     maps: loadMaps
@@ -1214,128 +1213,6 @@
     if (btn) btn.textContent = on ? "Done" : "Edit list";
   }
 
-  // ---------- Rules (SRD 5.2.1) ----------
-
-  var RULES_VERSION = 1; // bump when rules/index.json or any rules/*.txt changes
-  var rulesIndex = null;
-  var rulesCache = {};
-  var rulesCurrentText = "";
-  var rulesFindMarks = [];
-  var rulesFindPos = -1;
-
-  function escapeRegExp(text) {
-    return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  }
-
-  async function loadRulesIndex() {
-    var list = $("rules-list");
-    if (rulesIndex) {
-      renderRulesList();
-      return;
-    }
-    list.innerHTML = '<p class="empty">Loading sections...</p>';
-    try {
-      var res = await fetch("rules/index.json?v=" + RULES_VERSION);
-      rulesIndex = await res.json();
-      renderRulesList();
-    } catch (e) {
-      list.innerHTML = '<p class="error">Could not load the rules index.</p>';
-    }
-  }
-
-  function renderRulesList() {
-    if (!rulesIndex) return;
-    var list = $("rules-list");
-    var q = ($("rules-filter").value || "").trim().toLowerCase();
-    var shown = rulesIndex.filter(function (s) {
-      return !q || s.title.toLowerCase().indexOf(q) !== -1 || s.blurb.toLowerCase().indexOf(q) !== -1;
-    });
-    if (!shown.length) {
-      list.innerHTML = '<p class="empty">No sections match that search.</p>';
-      return;
-    }
-    list.innerHTML = shown.map(function (s) {
-      return '<div class="card rules-card" data-rules-section="' + s.slug + '">' +
-        '<p class="title">' + escapeHtml(s.title) + '</p>' +
-        '<p>' + escapeHtml(s.blurb) + '</p>' +
-        '<p class="meta">SRD pages ' + escapeHtml(s.pages) + '</p>' +
-        '</div>';
-    }).join("");
-    list.querySelectorAll("[data-rules-section]").forEach(function (card) {
-      card.addEventListener("click", function () { openRulesSection(card.dataset.rulesSection); });
-    });
-  }
-
-  async function openRulesSection(slug) {
-    var entry = null;
-    rulesIndex.forEach(function (s) { if (s.slug === slug) entry = s; });
-    if (!entry) return;
-    $("rules-list").classList.add("hidden");
-    $("rules-filter").classList.add("hidden");
-    $("rules-view").classList.remove("hidden");
-    $("rules-view-title").textContent = entry.title;
-    $("rules-find").value = "";
-    $("rules-find-count").textContent = "";
-    var body = $("rules-view-body");
-    if (rulesCache[slug]) {
-      rulesCurrentText = rulesCache[slug];
-      renderRulesText();
-      return;
-    }
-    body.innerHTML = '<p class="empty">Loading...</p>';
-    try {
-      var res = await fetch(entry.file + "?v=" + RULES_VERSION);
-      rulesCurrentText = await res.text();
-      rulesCache[slug] = rulesCurrentText;
-      renderRulesText();
-    } catch (e) {
-      body.innerHTML = '<p class="error">Could not load this section.</p>';
-    }
-  }
-
-  function highlightText(text, q) {
-    if (!q) return escapeHtml(text);
-    var re = new RegExp("(" + escapeRegExp(q) + ")", "gi");
-    var parts = text.split(re);
-    return parts.map(function (part, i) {
-      return i % 2 === 1 ? "<mark>" + escapeHtml(part) + "</mark>" : escapeHtml(part);
-    }).join("");
-  }
-
-  function renderRulesText() {
-    var body = $("rules-view-body");
-    var q = ($("rules-find").value || "").trim();
-    body.innerHTML = highlightText(rulesCurrentText, q);
-    rulesFindMarks = [];
-    rulesFindPos = -1;
-    if (q) {
-      rulesFindMarks = Array.prototype.slice.call(body.querySelectorAll("mark"));
-      $("rules-find-count").textContent = rulesFindMarks.length
-        ? rulesFindMarks.length + " match" + (rulesFindMarks.length === 1 ? "" : "es")
-        : "No matches in this section.";
-    } else {
-      $("rules-find-count").textContent = "";
-    }
-  }
-
-  function rulesFindStep(dir) {
-    if (!rulesFindMarks.length) return;
-    rulesFindPos = (rulesFindPos + dir + rulesFindMarks.length) % rulesFindMarks.length;
-    var mark = rulesFindMarks[rulesFindPos];
-    rulesFindMarks.forEach(function (m) { m.classList.remove("current"); });
-    mark.classList.add("current");
-    mark.scrollIntoView({ block: "center" });
-    $("rules-find-count").textContent = (rulesFindPos + 1) + " of " + rulesFindMarks.length + " matches";
-  }
-
-  function showRulesList() {
-    rulesCurrentText = "";
-    $("rules-view").classList.add("hidden");
-    $("rules-list").classList.remove("hidden");
-    $("rules-filter").classList.remove("hidden");
-    renderRulesList();
-  }
-
   // ---------- init ----------
 
   function initApp() {
@@ -1362,11 +1239,6 @@
     $("npcs-edit-toggle").addEventListener("click", function () { setNpcsEdit(!npcsEdit); });
     $("places-edit-toggle").addEventListener("click", function () { setPlacesEdit(!placesEdit); });
     $("quests-edit-toggle").addEventListener("click", function () { setQuestsEdit(!questsEdit); });
-    $("rules-filter").addEventListener("input", renderRulesList);
-    $("rules-find").addEventListener("input", renderRulesText);
-    $("rules-find-next").addEventListener("click", function () { rulesFindStep(1); });
-    $("rules-find-prev").addEventListener("click", function () { rulesFindStep(-1); });
-    $("rules-back").addEventListener("click", showRulesList);
     $("npc-form").classList.add("hidden");
     $("quest-form").classList.add("hidden");
 

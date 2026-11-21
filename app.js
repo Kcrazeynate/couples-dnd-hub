@@ -767,6 +767,10 @@
     if (savedScale && savedScale > 0) milesPerSquare = savedScale;
   } catch (e) {}
 
+  function normName(s) {
+    return (s || "").toLowerCase().trim().replace(/^the\s+/, "");
+  }
+
   async function loadMaps() {
     var tabs = $("map-tabs");
     if (!configured) {
@@ -807,6 +811,9 @@
     if (!map) return;
     var wrap = $("map-wrap");
     wrap.style.backgroundImage = map.image_url ? 'url("' + map.image_url + '")' : "none";
+    mapCells = {};
+    renderMapGrid();
+    $("map-markers").innerHTML = "";
     var cellsRes = await db.from("map_cells").select("*").eq("map_id", map.id);
     mapCells = {};
     if (!cellsRes.error && cellsRes.data) {
@@ -820,7 +827,7 @@
     npcsByName = {};
     if (!npcsRes.error && npcsRes.data) {
       npcsRes.data.forEach(function (n) {
-        npcsByName[(n.name || "").toLowerCase()] = n;
+        npcsByName[normName(n.name)] = n;
       });
     }
     closeMapTooltip();
@@ -866,7 +873,7 @@
       return;
     }
     openTooltipMarker = markerId;
-    var entry = npcsByName[(mk.label || "").toLowerCase()];
+    var entry = npcsByName[normName(mk.label)];
     var html = '<p class="tip-title">' + escapeHtml(mk.label) + '</p>';
     if (entry && entry.image_url) html += '<img class="tip-img" src="' + escapeHtml(entry.image_url) + '" alt="">';
     if (entry && entry.notes) html += '<p class="tip-notes">' + escapeHtml(entry.notes) + '</p>';
@@ -917,7 +924,7 @@
       return;
     }
     list.innerHTML = mapMarkers.map(function (mk) {
-      var entry = npcsByName[(mk.label || "").toLowerCase()];
+      var entry = npcsByName[normName(mk.label)];
       var img = entry && entry.image_url ? '<img class="place-thumb" src="' + escapeHtml(entry.image_url) + '" alt="">' : "";
       return '<div class="card place-card" data-marker-id="' + mk.id + '">' + img +
         '<p class="title">' + escapeHtml(mk.label) + '</p>' +

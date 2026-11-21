@@ -846,39 +846,3 @@ header {
   display: inline-block;
 }
 
-/* Rules tab (SRD 5.2.1) */
-
-.rules-attribution {
-  color: #a89a7c;
-  font-size: 0.85rem;
-}
-
-.rules-card {
-  cursor: pointer;
-}
-
-.rules-body {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  font-size: 0.95rem;
-  line-height: 1.55;
-  background: #241f18;
-  border: 1px solid #4a3f2c;
-  border-radius: 12px;
-  padding: 1rem;
-}
-
-.rules-body mark {
-  background: #c9a227;
-  color: #171410;
-}
-
-.rules-body mark.current {
-  background: #e8c96a;
-  outline: 2px solid #ece5d3;
-}
-
-.rules-find-row input {
-  flex: 1 1 auto;
-  min-width: 0;
-}

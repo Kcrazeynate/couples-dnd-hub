@@ -29,6 +29,8 @@ create table if not exists characters (
   name text,
   race text,
   class text,
+  background text,
+  skills text,
   level integer,
   hp integer,
   max_hp integer,

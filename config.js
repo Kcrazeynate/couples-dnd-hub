@@ -4,5 +4,6 @@
 const CONFIG = {
   SUPABASE_URL: "https://lstaouwvgalwceswnwvi.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_rTxjOmoDZdLu7bYvy7BubA_-PyQDGe4",
-  CAMPAIGN_PASSPHRASE: "Play together"
+  CAMPAIGN_PASSPHRASE: "Play together",
+  VAPID_PUBLIC_KEY: "BAUJmYc1huDDgmMbPL8WUiEkHBbwGtkdqn-bmFKyeZKBiSEsTR79L3ynx9dIoZAXzaFN7l8anz8TDV1WyuRMOXI"
 };

@@ -706,3 +706,34 @@ button.danger:hover {
     grid-template-columns: repeat(6, 1fr);
   }
 }
+
+/* Remember this device + Lock */
+.remember {
+  display: block;
+  margin-top: 0.75rem;
+  color: #a89a7c;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.remember input {
+  margin-right: 0.4rem;
+}
+header {
+  position: relative;
+}
+.lock-btn {
+  position: absolute;
+  top: 1rem;
+  right: 0.75rem;
+  background: transparent;
+  color: #a89a7c;
+  border: 1px solid #4a3f2c;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.7rem;
+  margin-top: 0;
+  width: auto;
+}
+.lock-btn:hover {
+  color: #c9a227;
+  border-color: #c9a227;
+}

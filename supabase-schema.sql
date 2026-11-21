@@ -140,3 +140,14 @@ create policy "Public read" on combatants for select using (true);
 create policy "Public insert" on combatants for insert with check (true);
 create policy "Public update" on combatants for update using (true) with check (true);
 create policy "Public delete" on combatants for delete using (true);
+
+-- Live updates (Realtime): run these lines once in the SQL editor so new
+-- rows appear on the hub instantly while the page is open. Until then the
+-- board still refreshes on its own every 15 seconds.
+alter publication supabase_realtime add table messages;
+alter publication supabase_realtime add table log_entries;
+alter publication supabase_realtime add table characters;
+alter publication supabase_realtime add table quests;
+alter publication supabase_realtime add table npcs;
+alter publication supabase_realtime add table rolls;
+alter publication supabase_realtime add table combatants;

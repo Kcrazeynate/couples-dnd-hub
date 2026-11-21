@@ -514,7 +514,8 @@
       return;
     }
     list.innerHTML = res.data.map(function (n) {
-      return '<div class="card">' +
+      var img = n.image_url ? '<img class="npc-img" src="' + escapeHtml(n.image_url) + '" alt="">' : "";
+      return '<div class="card npc-card">' + img +
         '<p class="title">' + escapeHtml(n.name) + ' <span class="badge">' + escapeHtml(n.kind) + '</span></p>' +
         '<p>' + escapeHtml(n.notes || "") + '</p>' +
         '<div class="actions">' +
@@ -536,14 +537,31 @@
     var name = $("npc-name").value.trim();
     var kind = $("npc-kind").value;
     var notes = $("npc-notes").value.trim();
+    var imageUrl = $("npc-image").value.trim() || null;
     if (!name) return;
-    var res = await db.from("npcs").insert({ name: name, kind: kind, notes: notes });
+    var row = { name: name, kind: kind, notes: notes };
+    if (imageUrl) row.image_url = imageUrl;
+    var res = await db.from("npcs").insert(row);
+    if (res.error && imageUrl) {
+      var retry = await db.from("npcs").insert({ name: name, kind: kind, notes: notes });
+      if (retry.error) {
+        alert("Could not add the entry. Check the connection and try again.");
+        return;
+      }
+      alert("Entry added, but the picture was not saved. Run the SQL line for the image column first, then add the picture.");
+      $("npc-name").value = "";
+      $("npc-notes").value = "";
+      $("npc-image").value = "";
+      loadNpcs();
+      return;
+    }
     if (res.error) {
       alert("Could not add the entry. Check the connection and try again.");
       return;
     }
     $("npc-name").value = "";
     $("npc-notes").value = "";
+    $("npc-image").value = "";
     loadNpcs();
   }
 
@@ -719,6 +737,15 @@
   var mapCells = {};
   var mapMarkers = [];
   var mapMode = "reveal";
+  var npcsByName = {};
+  var mapZoom = 1;
+  var measureA = null;
+  var measureB = null;
+  var milesPerSquare = 12;
+  try {
+    var savedScale = parseFloat(localStorage.getItem("hub-map-scale"));
+    if (savedScale && savedScale > 0) milesPerSquare = savedScale;
+  } catch (e) {}
 
   async function loadMaps() {
     var tabs = $("map-tabs");
@@ -769,8 +796,19 @@
     }
     var markersRes = await db.from("map_markers").select("*").eq("map_id", map.id).order("created_at", { ascending: true });
     mapMarkers = markersRes.error ? [] : (markersRes.data || []);
+    var npcsRes = await db.from("npcs").select("*");
+    npcsByName = {};
+    if (!npcsRes.error && npcsRes.data) {
+      npcsRes.data.forEach(function (n) {
+        npcsByName[(n.name || "").toLowerCase()] = n;
+      });
+    }
+    closeMapTooltip();
+    measureA = null;
+    measureB = null;
     renderMapGrid();
     renderMapMarkers();
+    renderMeasure();
   }
 
   function renderMapGrid() {
@@ -790,13 +828,52 @@
     });
   }
 
+  var openTooltipMarker = null;
+
+  function closeMapTooltip() {
+    var tip = $("map-tooltip");
+    if (tip) tip.classList.add("hidden");
+    openTooltipMarker = null;
+  }
+
+  function toggleMapTooltip(markerId) {
+    var tip = $("map-tooltip");
+    if (!tip) return;
+    var mk = mapMarkers.find(function (m) { return m.id === markerId; });
+    if (!mk) return;
+    if (openTooltipMarker === markerId) {
+      closeMapTooltip();
+      return;
+    }
+    openTooltipMarker = markerId;
+    var entry = npcsByName[(mk.label || "").toLowerCase()];
+    var html = '<p class="tip-title">' + escapeHtml(mk.label) + '</p>';
+    if (entry && entry.image_url) html += '<img class="tip-img" src="' + escapeHtml(entry.image_url) + '" alt="">';
+    if (entry && entry.notes) html += '<p class="tip-notes">' + escapeHtml(entry.notes) + '</p>';
+    tip.innerHTML = html;
+    var wrap = $("map-wrap");
+    var px = (mk.x + 0.5) / MAP_COLS * wrap.clientWidth;
+    var clamped = Math.min(Math.max(px, 115), Math.max(115, wrap.clientWidth - 115));
+    tip.style.left = clamped + "px";
+    var topPct = (mk.y + 0.5) / MAP_ROWS * 100;
+    tip.style.top = topPct.toFixed(2) + "%";
+    tip.classList.toggle("below", topPct < 35);
+    tip.classList.remove("hidden");
+  }
+
   function renderMapMarkers() {
     var layer = $("map-markers");
     layer.innerHTML = mapMarkers.map(function (mk) {
       var left = ((mk.x + 0.5) / MAP_COLS * 100).toFixed(2);
       var top = ((mk.y + 0.5) / MAP_ROWS * 100).toFixed(2);
-      return '<div class="map-marker" style="left:' + left + '%;top:' + top + '%"><span class="pin"></span><span class="pin-label">' + escapeHtml(mk.label) + '</span></div>';
+      return '<div class="map-marker" data-marker-id="' + mk.id + '" style="left:' + left + '%;top:' + top + '%"><span class="pin"></span></div>';
     }).join("");
+    layer.querySelectorAll(".map-marker").forEach(function (el) {
+      el.addEventListener("click", function (e) {
+        e.stopPropagation();
+        toggleMapTooltip(el.dataset.markerId);
+      });
+    });
     var list = $("map-markers-list");
     if (!mapMarkers.length) {
       list.innerHTML = '<p class="empty">No places marked on this map yet.</p>';
@@ -819,6 +896,17 @@
   async function onMapCellClick(x, y) {
     if (!configured) return setupNeeded();
     var key = x + "," + y;
+    closeMapTooltip();
+    if (mapMode === "measure") {
+      if (!measureA || measureB) {
+        measureA = { x: x, y: y };
+        measureB = null;
+      } else {
+        measureB = { x: x, y: y };
+      }
+      renderMeasure();
+      return;
+    }
     if (mapMode === "reveal") {
       if (mapCells[key]) return;
       var res = await db.from("map_cells").upsert({ map_id: currentMapId, x: x, y: y, revealed: true }, { onConflict: "map_id,x,y" });
@@ -851,6 +939,59 @@
       }
       loadMapView();
     }
+  }
+
+  function markerAt(x, y) {
+    return mapMarkers.find(function (m) { return m.x === x && m.y === y; });
+  }
+
+  function pointName(p) {
+    var mk = markerAt(p.x, p.y);
+    return mk ? mk.label : "Square (" + p.x + ", " + p.y + ")";
+  }
+
+  function renderMeasure() {
+    var svg = $("map-measure-svg");
+    var text = $("map-measure-text");
+    if (!svg || !text) return;
+    if (!measureA) {
+      svg.innerHTML = "";
+      text.textContent = "Tap Measure, then tap two squares to see distance and travel time.";
+      return;
+    }
+    var ax = ((measureA.x + 0.5) / MAP_COLS * 100).toFixed(2);
+    var ay = ((measureA.y + 0.5) / MAP_ROWS * 100).toFixed(2);
+    var shapes = '<circle cx="' + ax + '%" cy="' + ay + '%" r="6" class="measure-dot"/>';
+    if (measureB) {
+      var bx = ((measureB.x + 0.5) / MAP_COLS * 100).toFixed(2);
+      var by = ((measureB.y + 0.5) / MAP_ROWS * 100).toFixed(2);
+      shapes += '<line x1="' + ax + '%" y1="' + ay + '%" x2="' + bx + '%" y2="' + by + '%" class="measure-line"/>' +
+        '<circle cx="' + bx + '%" cy="' + by + '%" r="6" class="measure-dot"/>';
+      var dx = measureB.x - measureA.x;
+      var dy = measureB.y - measureA.y;
+      var squares = Math.sqrt(dx * dx + dy * dy);
+      var miles = squares * milesPerSquare;
+      text.textContent = pointName(measureA) + " to " + pointName(measureB) + ": " +
+        Math.round(miles) + " miles (" + squares.toFixed(1) + " squares). On foot by road: " + (miles / 24).toFixed(1) +
+        " days. Rough country: " + (miles / 12).toFixed(1) + " days. On horseback: " + (miles / 30).toFixed(1) + " days.";
+    } else {
+      text.textContent = pointName(measureA) + " set. Tap a second square.";
+    }
+    svg.innerHTML = shapes;
+  }
+
+  function applyMapZoom() {
+    var wrap = $("map-wrap");
+    if (!wrap) return;
+    wrap.style.transform = "scale(" + mapZoom + ")";
+    wrap.style.transformOrigin = "top left";
+    var label = $("map-zoom-level");
+    if (label) label.textContent = mapZoom.toFixed(1) + "x";
+  }
+
+  function setMapZoom(z) {
+    mapZoom = Math.min(3, Math.max(1, Math.round(z * 2) / 2));
+    applyMapZoom();
   }
 
   async function addMap(e) {
@@ -958,8 +1099,30 @@
         $("map-mode-hint").textContent =
           mapMode === "reveal" ? "Tap a dark square to reveal it." :
           mapMode === "hide" ? "Tap a revealed square to cover it with fog again." :
+          mapMode === "measure" ? "Tap two squares to measure the distance between them." :
           "Tap a revealed square to mark a place there.";
       });
+    });
+
+    $("map-zoom-in").addEventListener("click", function () { setMapZoom(mapZoom + 0.5); });
+    $("map-zoom-out").addEventListener("click", function () { setMapZoom(mapZoom - 0.5); });
+    $("map-zoom-reset").addEventListener("click", function () { setMapZoom(1); });
+    $("map-viewport").addEventListener("wheel", function (e) {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      setMapZoom(mapZoom + (e.deltaY < 0 ? 0.5 : -0.5));
+    }, { passive: false });
+    var scaleInput = $("map-scale-input");
+    scaleInput.value = milesPerSquare;
+    scaleInput.addEventListener("change", function () {
+      var v = parseFloat(scaleInput.value);
+      if (v && v > 0) {
+        milesPerSquare = v;
+        try { localStorage.setItem("hub-map-scale", String(v)); } catch (e) {}
+        renderMeasure();
+      } else {
+        scaleInput.value = milesPerSquare;
+      }
     });
 
     document.querySelectorAll("#dice-buttons button").forEach(function (btn) {

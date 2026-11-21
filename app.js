@@ -365,6 +365,7 @@
     if (fx.kind === "xp") return who + " " + signedNum(fx.amount) + " XP";
     if (fx.kind === "gold") return who + " " + signedNum(fx.amount) + " gold";
     if (fx.kind === "hp") return who + " " + signedNum(fx.amount) + " HP";
+    if (fx.kind === "temp_hp") return who + " temp HP set to " + fx.amount;
     if (fx.kind === "level") return who + " is now level " + fx.amount;
     if (fx.kind === "add_item") return who + " gained: " + fx.item;
     if (fx.kind === "remove_item") return who + " lost: " + fx.item;
@@ -394,6 +395,7 @@
         '<option value="xp">XP</option>' +
         '<option value="gold">Gold</option>' +
         '<option value="hp">HP</option>' +
+        '<option value="temp_hp">Temp HP (set)</option>' +
         '<option value="add_item">Add item</option>' +
         '<option value="remove_item">Remove item</option>' +
         '<option value="level">Set level</option>' +
@@ -437,7 +439,7 @@
       ? (charPlayers.length ? charPlayers.map(function (p) { return p.player; }) : PLAYERS.map(function (p) { return p.player; }))
       : [fx.target];
     for (var i = 0; i < targets.length; i++) {
-      var res = await db.from("characters").select("xp, gold, hp, max_hp, inventory, level").eq("player", targets[i]).single();
+      var res = await db.from("characters").select("xp, gold, hp, max_hp, temp_hp, inventory, level").eq("player", targets[i]).single();
       if (res.error || !res.data) continue;
       var c = res.data, patch = {};
       if (fx.kind === "xp") patch.xp = (c.xp || 0) + (fx.amount || 0);
@@ -448,6 +450,7 @@
         if (c.max_hp !== null && c.max_hp !== undefined && hp > c.max_hp) hp = c.max_hp;
         patch.hp = hp;
       }
+      if (fx.kind === "temp_hp") patch.temp_hp = fx.amount || 0;
       if (fx.kind === "level") patch.level = fx.amount;
       if (fx.kind === "add_item" && fx.item) {
         patch.inventory = (c.inventory || "").trim() ? (c.inventory || "") + "\n" + fx.item : fx.item;
@@ -636,10 +639,39 @@
     return '<ul class="inventory">' + lines.map(function (l) { return "<li>" + escapeHtml(l) + "</li>"; }).join("") + "</ul>";
   }
 
+  var HIT_DICE = {
+    barbarian: 12, bard: 8, cleric: 8, druid: 8, fighter: 10, monk: 8,
+    paladin: 10, ranger: 10, rogue: 8, sorcerer: 6, warlock: 8, wizard: 6
+  };
+
+  function hitDieFor(c) {
+    return HIT_DICE[classKey(c.class)] || 8;
+  }
+
+  function hitDiceTotal(c) {
+    return c.level || 1;
+  }
+
+  function hitDiceLeft(c) {
+    var left = hitDiceTotal(c) - (c.hit_dice_used || 0);
+    if (left < 0) left = 0;
+    return left;
+  }
+
+  function deathSaveDots(c, kind, player) {
+    var count = kind === "success" ? (c.death_save_successes || 0) : (c.death_save_failures || 0);
+    var dots = "";
+    for (var i = 1; i <= 3; i++) {
+      dots += '<button type="button" class="ds-dot' + (i <= count ? ' filled' : '') + '" data-death-save="' + kind + '" data-death-n="' + i + '" data-player="' + player + '" title="' + kind + ' ' + i + '">' + (i <= count ? "●" : "○") + '</button>';
+    }
+    return dots;
+  }
+
   function charCard(p, c) {
     var pb = profBonus(c.level);
     var hpText = (c.hp === null || c.hp === undefined ? "-" : c.hp) +
       " / " + (c.max_hp === null || c.max_hp === undefined ? "-" : c.max_hp);
+    var tempHp = c.temp_hp || 0;
     var items = textLines(c.inventory);
     var invHtml = items.length ? listHtml(items) : '<p class="empty">No items yet.</p>';
     var saveProfs = SAVE_PROFS[classKey(c.class)] || [];
@@ -700,9 +732,13 @@
       '<div class="combat-stat"><span>Speed</span><strong>' + speedFor(c.race) + ' ft</strong></div>' +
       '<div class="combat-stat"><span>Prof. Bonus</span><strong>' + fmtMod(pb) + '</strong></div>' +
       '</div>' +
-      '<div class="hp-row"><span>HP</span><span class="hp">' + hpText + '</span>' +
+      '<div class="hp-row"><span>HP</span><span class="hp">' + hpText + (tempHp > 0 ? ' <span class="temp-hp">+ ' + tempHp + ' temp</span>' : '') + '</span>' +
       '<button type="button" class="hp-btn" data-hp-delta="-1" data-player="' + p.player + '">-</button>' +
       '<button type="button" class="hp-btn" data-hp-delta="1" data-player="' + p.player + '">+</button></div>' +
+      '<div class="hp-row"><span>Hit Dice</span><span class="hp">' + hitDiceTotal(c) + 'd' + hitDieFor(c) + ' · ' + hitDiceLeft(c) + ' left</span>' +
+      '<button type="button" class="hp-btn" data-hit-dice-delta="-1" data-player="' + p.player + '">-</button>' +
+      '<button type="button" class="hp-btn" data-hit-dice-delta="1" data-player="' + p.player + '">+</button></div>' +
+      '<div class="death-saves"><span>Death Saves</span><span class="ds-group"><span class="ds-label">Success</span>' + deathSaveDots(c, "success", p.player) + '</span><span class="ds-group"><span class="ds-label">Failure</span>' + deathSaveDots(c, "failure", p.player) + '</span></div>' +
       '<div class="sheet-scores">' + scoresHtml + '</div>' +
       '<p><strong>Saving Throws</strong></p><div class="sheet-list">' + savesHtml + '</div>' +
       '<p><strong>Skills</strong></p><div class="sheet-list">' + skillsHtml + '</div>' +
@@ -727,17 +763,67 @@
         changeCharHp(btn.dataset.player, parseInt(btn.dataset.hpDelta, 10));
       });
     });
+    document.querySelectorAll("[data-hit-dice-delta]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        changeHitDice(btn.dataset.player, parseInt(btn.dataset.hitDiceDelta, 10));
+      });
+    });
+    document.querySelectorAll("[data-death-save]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setDeathSave(btn.dataset.player, btn.dataset.deathSave, parseInt(btn.dataset.deathN, 10));
+      });
+    });
   }
 
   async function changeCharHp(player, delta) {
     if (!configured) return setupNeeded();
-    var res = await db.from("characters").select("hp, max_hp").eq("player", player).single();
+    var res = await db.from("characters").select("hp, max_hp, temp_hp").eq("player", player).single();
     if (res.error || !res.data) return;
     var hp = (res.data.hp === null || res.data.hp === undefined) ? 0 : res.data.hp;
-    hp += delta;
-    if (hp < 0) hp = 0;
-    if (res.data.max_hp !== null && res.data.max_hp !== undefined && hp > res.data.max_hp) hp = res.data.max_hp;
-    await db.from("characters").update({ hp: hp, updated_at: new Date().toISOString() }).eq("player", player);
+    var tempHp = res.data.temp_hp || 0;
+    var patch = {};
+    if (delta < 0) {
+      var dmg = -delta;
+      var absorbed = Math.min(tempHp, dmg);
+      tempHp -= absorbed;
+      dmg -= absorbed;
+      hp -= dmg;
+      if (hp < 0) hp = 0;
+      patch.hp = hp;
+      patch.temp_hp = tempHp;
+    } else {
+      hp += delta;
+      if (res.data.max_hp !== null && res.data.max_hp !== undefined && hp > res.data.max_hp) hp = res.data.max_hp;
+      patch.hp = hp;
+    }
+    patch.updated_at = new Date().toISOString();
+    await db.from("characters").update(patch).eq("player", player);
+    loadCharacters();
+  }
+
+  async function changeHitDice(player, delta) {
+    if (!configured) return setupNeeded();
+    var res = await db.from("characters").select("level, hit_dice_used").eq("player", player).single();
+    if (res.error || !res.data) return;
+    var total = res.data.level || 1;
+    var used = res.data.hit_dice_used || 0;
+    var left = total - used + delta;
+    if (left < 0) left = 0;
+    if (left > total) left = total;
+    await db.from("characters").update({ hit_dice_used: total - left, updated_at: new Date().toISOString() }).eq("player", player);
+    loadCharacters();
+  }
+
+  async function setDeathSave(player, kind, n) {
+    if (!configured) return setupNeeded();
+    var col = kind === "success" ? "death_save_successes" : "death_save_failures";
+    var res = await db.from("characters").select(col).eq("player", player).single();
+    if (res.error || !res.data) return;
+    var current = res.data[col] || 0;
+    var next = current === n ? n - 1 : n;
+    var patch = { updated_at: new Date().toISOString() };
+    patch[col] = next;
+    await db.from("characters").update(patch).eq("player", player);
     loadCharacters();
   }
 
@@ -760,6 +846,10 @@
     $("char-max-hp").value = c && c.max_hp !== null && c.max_hp !== undefined ? c.max_hp : "";
     $("char-ac").value = c && c.ac !== null && c.ac !== undefined ? c.ac : "";
     $("char-gold").value = c && c.gold !== null && c.gold !== undefined ? c.gold : 0;
+    $("char-temp-hp").value = c && c.temp_hp !== null && c.temp_hp !== undefined ? c.temp_hp : "";
+    $("char-hit-dice-used").value = c && c.hit_dice_used !== null && c.hit_dice_used !== undefined ? c.hit_dice_used : "";
+    $("char-death-successes").value = c && c.death_save_successes !== null && c.death_save_successes !== undefined ? c.death_save_successes : "";
+    $("char-death-failures").value = c && c.death_save_failures !== null && c.death_save_failures !== undefined ? c.death_save_failures : "";
     $("char-str").value = c && c.str !== null && c.str !== undefined ? c.str : "";
     $("char-dex").value = c && c.dex !== null && c.dex !== undefined ? c.dex : "";
     $("char-con").value = c && c.con !== null && c.con !== undefined ? c.con : "";
@@ -807,6 +897,10 @@
       cha: numOrNull($("char-cha").value),
       skills: $("char-skills").value.trim(),
       gold: numOrNull($("char-gold").value),
+      temp_hp: numOrNull($("char-temp-hp").value),
+      hit_dice_used: numOrNull($("char-hit-dice-used").value),
+      death_save_successes: numOrNull($("char-death-successes").value),
+      death_save_failures: numOrNull($("char-death-failures").value),
       inventory: $("char-inventory").value.trim(),
       notes: $("char-notes").value.trim(),
       attacks: $("char-attacks").value.trim(),

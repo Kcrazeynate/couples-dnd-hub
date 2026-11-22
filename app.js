@@ -2635,6 +2635,9 @@
   // Eldemmor's Market -16.5 LUFS, Lockwood -22.5 LUFS,
   // Blood Magic -19.9 LUFS, The House of Pleasures -16.3 LUFS,
   // Underworld -17.0 LUFS.
+  // Louis -17.5 LUFS, Out of the Nest -16.4 LUFS, Oarsmarket -18.0 LUFS,
+  // The Ogier -14.1 LUFS, March of the Heroes -14.7 LUFS,
+  // Protecting Neverwinter -11.6 LUFS.
   // The Herd is a quiet outlier; its true peak is -10.5 dBTP, so its gain
   // is boosted to 2.76 to match, peaking at -1.7 dBTP, no clipping.
   // Lockwood is also boosted (1.58, peak -1.4 dBTP) for the same reason.
@@ -2643,7 +2646,9 @@
   // Add entries here when more files arrive.
   var MUSIC_TRACKS = {
     opening: [
-      { file: "assets/music/opening-voyages-of-the-valiant.mp3", title: "Voyages of the Valiant", gain: 0.55 }
+      { file: "assets/music/opening-voyages-of-the-valiant.mp3", title: "Voyages of the Valiant", gain: 0.55 },
+      { file: "assets/music/opening-louis.mp3", title: "Louis", gain: 0.89 },
+      { file: "assets/music/opening-out-of-the-nest.mp3", title: "Out of the Nest", gain: 0.78 }
     ],
     travel: [
       { file: "assets/music/travel-the-north-wind.mp3", title: "The North Wind", gain: 0.62 },
@@ -2653,7 +2658,9 @@
     ],
     combat: [
       { file: "assets/music/combat-to-crush-your-enemies.mp3", title: "To Crush Your Enemies", gain: 0.98 },
-      { file: "assets/music/combat-black-shadow.mp3", title: "Black Shadow", gain: 0.66 }
+      { file: "assets/music/combat-black-shadow.mp3", title: "Black Shadow", gain: 0.66 },
+      { file: "assets/music/combat-march-of-the-heroes.mp3", title: "March of the Heroes", gain: 0.65 },
+      { file: "assets/music/combat-protecting-neverwinter.mp3", title: "Protecting Neverwinter", gain: 0.45 }
     ],
     dungeon: [
       { file: "assets/music/dungeon-blood-magic.mp3", title: "Blood Magic", gain: 1.0 },
@@ -2664,7 +2671,9 @@
       { file: "assets/music/town-medieval-kitchen.mp3", title: "Medieval Kitchen", gain: 0.65 },
       { file: "assets/music/town-the-ascendancy-festival.mp3", title: "The Ascendancy Festival", gain: 1.0 },
       { file: "assets/music/town-eldemmors-market.mp3", title: "Eldemmor's Market", gain: 0.8 },
-      { file: "assets/music/town-lockwood.mp3", title: "Lockwood", gain: 1.58 }
+      { file: "assets/music/town-lockwood.mp3", title: "Lockwood", gain: 1.58 },
+      { file: "assets/music/town-oarsmarket.mp3", title: "Oarsmarket", gain: 0.95 },
+      { file: "assets/music/town-the-ogier.mp3", title: "The Ogier", gain: 0.61 }
     ],
     rest: [
       { file: "assets/music/rest-magical-forest.mp3", title: "Magical Forest", gain: 0.66 },

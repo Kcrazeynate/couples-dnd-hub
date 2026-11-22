@@ -688,6 +688,24 @@
     return Math.max(Math.abs(bx - ax), Math.abs(by - ay)) * 5;
   }
 
+  // Token positions are stored in fine grid units: TOKEN_FINE sub-squares per
+  // map square (1 fine unit = 0.5 ft). A combatant's grid_x/grid_y hold the
+  // token CENTRE in fine units, not the square: the centre of square S is
+  // S * TOKEN_FINE + TOKEN_FINE / 2, the left edge of square S is
+  // S * TOKEN_FINE. The square, for speed, reach, and opportunity attacks
+  // (the rules measure in 5 ft squares), is Math.floor(grid / TOKEN_FINE).
+  // This lets a token sit at a corner, an edge, or anywhere inside a square
+  // instead of only the square centre, with no schema change
+  // (grid_x/grid_y stay integers).
+  var TOKEN_FINE = 10;
+  function gridSquare(v) { return Math.floor(v / TOKEN_FINE); }
+  function tokenLeftTop(gx, gy, grid) {
+    return {
+      left: (gx / TOKEN_FINE / grid * 100).toFixed(2),
+      top: (gy / TOKEN_FINE / grid * 100).toFixed(2)
+    };
+  }
+
   function renderAreaTokens() {
     var layer = $("area-tokens");
     if (!layer || !currentAreaMapUrl) return;
@@ -699,8 +717,9 @@
       var side = combatantSide(c);
       var isCurrent = battleStateReady && c.id === battleState.current_combatant_id;
       var initial = String(c.name || "?").trim().charAt(0).toUpperCase();
-      var left = ((c.grid_x + 0.5) / grid * 100).toFixed(2);
-      var top = ((c.grid_y + 0.5) / grid * 100).toFixed(2);
+      var pos = tokenLeftTop(c.grid_x, c.grid_y, grid);
+      var left = pos.left;
+      var top = pos.top;
       return '<div class="area-token ' + side + (isCurrent ? " current" : "") + '" data-token-id="' + c.id + '" style="left:' + left + '%;top:' + top + '%" title="' + escapeHtml(c.name) + ' - HP ' + c.hp + '/' + c.max_hp + ', Speed ' + combatantSpeed(c) + ' ft">' + escapeHtml(initial) + '</div>';
     }).join("");
     layer.innerHTML = html;
@@ -711,16 +730,16 @@
 
   var tokenDrag = null;
 
-  function areaSquareFromEvent(ev) {
+  function areaPosFromEvent(ev) {
     var wrap = document.querySelector(".area-map-wrap");
     if (!wrap || !currentAreaMapUrl) return null;
     var rect = wrap.getBoundingClientRect();
     var grid = areaGridFor(currentAreaMapUrl);
-    var x = Math.floor((ev.clientX - rect.left) / rect.width * grid);
-    var y = Math.floor((ev.clientY - rect.top) / rect.height * grid);
-    x = Math.max(0, Math.min(grid - 1, x));
-    y = Math.max(0, Math.min(grid - 1, y));
-    return { x: x, y: y, grid: grid };
+    var fx = Math.round((ev.clientX - rect.left) / rect.width * grid * TOKEN_FINE);
+    var fy = Math.round((ev.clientY - rect.top) / rect.height * grid * TOKEN_FINE);
+    fx = Math.max(0, Math.min(grid * TOKEN_FINE, fx));
+    fy = Math.max(0, Math.min(grid * TOKEN_FINE, fy));
+    return { x: gridSquare(fx), y: gridSquare(fy), fx: fx, fy: fy, grid: grid };
   }
 
   function onTokenPointerDown(ev) {
@@ -729,12 +748,14 @@
     var c = combatants.find(function (cc) { return cc.id === id; });
     if (!c) return;
     ev.preventDefault();
-    var sq = areaSquareFromEvent(ev);
+    var sq = areaPosFromEvent(ev);
     if (!sq) return;
     tokenDrag = {
       id: id,
-      startX: c.grid_x,
-      startY: c.grid_y,
+      startFX: c.grid_x,
+      startFY: c.grid_y,
+      startX: gridSquare(c.grid_x),
+      startY: gridSquare(c.grid_y),
       moved: false,
       startClientX: ev.clientX,
       startClientY: ev.clientY
@@ -748,15 +769,16 @@
 
   function onTokenPointerMove(ev) {
     if (!tokenDrag) return;
-    var sq = areaSquareFromEvent(ev);
+    var sq = areaPosFromEvent(ev);
     if (!sq) return;
     if (Math.abs(ev.clientX - tokenDrag.startClientX) > 6 || Math.abs(ev.clientY - tokenDrag.startClientY) > 6) {
       tokenDrag.moved = true;
     }
     var el = document.querySelector('[data-token-id="' + tokenDrag.id + '"]');
     if (el) {
-      el.style.left = ((sq.x + 0.5) / sq.grid * 100).toFixed(2) + "%";
-      el.style.top = ((sq.y + 0.5) / sq.grid * 100).toFixed(2) + "%";
+      var p = tokenLeftTop(sq.fx, sq.fy, sq.grid);
+      el.style.left = p.left + "%";
+      el.style.top = p.top + "%";
     }
     var c = combatants.find(function (cc) { return cc.id === tokenDrag.id; });
     var label = $("area-drag-label");
@@ -765,6 +787,8 @@
       label.textContent = c.name + ": " + feet + " ft (speed " + combatantSpeed(c) + " ft)";
       label.classList.remove("hidden");
     }
+    tokenDrag.fx = sq.fx;
+    tokenDrag.fy = sq.fy;
     tokenDrag.x = sq.x;
     tokenDrag.y = sq.y;
   }
@@ -790,22 +814,25 @@
       renderAreaTokens();
       return;
     }
-    var toX = (typeof drag.x === "number") ? drag.x : drag.startX;
-    var toY = (typeof drag.y === "number") ? drag.y : drag.startY;
-    if (toX === drag.startX && toY === drag.startY) {
+    var toFX = (typeof drag.fx === "number") ? drag.fx : drag.startFX;
+    var toFY = (typeof drag.fy === "number") ? drag.fy : drag.startFY;
+    if (toFX === drag.startFX && toFY === drag.startFY) {
       if (label) label.classList.add("hidden");
       renderAreaTokens();
       return;
     }
-    var feet = gridFeet(drag.startX, drag.startY, toX, toY);
+    var toSX = gridSquare(toFX);
+    var toSY = gridSquare(toFY);
+    var feet = gridFeet(drag.startX, drag.startY, toSX, toSY);
     var speed = combatantSpeed(c);
     var side = combatantSide(c);
     var oa = [];
     combatants.forEach(function (other) {
       if (other.id === c.id || other.hp <= 0) return;
       if (combatantSide(other) === side) return;
-      var startAdj = gridFeet(drag.startX, drag.startY, other.grid_x, other.grid_y) <= 5;
-      var endAdj = gridFeet(toX, toY, other.grid_x, other.grid_y) <= 5;
+      if (typeof other.grid_x !== "number" || typeof other.grid_y !== "number") return;
+      var startAdj = gridFeet(drag.startX, drag.startY, gridSquare(other.grid_x), gridSquare(other.grid_y)) <= 5;
+      var endAdj = gridFeet(toSX, toSY, gridSquare(other.grid_x), gridSquare(other.grid_y)) <= 5;
       if (startAdj && !endAdj) oa.push(other.name);
     });
     var problems = [];
@@ -820,7 +847,7 @@
       var ok = window.confirm(problems.join("\n\n") + "\n\nMove anyway?");
       if (!ok) { renderAreaTokens(); return; }
     }
-    var res = await db.from("combatants").update({ grid_x: toX, grid_y: toY }).eq("id", c.id);
+    var res = await db.from("combatants").update({ grid_x: toFX, grid_y: toFY }).eq("id", c.id);
     if (res.error) {
       alert("Could not move the token. Check the connection and try again.");
       renderAreaTokens();
@@ -841,7 +868,7 @@
       '<div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '" alt="Area map">' +
       '<div id="area-tokens" class="area-tokens"></div>' +
       '<div id="area-drag-label" class="area-drag-label hidden"></div></div>' +
-      '<p class="hint">1 square = 5 feet. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them.</p></div>';
+      '<p class="hint">1 square = 5 feet. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab.</p></div>';
     content.querySelector("img").addEventListener("click", function () {
       openLightbox(currentAreaMapUrl);
     });
@@ -2329,6 +2356,7 @@
         '<button type="button" class="hp-btn" data-combat-heal="' + c.id + '">Heal</button></div>' +
         (c.note ? '<p>' + escapeHtml(c.note) + '</p>' : '') +
         '<div class="actions">' +
+        ((typeof c.grid_x !== "number" || typeof c.grid_y !== "number") && currentAreaMapUrl ? '<button type="button" class="small" data-combat-place="' + c.id + '">Place on map</button>' : '') +
         '<button type="button" class="small-danger" data-combat-delete="' + c.id + '">Remove</button>' +
         '</div></div>';
     }).join("");
@@ -2359,7 +2387,41 @@
         loadCombatants();
       });
     });
+    document.querySelectorAll("[data-combat-place]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        placeCombatantOnMap(btn.dataset.combatPlace);
+      });
+    });
     renderAreaTokens();
+  }
+
+  // Drop an unplaced fighter onto the area map at the centre of the first
+  // empty square. The DM then drags the token to the exact spot.
+  async function placeCombatantOnMap(id) {
+    if (!configured) return setupNeeded();
+    var c = combatants.find(function (cc) { return cc.id === id; });
+    if (!c || !currentAreaMapUrl) return;
+    var grid = areaGridFor(currentAreaMapUrl);
+    var taken = {};
+    combatants.forEach(function (o) {
+      if (typeof o.grid_x === "number" && typeof o.grid_y === "number") {
+        taken[gridSquare(o.grid_x) + "," + gridSquare(o.grid_y)] = true;
+      }
+    });
+    var sx = 0, sy = 0, found = false;
+    for (var y = 0; y < grid && !found; y++) {
+      for (var x = 0; x < grid && !found; x++) {
+        if (!taken[x + "," + y]) { sx = x; sy = y; found = true; }
+      }
+    }
+    var fx = sx * TOKEN_FINE + Math.floor(TOKEN_FINE / 2);
+    var fy = sy * TOKEN_FINE + Math.floor(TOKEN_FINE / 2);
+    var res = await db.from("combatants").update({ grid_x: fx, grid_y: fy }).eq("id", id);
+    if (res.error) {
+      alert("Could not place the token. Check the connection and try again.");
+      return;
+    }
+    loadCombatants();
   }
 
   async function changeCombatantHp(id, delta) {

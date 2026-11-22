@@ -105,6 +105,12 @@
           <div id="log-effect-rows"></div>
           <button type="button" id="log-effect-add">Add a change</button>
         </div>
+        <div id="log-locations" class="hidden">
+          <p class="title">Where is the party? (optional)</p>
+          <p class="hint">The party marker on the map follows the latest entry that has a location. Add a row per group if the party splits up.</p>
+          <div id="log-location-rows"></div>
+          <button type="button" id="log-location-add">Add another group</button>
+        </div>
         <label class="check"><input type="checkbox" id="log-mechanics"> Mechanics or rules note (doesn't start the campaign)</label>
         <button type="submit">Add entry</button>
       </form>
@@ -333,6 +339,7 @@
           <div id="map-wrap" class="map-wrap">
             <div id="map-grid" class="map-grid"></div>
             <div id="map-markers" class="map-markers"></div>
+            <div id="party-markers" class="party-markers"></div>
             <svg id="map-measure-svg" class="map-measure-svg" aria-hidden="true"></svg>
             <div id="map-tooltip" class="map-tooltip hidden"></div>
           </div>
@@ -488,6 +495,6 @@
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<script src="app.js?v=20"></script>
+<script src="app.js?v=21"></script>
 </body>
 </html>

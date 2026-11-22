@@ -2626,14 +2626,15 @@
   // so all tracks play at the same perceived level as the quietest track
   // (Old Creek Grove, -18.5 LUFS): a loud track gets a gain below 1, a
   // quiet one stays at 1. Measured: Voyages of the Valiant -13.4 LUFS,
-  // To Crush Your Enemies -18.3 LUFS, Magical Forest -14.8 LUFS,
-  // Old Creek Grove -18.5 LUFS. Add entries here when more files arrive.
+  // To Crush Your Enemies -18.3 LUFS, Black Shadow -14.8 LUFS,
+  // Magical Forest -14.8 LUFS, Old Creek Grove -18.5 LUFS. Add entries here
   var MUSIC_TRACKS = {
     travel: [
       { file: "assets/music/travel-voyages-of-the-valiant.mp3", title: "Voyages of the Valiant", gain: 0.55 }
     ],
     combat: [
-      { file: "assets/music/combat-to-crush-your-enemies.mp3", title: "To Crush Your Enemies", gain: 0.98 }
+      { file: "assets/music/combat-to-crush-your-enemies.mp3", title: "To Crush Your Enemies", gain: 0.98 },
+      { file: "assets/music/combat-black-shadow.mp3", title: "Black Shadow", gain: 0.66 }
     ],
     dungeon: [],
     town: [],

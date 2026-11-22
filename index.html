@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Hub">
-<link rel="stylesheet" href="styles.css?v=21">
+<link rel="stylesheet" href="styles.css?v=22">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=3"></script>
 </head>
@@ -42,6 +42,7 @@
     <button type="button" data-tab="board" class="tab-btn active">Board</button>
     <button type="button" data-tab="log" class="tab-btn">Campaign Log</button>
     <button type="button" data-tab="characters" class="tab-btn">Characters</button>
+    <button type="button" data-tab="companions" class="tab-btn">Companions</button>
     <button type="button" data-tab="howto" class="tab-btn">How to Play</button>
     <button type="button" data-tab="aiguide" class="tab-btn">AI Guide</button>
     <button type="button" data-tab="quests" class="tab-btn">Quests</button>
@@ -104,9 +105,17 @@
           <div id="log-effect-rows"></div>
           <button type="button" id="log-effect-add">Add a change</button>
         </div>
+        <label class="check"><input type="checkbox" id="log-mechanics"> Mechanics or rules note (doesn't start the campaign)</label>
         <button type="submit">Add entry</button>
       </form>
       <div id="log-list" class="list"></div>
+    </section>
+
+    <section id="tab-companions" class="tab-panel" hidden>
+      <h2>Companions</h2>
+      <p class="hint">One companion per class, ready to join a party that is short of six players. Companions scale to the party's level and carry no gold. Choose them at the start of the campaign; once the first story entry is posted, recruitment closes. If a real player joins later, dismiss a companion to make room, but a dismissed companion does not come back until a new campaign.</p>
+      <div id="companions-status"></div>
+      <div id="companions-list" class="list"></div>
     </section>
 
     <section id="tab-characters" class="tab-panel">
@@ -381,7 +390,7 @@
           <label for="char-ac">AC</label>
           <input type="number" id="char-ac" min="0" step="1">
         </div>
-        <div class="field">
+        <div class="field" id="char-gold-field">
           <label for="char-gold">Gold</label>
           <input type="number" id="char-gold" min="0" step="1">
         </div>
@@ -479,6 +488,6 @@
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<script src="app.js?v=18"></script>
+<script src="app.js?v=19"></script>
 </body>
 </html>

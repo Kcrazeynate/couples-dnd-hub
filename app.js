@@ -13,6 +13,8 @@
   var selectedDie = 20;
   var combatants = [];
   var currentTurn = 0;
+  var battleState = { round: 1, current_combatant_id: null };
+  var battleStateReady = false;
 
   // ---------- helpers ----------
 
@@ -1639,6 +1641,25 @@
 
   // ---------- Battle ----------
 
+  // Battle state lives in the DB so the turn and round sync across devices
+  // and follow the board: the DM updates combatant HP and this row as it
+  // resolves actions, and the tracker reloads live.
+  async function loadBattleState() {
+    var res = await db.from("battle_state").select("current_combatant_id, round").eq("id", 1).single();
+    if (res.error || !res.data) return; // table not there yet (SQL not run): local turn only
+    battleState = res.data;
+    battleStateReady = true;
+  }
+
+  async function saveBattleState() {
+    if (!battleStateReady) return;
+    await db.from("battle_state").update({
+      current_combatant_id: battleState.current_combatant_id,
+      round: battleState.round,
+      updated_at: new Date().toISOString()
+    }).eq("id", 1);
+  }
+
   async function loadCombatants() {
     var list = $("combatants-list");
     if (!configured) {
@@ -1651,12 +1672,20 @@
       return;
     }
     combatants = res.data || [];
-    if (currentTurn >= combatants.length) currentTurn = 0;
+    await loadBattleState();
+    if (battleStateReady) {
+      var idx = combatants.findIndex(function (c) { return c.id === battleState.current_combatant_id; });
+      currentTurn = idx >= 0 ? idx : 0;
+    } else if (currentTurn >= combatants.length) {
+      currentTurn = 0;
+    }
     renderCombatants();
   }
 
   function renderCombatants() {
     var list = $("combatants-list");
+    var roundEl = $("battle-round");
+    if (roundEl) roundEl.textContent = combatants.length ? ("Round " + battleState.round) : "";
     if (!combatants.length) {
       list.innerHTML = '<p class="empty">No combatants yet. Add the fighters above.</p>';
       return;
@@ -1669,7 +1698,10 @@
         (isCurrent ? ' <span class="turn-tag">Current turn</span>' : '') + '</p>' +
         '<div class="hp-row"><span>HP</span><span class="hp">' + c.hp + ' / ' + c.max_hp + '</span>' +
         '<button type="button" class="hp-btn" data-combat-hp="-1" data-id="' + c.id + '">-</button>' +
-        '<button type="button" class="hp-btn" data-combat-hp="1" data-id="' + c.id + '">+</button></div>' +
+        '<button type="button" class="hp-btn" data-combat-hp="1" data-id="' + c.id + '">+</button>' +
+        '<input type="number" class="hp-amount" data-amount-id="' + c.id + '" placeholder="Amount" min="1" step="1">' +
+        '<button type="button" class="hp-btn" data-combat-damage="' + c.id + '">Damage</button>' +
+        '<button type="button" class="hp-btn" data-combat-heal="' + c.id + '">Heal</button></div>' +
         (c.note ? '<p>' + escapeHtml(c.note) + '</p>' : '') +
         '<div class="actions">' +
         '<button type="button" class="small-danger" data-combat-delete="' + c.id + '">Remove</button>' +
@@ -1678,6 +1710,22 @@
     document.querySelectorAll("[data-combat-hp]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         changeCombatantHp(btn.dataset.id, parseInt(btn.dataset.combatHp, 10));
+      });
+    });
+    document.querySelectorAll("[data-combat-damage]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var input = document.querySelector('[data-amount-id="' + btn.dataset.combatDamage + '"]');
+        var amt = input ? parseInt(input.value, 10) : NaN;
+        if (!amt || amt <= 0) return;
+        changeCombatantHp(btn.dataset.combatDamage, -amt);
+      });
+    });
+    document.querySelectorAll("[data-combat-heal]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var input = document.querySelector('[data-amount-id="' + btn.dataset.combatHeal + '"]');
+        var amt = input ? parseInt(input.value, 10) : NaN;
+        if (!amt || amt <= 0) return;
+        changeCombatantHp(btn.dataset.combatHeal, amt);
       });
     });
     document.querySelectorAll("[data-combat-delete]").forEach(function (btn) {
@@ -1720,9 +1768,13 @@
     loadCombatants();
   }
 
-  function nextTurn() {
+  async function nextTurn() {
     if (!combatants.length) return;
-    currentTurn = (currentTurn + 1) % combatants.length;
+    var next = (currentTurn + 1) % combatants.length;
+    if (next === 0) battleState.round += 1;
+    currentTurn = next;
+    battleState.current_combatant_id = combatants[currentTurn].id;
+    await saveBattleState();
     renderCombatants();
   }
 
@@ -1732,6 +1784,8 @@
     if (!confirm("Clear the whole battle?")) return;
     await db.from("combatants").delete().neq("id", "00000000-0000-0000-0000-000000000000");
     currentTurn = 0;
+    battleState = { round: 1, current_combatant_id: null };
+    await saveBattleState();
     loadCombatants();
   }
 
@@ -2154,6 +2208,7 @@
       npcs: loadNpcs,
       rolls: loadRolls,
       combatants: loadCombatants,
+      battle_state: loadCombatants,
       maps: loadMaps,
       map_cells: loadMapView,
       map_markers: loadMapView,

@@ -450,23 +450,49 @@ button.danger:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  height: 46px;
-  font-size: 1.4rem;
-  font-weight: 700;
-  background: #171410;
-  border: 2px solid #c9a227;
+  width: 58px;
+  height: 58px;
+  background: #c9a227;
   border-radius: 10px;
-  color: #e8c96a;
 }
 
+.die-face .die-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  background: #171410;
+  color: #e8c96a;
+  font-size: 1.35rem;
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+.die-face.dropped {
+  opacity: 0.4;
+}
+
+.die-face.dropped .die-num {
+  text-decoration: line-through;
+}
+
+.die-d4, .die-d4 .die-num { clip-path: polygon(50% 0%, 100% 100%, 0% 100%); border-radius: 0; }
+.die-d8, .die-d8 .die-num { clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); border-radius: 0; }
+.die-d10, .die-d10 .die-num,
+.die-d12, .die-d12 .die-num { clip-path: polygon(50% 0%, 100% 38%, 81% 100%, 19% 100%, 0% 38%); border-radius: 0; }
+.die-d20, .die-d20 .die-num { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); border-radius: 0; }
+
 .die-face.rolling {
-  animation: die-tumble 0.12s ease-in-out infinite alternate;
+  animation: die-tumble 0.28s linear infinite;
 }
 
 @keyframes die-tumble {
-  from { transform: rotate(-10deg) scale(1); }
-  to { transform: rotate(10deg) scale(1.15); }
+  0% { transform: rotate(0deg) translateY(0) scale(1); }
+  25% { transform: rotate(100deg) translateY(-10px) scale(1.12); }
+  50% { transform: rotate(200deg) translateY(0) scale(1); }
+  75% { transform: rotate(300deg) translateY(-10px) scale(1.12); }
+  100% { transform: rotate(360deg) translateY(0) scale(1); }
 }
 
 /* Battle */

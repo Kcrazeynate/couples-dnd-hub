@@ -136,18 +136,53 @@ function makeFeltTexture() {
     ctx.fillStyle = base;
     ctx.fillRect(0, 0, s, s);
     if (style.feltDesign === "mottled") {
-      // Big soft blotches, like a real mottled fabric: large cloudy
-      // patches of lighter and darker felt, not fine noise.
-      for (var i = 0; i < 22; i++) {
-        var bx = randRange(0, s), by = randRange(0, s), br = randRange(45, 95);
-        var light = Math.random() < 0.5;
-        var bg = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-        bg.addColorStop(0, light ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.10)");
-        bg.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = bg;
-        ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill();
+      // Mottled like the reference wallpaper: big irregular patches
+      // with torn edges and real contrast, in lighter and darker
+      // felt plus warm gold and cool blue-grey tints. Patches wrap
+      // around the tile edges so the repeat has no visible seam.
+      function patch(cx, cy, r, fill) {
+        var pts = [];
+        for (var k = 0; k < 12; k++) {
+          var ang = (k / 12) * Math.PI * 2;
+          var rr = r * randRange(0.55, 1.05);
+          pts.push([Math.cos(ang) * rr, Math.sin(ang) * rr]);
+        }
+        for (var ox = -1; ox <= 1; ox++) {
+          for (var oy = -1; oy <= 1; oy++) {
+            ctx.beginPath();
+            for (var k2 = 0; k2 <= 12; k2++) {
+              var p = pts[k2 % 12];
+              var px = cx + p[0] + ox * s;
+              var py = cy + p[1] + oy * s;
+              if (k2 === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fillStyle = fill;
+            ctx.fill();
+          }
+        }
       }
-      for (var i2 = 0; i2 < 1200; i2++) {
+      for (var i = 0; i < 14; i++) {
+        var px = randRange(0, s), py = randRange(0, s), pr = randRange(70, 140);
+        var roll = Math.random();
+        var fill;
+        if (roll < 0.35) fill = "rgba(255,255,255,0.16)";
+        else if (roll < 0.65) fill = "rgba(0,0,0,0.20)";
+        else if (roll < 0.82) fill = "rgba(180,150,80,0.16)";
+        else fill = "rgba(90,110,140,0.16)";
+        patch(px, py, pr, fill);
+      }
+      for (var i2 = 0; i2 < 18; i2++) {
+        var qx = randRange(0, s), qy = randRange(0, s), qr = randRange(30, 65);
+        var roll2 = Math.random();
+        var fill2;
+        if (roll2 < 0.4) fill2 = "rgba(255,255,255,0.14)";
+        else if (roll2 < 0.7) fill2 = "rgba(0,0,0,0.18)";
+        else if (roll2 < 0.85) fill2 = "rgba(180,150,80,0.14)";
+        else fill2 = "rgba(90,110,140,0.14)";
+        patch(qx, qy, qr, fill2);
+      }
+      for (var g = 0; g < 1200; g++) {
         ctx.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.04)";
         ctx.beginPath(); ctx.arc(randRange(0, s), randRange(0, s), randRange(1, 4), 0, Math.PI * 2); ctx.fill();
       }
@@ -162,19 +197,61 @@ function makeFeltTexture() {
         ctx.beginPath(); ctx.ellipse(lx - lr * 0.25, ly - lr * 0.25, lr * 0.55, lr * 0.35, randRange(0, Math.PI), 0, Math.PI * 2); ctx.fill();
       }
     } else if (style.feltDesign === "roses") {
-      // Big tattoo-art roses, dyed into the felt: deep muted rose
-      // reds, bold dark outlines, dark green leaves, a few large
-      // blooms linked by stems. A wash of the felt colour and fresh
-      // grain over the top so they read as part of the fabric, not
-      // stickers on it.
-      var outline = "#241016";
-      var petal = "#8e2f42";
-      var petalDark = "#6d2233";
-      var petalLight = "#a84a5c";
-      var leaf = "#33502e";
-      var leafDark = "#22331e";
-      var leafVein = "#54703f";
-      function leafShape(x, y, len, wid, angle) {
+      // One big dramatic rose with a stem, thorns, leaves, and wisps
+      // of smoke, like tattoo flash on black. The felt wash over the
+      // top keeps it dyed into the fabric, not a sticker.
+      var outline = "#1a0a0e";
+      var petal = "#c22737";
+      var petalDark = "#8e1a28";
+      var petalLight = "#e04050";
+      var petalEdge = "#f06070";
+      var leaf = "#2e4a2a";
+      var leafDark = "#1e301c";
+      var leafVein = "#5a7a45";
+      var leafRed = "#a02830";
+      // Smoke wisps curling around the rose: thin, pale, layered.
+      function smoke(x, y, len, curl) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(220,220,225,0.14)";
+        ctx.lineWidth = 7;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.bezierCurveTo(x + curl, y - len * 0.3, x - curl, y - len * 0.6, x + curl * 0.5, y - len);
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(255,255,255,0.10)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x + 8, y);
+        ctx.bezierCurveTo(x + curl + 10, y - len * 0.35, x - curl + 6, y - len * 0.65, x + curl * 0.5 + 12, y - len * 0.95);
+        ctx.stroke();
+        ctx.restore();
+      }
+      smoke(90, 430, 380, 70);
+      smoke(420, 460, 420, -80);
+      smoke(150, 480, 300, 50);
+      smoke(360, 420, 340, 60);
+      // Stem with thorns, running down from the bloom.
+      ctx.beginPath();
+      ctx.moveTo(256, 300);
+      ctx.quadraticCurveTo(250, 380, 258, 490);
+      ctx.lineWidth = 7;
+      ctx.strokeStyle = "#3a1a1a";
+      ctx.stroke();
+      function thorn(x, y, dx, dy) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + dx, y + dy);
+        ctx.lineTo(x + dx * 0.3, y + dy * 0.9);
+        ctx.closePath();
+        ctx.fillStyle = "#2a1214";
+        ctx.fill();
+      }
+      thorn(253, 360, -14, 6);
+      thorn(255, 420, 14, 6);
+      thorn(252, 460, -12, 5);
+      // Leaves: one dark green, one deep red, with veins.
+      function leafShape(x, y, len, wid, angle, color) {
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(angle);
@@ -183,87 +260,87 @@ function makeFeltTexture() {
         ctx.quadraticCurveTo(len * 0.4, -wid, len, 0);
         ctx.quadraticCurveTo(len * 0.4, wid, 0, 0);
         ctx.closePath();
-        ctx.fillStyle = leaf;
+        ctx.fillStyle = color;
         ctx.fill();
-        ctx.lineWidth = Math.max(2, len * 0.05);
+        ctx.lineWidth = 3;
         ctx.strokeStyle = outline;
         ctx.stroke();
         ctx.beginPath();
         ctx.moveTo(len * 0.1, 0);
         ctx.lineTo(len * 0.9, 0);
-        ctx.lineWidth = Math.max(1.5, len * 0.03);
+        ctx.lineWidth = 2;
         ctx.strokeStyle = leafVein;
         ctx.stroke();
         ctx.restore();
       }
-      function rose(x, y, r) {
-        leafShape(x - r * 0.55, y + r * 0.35, r * 0.85, r * 0.28, Math.PI * 0.78);
-        leafShape(x + r * 0.55, y + r * 0.3, r * 0.8, r * 0.26, Math.PI * 0.22);
-        leafShape(x, y - r * 0.7, r * 0.75, r * 0.24, -Math.PI * 0.5);
-        ctx.lineWidth = Math.max(3, r * 0.055);
-        ctx.strokeStyle = outline;
-        for (var i = 0; i < 5; i++) {
-          var a = (i / 5) * Math.PI * 2 + 0.3;
-          var px = x + Math.cos(a) * r * 0.48;
-          var py = y + Math.sin(a) * r * 0.48;
-          ctx.save();
-          ctx.translate(px, py);
-          ctx.rotate(a + Math.PI / 2);
-          ctx.beginPath();
-          ctx.ellipse(0, 0, r * 0.34, r * 0.52, 0, 0, Math.PI * 2);
-          ctx.fillStyle = petal;
-          ctx.fill();
-          ctx.stroke();
-          ctx.restore();
-        }
-        for (var j = 0; j < 5; j++) {
-          var b = (j / 5) * Math.PI * 2 + 0.3 + Math.PI / 5;
-          var qx = x + Math.cos(b) * r * 0.26;
-          var qy = y + Math.sin(b) * r * 0.26;
-          ctx.save();
-          ctx.translate(qx, qy);
-          ctx.rotate(b + Math.PI / 2);
-          ctx.beginPath();
-          ctx.ellipse(0, 0, r * 0.22, r * 0.34, 0, 0, Math.PI * 2);
-          ctx.fillStyle = petalDark;
-          ctx.fill();
-          ctx.stroke();
-          ctx.restore();
-        }
+      leafShape(250, 380, 95, 32, Math.PI * 0.82, leaf);
+      leafShape(262, 400, 90, 30, Math.PI * 0.18, leafRed);
+      // The bloom: layered petals around a spiral heart.
+      var cx = 256, cy = 210, r = 135;
+      ctx.lineWidth = Math.max(3, r * 0.04);
+      ctx.strokeStyle = outline;
+      for (var i = 0; i < 6; i++) {
+        var a = (i / 6) * Math.PI * 2 + 0.25;
+        var px = cx + Math.cos(a) * r * 0.5;
+        var py = cy + Math.sin(a) * r * 0.5;
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(a + Math.PI / 2);
         ctx.beginPath();
-        ctx.arc(x, y, r * 0.2, 0, Math.PI * 2);
-        ctx.fillStyle = petalLight;
+        ctx.ellipse(0, 0, r * 0.36, r * 0.55, 0, 0, Math.PI * 2);
+        ctx.fillStyle = petal;
         ctx.fill();
-        ctx.lineWidth = Math.max(2.5, r * 0.04);
-        ctx.strokeStyle = outline;
         ctx.stroke();
-        ctx.beginPath();
-        var turns = 1.6;
-        for (var t = 0; t <= turns * Math.PI * 2; t += 0.15) {
-          var rr = (t / (turns * Math.PI * 2)) * r * 0.16;
-          var sx = x + Math.cos(t) * rr;
-          var sy = y + Math.sin(t) * rr;
-          if (t === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
-        }
-        ctx.lineWidth = Math.max(2, r * 0.03);
-        ctx.strokeStyle = petalDark;
-        ctx.stroke();
+        ctx.restore();
       }
-      function stem(x1, y1, x2, y2) {
+      for (var j = 0; j < 6; j++) {
+        var b = (j / 6) * Math.PI * 2 + 0.25 + Math.PI / 6;
+        var qx = cx + Math.cos(b) * r * 0.28;
+        var qy = cy + Math.sin(b) * r * 0.28;
+        ctx.save();
+        ctx.translate(qx, qy);
+        ctx.rotate(b + Math.PI / 2);
         ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.quadraticCurveTo((x1 + x2) / 2, Math.min(y1, y2) - 30, x2, y2);
-        ctx.lineWidth = 6;
-        ctx.strokeStyle = leafDark;
+        ctx.ellipse(0, 0, r * 0.24, r * 0.36, 0, 0, Math.PI * 2);
+        ctx.fillStyle = petalDark;
+        ctx.fill();
         ctx.stroke();
+        ctx.restore();
       }
-      stem(170, 180, 360, 340);
-      stem(360, 340, 420, 110);
-      rose(170, 180, 110);
-      rose(360, 340, 120);
-      rose(420, 110, 45);
-      // wash the felt colour over the top so the roses sit IN the
-      // fabric, then re-grain so the cloth texture covers them too.
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.22, 0, Math.PI * 2);
+      ctx.fillStyle = petalLight;
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = outline;
+      ctx.stroke();
+      ctx.beginPath();
+      var turns = 1.8;
+      for (var t = 0; t <= turns * Math.PI * 2; t += 0.15) {
+        var rr = (t / (turns * Math.PI * 2)) * r * 0.18;
+        var sx = cx + Math.cos(t) * rr;
+        var sy = cy + Math.sin(t) * rr;
+        if (t === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+      }
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = petalDark;
+      ctx.stroke();
+      // Bright petal-edge highlights so the bloom reads vivid.
+      ctx.strokeStyle = petalEdge;
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.62, Math.PI * 0.1, Math.PI * 0.5);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.45, Math.PI * 1.1, Math.PI * 1.5);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      // A couple of smoke wisps crossing in front of the bloom.
+      smoke(120, 320, 220, 55);
+      smoke(400, 300, 240, -60);
+      // wash the felt colour over the top so the rose sits IN the
+      // fabric, then re-grain so the cloth texture covers it too.
       ctx.globalAlpha = 0.16;
       ctx.fillStyle = base;
       ctx.fillRect(0, 0, s, s);
@@ -273,14 +350,54 @@ function makeFeltTexture() {
         ctx.fillRect(Math.random() * s, Math.random() * s, 2, 2);
       }
     } else if (style.feltDesign === "starlight") {
-      // Big bright four-point stars with a glow, like a starry sky.
-      for (var m = 0; m < 55; m++) {
-        var sx = randRange(15, s - 15), sy = randRange(15, s - 15), sr = randRange(9, 20);
-        var hg = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 2.2);
-        hg.addColorStop(0, "rgba(255,240,200,0.35)");
+      // A nebula: deep-space clouds in orange, teal, and violet,
+      // a dense field of tiny stars, and a few bright flared ones.
+      ctx.fillStyle = "rgba(8,10,24,0.55)";
+      ctx.fillRect(0, 0, s, s);
+      function cloud(x, y, r, rc, gc, bc, alpha) {
+        var g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, "rgba(" + rc + "," + gc + "," + bc + "," + alpha + ")");
+        g.addColorStop(1, "rgba(" + rc + "," + gc + "," + bc + ",0)");
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      }
+      // cloud clusters, overlapping so the shapes read billowy
+      cloud(380, 180, 150, 200, 110, 50, 0.5);
+      cloud(420, 260, 130, 180, 90, 40, 0.45);
+      cloud(340, 320, 120, 220, 140, 70, 0.4);
+      cloud(140, 200, 140, 60, 140, 150, 0.45);
+      cloud(200, 300, 130, 50, 110, 140, 0.4);
+      cloud(120, 340, 110, 70, 130, 130, 0.35);
+      cloud(260, 240, 120, 120, 70, 150, 0.35);
+      cloud(300, 140, 100, 90, 60, 130, 0.3);
+      cloud(60, 90, 100, 40, 60, 110, 0.35);
+      cloud(450, 420, 120, 150, 80, 50, 0.35);
+      // dense tiny star field
+      for (var n = 0; n < 380; n++) {
+        var starA = randRange(0.35, 1);
+        var warm = Math.random() < 0.3;
+        ctx.fillStyle = warm ? "rgba(255,220,180," + starA + ")" : "rgba(230,240,255," + starA + ")";
+        ctx.beginPath(); ctx.arc(randRange(0, s), randRange(0, s), randRange(0.6, 2), 0, Math.PI * 2); ctx.fill();
+      }
+      // a few medium stars with a small glow
+      for (var m2 = 0; m2 < 40; m2++) {
+        var mx = randRange(10, s - 10), my = randRange(10, s - 10), mr = randRange(2, 3.5);
+        var mg = ctx.createRadialGradient(mx, my, 0, mx, my, mr * 3);
+        mg.addColorStop(0, "rgba(255,255,255,0.5)");
+        mg.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = mg;
+        ctx.beginPath(); ctx.arc(mx, my, mr * 3, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.95)";
+        ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
+      }
+      // a handful of bright four-point stars with a glow
+      for (var m3 = 0; m3 < 12; m3++) {
+        var sx = randRange(20, s - 20), sy = randRange(20, s - 20), sr = randRange(8, 16);
+        var hg = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 2.5);
+        hg.addColorStop(0, "rgba(255,240,200,0.4)");
         hg.addColorStop(1, "rgba(255,240,200,0)");
         ctx.fillStyle = hg;
-        ctx.beginPath(); ctx.arc(sx, sy, sr * 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(sx, sy, sr * 2.5, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = "rgba(255,246,220,0.95)";
         ctx.beginPath();
         ctx.moveTo(sx, sy - sr); ctx.quadraticCurveTo(sx, sy, sx + sr, sy);
@@ -288,10 +405,6 @@ function makeFeltTexture() {
         ctx.quadraticCurveTo(sx, sy, sx, sy - sr); ctx.fill();
         ctx.fillStyle = "rgba(255,255,255,0.95)";
         ctx.beginPath(); ctx.arc(sx, sy, sr * 0.22, 0, Math.PI * 2); ctx.fill();
-      }
-      for (var n = 0; n < 140; n++) {
-        ctx.fillStyle = "rgba(255,255,255,0.5)";
-        ctx.beginPath(); ctx.arc(randRange(0, s), randRange(0, s), randRange(1, 2.5), 0, Math.PI * 2); ctx.fill();
       }
     }
     // Soft dark vignette at the corners, like a real tray.

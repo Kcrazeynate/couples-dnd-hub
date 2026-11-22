@@ -1844,7 +1844,8 @@
       return;
     }
     initDice3D();
-    loadDiceRollers();
+    await loadDiceRollers();
+    buildModSourcePicker();
     var res = await db.from("rolls").select("*").order("created_at", { ascending: false }).limit(50);
     if (res.error) {
       list.innerHTML = '<p class="error">Could not load rolls.</p>';
@@ -1932,6 +1933,108 @@
     }
     sel.value = picked;
     try { window.localStorage.setItem("hub-dice-roller", picked); } catch (e) {}
+  }
+
+  // Modifier auto-fill: pick an ability, skill, or saving throw and the
+  // Modifier fills itself from the rolling character's sheet.
+  var ABILITIES = [
+    ["str", "Strength"], ["dex", "Dexterity"], ["con", "Constitution"],
+    ["int", "Intelligence"], ["wis", "Wisdom"], ["cha", "Charisma"]
+  ];
+
+  // Resolve the roller dropdown's short name to a character-like object.
+  function charForRoller(name, rows) {
+    if (!name || name === "DM") return null;
+    for (var i = 0; i < rows.length; i++) {
+      if (shortCharName(rows[i].name) === name) return rows[i];
+    }
+    // A DM-run companion who is not a character row yet: use the roster
+    // template at the party's target level.
+    for (var j = 0; j < NPC_ROSTER.length; j++) {
+      if (NPC_ROSTER[j].name === name) {
+        var e = NPC_ROSTER[j];
+        return { level: npcTargetLevel(rows), str: e.str, dex: e.dex, con: e.con, int: e.int, wis: e.wis, cha: e.cha, skills: e.skills, class: e.class };
+      }
+    }
+    return null;
+  }
+
+  function modSourceBonus(c, source) {
+    if (!c || !source || source === "manual") return null;
+    var parts = source.split(":");
+    var kind = parts[0], key = parts[1];
+    if (kind === "ab") return abilityMod(c[key]);
+    if (kind === "skill") {
+      var sk = null;
+      for (var i = 0; i < SKILLS.length; i++) if (SKILLS[i][0] === key) sk = SKILLS[i];
+      if (!sk) return null;
+      return skillBonus(c, sk[0], sk[1]).bonus;
+    }
+    if (kind === "save") {
+      var profs = SAVE_PROFS[classKey(c.class)] || [];
+      return abilityMod(c[key]) + (profs.indexOf(key) !== -1 ? profBonus(c.level) : 0);
+    }
+    if (kind === "spell") {
+      var ss = spellStats(c);
+      return ss ? ss.attack : null;
+    }
+    return null;
+  }
+
+  async function buildModSourcePicker() {
+    var sel = $("dice-mod-source");
+    if (!sel) return;
+    var rows = Object.keys(charByPlayer).map(function (k) { return charByPlayer[k]; });
+    if (!rows.length) {
+      var res = await db.from("characters").select("*").eq("dismissed", false);
+      if (!res.error && res.data) rows = res.data;
+    }
+    var roller = $("dice-roller") ? $("dice-roller").value : "";
+    var c = charForRoller(roller, rows);
+    var saved = null;
+    try { saved = window.localStorage.getItem("hub-dice-mod-source"); } catch (e) {}
+    var html = '<option value="manual">Manual (type it)</option>';
+    if (c) {
+      html += '<optgroup label="Abilities">';
+      ABILITIES.forEach(function (ab) {
+        html += '<option value="ab:' + ab[0] + '">' + ab[1] + ' (' + fmtMod(abilityMod(c[ab[0]])) + ')</option>';
+      });
+      html += '</optgroup><optgroup label="Skills">';
+      SKILLS.forEach(function (sk) {
+        var sb = skillBonus(c, sk[0], sk[1]);
+        html += '<option value="skill:' + sk[0] + '">' + sk[0] + ' (' + fmtMod(sb.bonus) + ')</option>';
+      });
+      html += '</optgroup><optgroup label="Saving throws">';
+      ABILITIES.forEach(function (ab) {
+        var profs = SAVE_PROFS[classKey(c.class)] || [];
+        var bonus = abilityMod(c[ab[0]]) + (profs.indexOf(ab[0]) !== -1 ? profBonus(c.level) : 0);
+        html += '<option value="save:' + ab[0] + '">' + ab[1] + ' (' + fmtMod(bonus) + ')</option>';
+      });
+      html += '</optgroup>';
+      var ss = spellStats(c);
+      if (ss) html += '<option value="spell">Spell attack (' + fmtMod(ss.attack) + ')</option>';
+    }
+    sel.innerHTML = html;
+    if (saved && sel.querySelector('option[value="' + saved + '"]')) {
+      sel.value = saved;
+    } else {
+      sel.value = "manual";
+    }
+    applyModSource();
+  }
+
+  function applyModSource() {
+    var sel = $("dice-mod-source");
+    var modInput = $("dice-mod");
+    if (!sel || !modInput) return;
+    var source = sel.value;
+    try { window.localStorage.setItem("hub-dice-mod-source", source); } catch (e) {}
+    if (source === "manual") return;
+    var roller = $("dice-roller") ? $("dice-roller").value : "";
+    var rows = Object.keys(charByPlayer).map(function (k) { return charByPlayer[k]; });
+    var c = charForRoller(roller, rows);
+    var bonus = modSourceBonus(c, source);
+    if (bonus !== null && bonus !== undefined) modInput.value = String(bonus);
   }
 
   function updateDiceMode() {
@@ -2948,6 +3051,21 @@
 
     $("dice-roller").addEventListener("change", function () {
       try { window.localStorage.setItem("hub-dice-roller", $("dice-roller").value); } catch (e) {}
+      buildModSourcePicker();
+    });
+
+    $("dice-mod-source").addEventListener("change", function () {
+      applyModSource();
+    });
+
+    // Typing a modifier by hand switches the source back to Manual, so
+    // the auto-fill does not overwrite what was just typed.
+    $("dice-mod").addEventListener("input", function () {
+      var sel = $("dice-mod-source");
+      if (sel && sel.value !== "manual") {
+        sel.value = "manual";
+        try { window.localStorage.setItem("hub-dice-mod-source", "manual"); } catch (e) {}
+      }
     });
 
     $("dice-mode").addEventListener("change", function () {

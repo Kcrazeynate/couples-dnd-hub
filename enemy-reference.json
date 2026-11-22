@@ -1,0 +1,292 @@
+{
+  "custom": [],
+  "enemies": [
+    {
+      "ac": 12,
+      "cr": "1/8",
+      "dex_mod": 1,
+      "hp": 11,
+      "init_mod": 1,
+      "name": "Bandit",
+      "speed": 30
+    },
+    {
+      "ac": 12,
+      "cr": "1/8",
+      "dex_mod": 1,
+      "hp": 9,
+      "init_mod": 1,
+      "name": "Cultist",
+      "speed": 30
+    },
+    {
+      "ac": 13,
+      "cr": "1/8",
+      "dex_mod": 3,
+      "hp": 7,
+      "init_mod": 3,
+      "name": "Giant Rat",
+      "note": "Pack Tactics",
+      "speed": 30
+    },
+    {
+      "ac": 12,
+      "cr": "1/8",
+      "dex_mod": 2,
+      "hp": 7,
+      "init_mod": 2,
+      "name": "Goblin Minion",
+      "speed": 30
+    },
+    {
+      "ac": 16,
+      "cr": "1/8",
+      "dex_mod": 1,
+      "hp": 11,
+      "init_mod": 1,
+      "name": "Guard",
+      "speed": 30
+    },
+    {
+      "ac": 14,
+      "cr": "1/8",
+      "dex_mod": 2,
+      "hp": 7,
+      "init_mod": 2,
+      "name": "Kobold Warrior",
+      "note": "Pack Tactics",
+      "speed": 30
+    },
+    {
+      "ac": 13,
+      "cr": "1/8",
+      "dex_mod": 3,
+      "hp": 5,
+      "init_mod": 3,
+      "name": "Stirge",
+      "speed": 10
+    },
+    {
+      "ac": 11,
+      "cr": "1/4",
+      "dex_mod": 0,
+      "hp": 13,
+      "init_mod": 0,
+      "name": "Boar",
+      "note": "Bloodied Fury",
+      "speed": 40
+    },
+    {
+      "ac": 13,
+      "cr": "1/4",
+      "dex_mod": 2,
+      "hp": 13,
+      "init_mod": 2,
+      "name": "Constrictor Snake",
+      "speed": 30
+    },
+    {
+      "ac": 13,
+      "cr": "1/4",
+      "dex_mod": 3,
+      "hp": 11,
+      "init_mod": 3,
+      "name": "Giant Wolf Spider",
+      "note": "Spider Climb",
+      "speed": 40
+    },
+    {
+      "ac": 13,
+      "cr": "1/4",
+      "dex_mod": 0,
+      "hp": 11,
+      "init_mod": 0,
+      "name": "Priest Acolyte",
+      "speed": 30
+    },
+    {
+      "ac": 14,
+      "cr": "1/4",
+      "dex_mod": 3,
+      "hp": 13,
+      "init_mod": 3,
+      "name": "Skeleton",
+      "speed": 30
+    },
+    {
+      "ac": 12,
+      "cr": "1/4",
+      "dex_mod": 2,
+      "hp": 11,
+      "init_mod": 2,
+      "name": "Wolf",
+      "note": "Pack Tactics",
+      "speed": 40
+    },
+    {
+      "ac": 8,
+      "cr": "1/4",
+      "dex_mod": -2,
+      "hp": 15,
+      "init_mod": -2,
+      "name": "Zombie",
+      "note": "Undead Fortitude",
+      "speed": 20
+    },
+    {
+      "ac": 11,
+      "cr": "1/2",
+      "dex_mod": 1,
+      "hp": 19,
+      "init_mod": 1,
+      "name": "Black Bear",
+      "speed": 30
+    },
+    {
+      "ac": 15,
+      "cr": "1/2",
+      "dex_mod": 1,
+      "hp": 27,
+      "init_mod": 1,
+      "name": "Gnoll Warrior",
+      "speed": 30
+    },
+    {
+      "ac": 18,
+      "cr": "1/2",
+      "dex_mod": 1,
+      "hp": 11,
+      "init_mod": 3,
+      "name": "Hobgoblin Warrior",
+      "note": "Pack Tactics",
+      "speed": 30
+    },
+    {
+      "ac": 12,
+      "cr": "1/2",
+      "dex_mod": 2,
+      "hp": 27,
+      "init_mod": 2,
+      "name": "Shadow",
+      "note": "Amorphous",
+      "speed": 40
+    },
+    {
+      "ac": 11,
+      "cr": "1",
+      "dex_mod": 1,
+      "hp": 22,
+      "init_mod": 1,
+      "name": "Brown Bear",
+      "speed": 40
+    },
+    {
+      "ac": 14,
+      "cr": "1",
+      "dex_mod": 2,
+      "hp": 33,
+      "init_mod": 2,
+      "name": "Bugbear Warrior",
+      "note": "Abduct",
+      "speed": 30
+    },
+    {
+      "ac": 14,
+      "cr": "1",
+      "dex_mod": 2,
+      "hp": 22,
+      "init_mod": 2,
+      "name": "Dire Wolf",
+      "note": "Pack Tactics",
+      "speed": 50
+    },
+    {
+      "ac": 12,
+      "cr": "1",
+      "dex_mod": 2,
+      "hp": 22,
+      "init_mod": 2,
+      "name": "Ghoul",
+      "speed": 30
+    },
+    {
+      "ac": 14,
+      "cr": "1",
+      "dex_mod": 3,
+      "hp": 26,
+      "init_mod": 3,
+      "name": "Giant Spider",
+      "note": "Spider Climb",
+      "speed": 30
+    },
+    {
+      "ac": 12,
+      "cr": "1",
+      "dex_mod": 2,
+      "hp": 22,
+      "init_mod": 2,
+      "name": "Specter",
+      "note": "Incorporeal Movement",
+      "speed": 30
+    },
+    {
+      "ac": 13,
+      "cr": "2",
+      "dex_mod": 0,
+      "hp": 42,
+      "init_mod": 0,
+      "name": "Giant Boar",
+      "note": "Bloodied Fury",
+      "speed": 40
+    },
+    {
+      "ac": 12,
+      "cr": "2",
+      "dex_mod": 2,
+      "hp": 60,
+      "init_mod": 2,
+      "name": "Giant Constrictor Snake",
+      "speed": 30
+    },
+    {
+      "ac": 11,
+      "cr": "2",
+      "dex_mod": -1,
+      "hp": 68,
+      "init_mod": -1,
+      "name": "Ogre",
+      "speed": 40
+    },
+    {
+      "ac": 13,
+      "cr": "3",
+      "dex_mod": 1,
+      "hp": 59,
+      "init_mod": 1,
+      "name": "Owlbear",
+      "speed": 40
+    },
+    {
+      "ac": 15,
+      "cr": "3",
+      "dex_mod": 2,
+      "hp": 71,
+      "init_mod": 4,
+      "name": "Werewolf",
+      "note": "Pack Tactics",
+      "speed": 30
+    },
+    {
+      "ac": 13,
+      "cr": "3",
+      "dex_mod": 1,
+      "hp": 75,
+      "init_mod": 1,
+      "name": "Winter Wolf",
+      "note": "Pack Tactics",
+      "speed": 50
+    }
+  ],
+  "source": "SRD 5.2.1",
+  "version": 1
+}

@@ -2695,12 +2695,83 @@
     tip.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 
+  // World map marker icons. One small gold glyph per place kind, so a marker
+  // shows what the place is instead of just a dot. Kinds come from the
+  // map_markers.kind column; anything unrecognised falls back to the dot.
+  var MAP_KINDS = ["City", "Town", "Village", "Castle", "Fort", "Watchtower", "Ruins", "Dungeon", "Cave", "Tomb", "Mine", "Camp", "Inn", "Tavern", "Temple", "Shrine", "Mill", "Farm", "Warehouse", "Brewery", "Shop", "Bridge", "Port", "Lighthouse", "Graveyard", "House"];
+  var MAP_ICONS = {
+    city: '<rect x="2" y="18" width="20" height="4"/><rect x="3" y="12" width="5" height="6"/><rect x="10" y="6" width="4" height="12"/><rect x="16" y="10" width="5" height="8"/><rect x="11.5" y="2" width="1" height="4"/><polygon points="12.5,2 12.5,5 15,3.5"/>',
+    town: '<rect x="2" y="14" width="7" height="6"/><polygon points="1,14 5.5,9 10,14"/><polygon points="12,20 14,5 16,20"/><rect x="16" y="15" width="6" height="5"/><polygon points="15,15 19,11 23,15"/>',
+    village: '<rect x="2" y="14" width="8" height="6"/><polygon points="1,14 6,9 11,14"/><rect x="13" y="15" width="8" height="5"/><polygon points="12,15 17,10 22,15"/>',
+    castle: '<rect x="2" y="8" width="5" height="12"/><rect x="2" y="6" width="1.5" height="2"/><rect x="4" y="6" width="1.5" height="2"/><rect x="17" y="8" width="5" height="12"/><rect x="17" y="6" width="1.5" height="2"/><rect x="19" y="6" width="1.5" height="2"/><rect x="8" y="10" width="8" height="10"/><rect x="8" y="8" width="1.5" height="2"/><rect x="10.5" y="8" width="1.5" height="2"/><rect x="13" y="8" width="1.5" height="2"/>',
+    fort: '<polygon points="3,20 3,10 5,7 7,10 7,20"/><polygon points="8,20 8,10 10,7 12,10 12,20"/><polygon points="13,20 13,10 15,7 17,10 17,20"/><polygon points="18,20 18,10 20,7 22,10 22,20"/>',
+    watchtower: '<rect x="10" y="8" width="4" height="12"/><polygon points="8,8 16,8 14,4 10,4"/><rect x="8" y="2" width="8" height="2"/><rect x="11" y="0" width="1" height="2"/><polygon points="12,0 12,2.5 15,1.2"/>',
+    ruins: '<rect x="3" y="12" width="3" height="8"/><polygon points="3,12 6,12 5,8 4,10"/><rect x="9" y="8" width="3" height="12"/><polygon points="9,8 12,8 11,4 10,6"/><rect x="15" y="14" width="4" height="6"/><polygon points="15,14 19,14 18,11 16,12"/>',
+    dungeon: '<rect x="3" y="3" width="18" height="2"/><path fill-rule="evenodd" d="M4 21 L4 5 L20 5 L20 21 Z M9 21 L9 12 A3 3 0 0 1 15 12 L15 21 Z"/>',
+    cave: '<path fill-rule="evenodd" d="M2 21 L12 3 L22 21 Z M9 21 L9 14 A3 3 0 0 1 15 14 L15 21 Z"/>',
+    tomb: '<rect x="8" y="8" width="8" height="12"/><path d="M8 8 A4 4 0 0 1 16 8 Z"/><rect x="11" y="12" width="2" height="5"/><rect x="9.5" y="13.5" width="5" height="2"/>',
+    mine: '<rect x="2" y="6" width="20" height="2"/><path fill-rule="evenodd" d="M4 21 L4 8 L20 8 L20 21 Z M9 21 L9 12 L15 12 L15 21 Z"/>',
+    camp: '<polygon points="11,5 3,20 19,20"/><path d="M20.5 20 C18.5 18 19 15 20.5 13 C22 15 22.5 18 20.5 20 Z"/>',
+    inn: '<rect x="3" y="12" width="10" height="8"/><polygon points="2,12 8,7 14,12"/><rect x="14" y="9" width="1" height="3"/><rect x="15" y="9" width="6" height="4"/>',
+    tavern: '<rect x="6" y="8" width="10" height="12"/><path d="M16 10 L19 10 A2 2 0 0 1 19 16 L16 16 Z"/><circle cx="8.5" cy="7" r="1.5"/><circle cx="11.5" cy="6" r="1.5"/><circle cx="14" cy="7" r="1.5"/>',
+    temple: '<polygon points="2,8 12,2 22,8"/><rect x="4" y="10" width="2" height="8"/><rect x="8" y="10" width="2" height="8"/><rect x="11" y="10" width="2" height="8"/><rect x="14" y="10" width="2" height="8"/><rect x="18" y="10" width="2" height="8"/><rect x="3" y="18" width="18" height="2"/>',
+    shrine: '<rect x="9" y="8" width="6" height="12"/><path d="M9 8 A3 3 0 0 1 15 8 Z"/><rect x="17" y="14" width="4" height="6"/>',
+    mill: '<polygon points="10,20 11,9 13,9 14,20"/><polygon points="11,9 13,9 12,2"/><polygon points="12,8 12,10 19,9"/><polygon points="11,9 13,9 12,16"/><polygon points="12,8 12,10 5,9"/><circle cx="12" cy="9" r="1.2"/>',
+    farm: '<rect x="3" y="11" width="13" height="9"/><polygon points="2,11 9.5,5 17,11"/><rect x="17" y="8" width="4" height="12"/><path d="M17 8 A2 2 0 0 1 21 8 Z"/>',
+    warehouse: '<path fill-rule="evenodd" d="M2 20 L2 10 L12 5 L22 10 L22 20 Z M5 20 L5 14 L8 14 L8 20 Z M10.5 20 L10.5 14 L13.5 14 L13.5 20 Z M16 20 L16 14 L19 14 L19 20 Z"/>',
+    brewery: '<rect x="6" y="8" width="12" height="10" rx="3"/><rect x="10" y="4" width="4" height="4"/><rect x="18" y="12" width="4" height="2"/>',
+    shop: '<polygon points="3,8 21,8 19,4 5,4"/><rect x="4" y="10" width="2" height="8"/><rect x="18" y="10" width="2" height="8"/><rect x="4" y="14" width="16" height="4"/>',
+    bridge: '<path fill-rule="evenodd" d="M2 11 L22 11 L22 15 L2 15 Z M9 15 L9 12 A3 2.5 0 0 1 15 12 L15 15 Z"/><rect x="4" y="7" width="1.5" height="4"/><rect x="18.5" y="7" width="1.5" height="4"/><path d="M3 19 C6 17.5 9 20.5 12 19 C15 17.5 18 20.5 21 19" stroke="currentColor" stroke-width="1.5" fill="none"/>',
+    port: '<circle cx="12" cy="4" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="11" y="6" width="2" height="11"/><rect x="6" y="9" width="12" height="2"/><polygon points="5,14 8,14 7,19 4,16"/><polygon points="19,14 16,14 17,19 20,16"/>',
+    lighthouse: '<polygon points="10,20 11,9 13,9 14,20"/><rect x="9" y="5" width="6" height="4"/><polygon points="9,5 15,5 13,2 11,2"/><rect x="4" y="6" width="3" height="1.5"/><rect x="17" y="6" width="3" height="1.5"/>',
+    graveyard: '<rect x="4" y="10" width="5" height="10"/><path d="M4 10 A2.5 2.5 0 0 1 9 10 Z"/><rect x="6" y="13" width="1" height="3"/><rect x="5" y="14" width="3" height="1"/><rect x="15" y="12" width="5" height="8"/><path d="M15 12 A2.5 2.5 0 0 1 20 12 Z"/><rect x="12" y="18" width="10" height="2"/>',
+    house: '<path fill-rule="evenodd" d="M5 20 L5 11 L12 4 L19 11 L19 20 Z M10.5 20 L10.5 14 L13.5 14 L13.5 20 Z"/>'
+  };
+  var MAP_ICON_ALIASES = {
+    "capital": "city", "walled city": "city",
+    "market town": "town",
+    "hamlet": "village",
+    "keep": "castle", "grand castle": "castle",
+    "fortress": "fort", "border keep": "fort", "stockade": "fort",
+    "tower": "watchtower", "wizard tower": "watchtower",
+    "ruin": "ruins", "overgrown ruins": "ruins",
+    "dungeon entrance": "dungeon",
+    "cave entrance": "cave", "cavern": "cave",
+    "crypt": "tomb", "catacomb": "tomb", "catacombs": "tomb",
+    "mine entrance": "mine",
+    "nomad camp": "camp", "bandit camp": "camp",
+    "church": "temple", "cathedral": "temple", "monastery": "temple",
+    "standing stones": "shrine",
+    "windmill": "mill", "old mill": "mill",
+    "farmstead": "farm",
+    "brewery company": "brewery",
+    "market": "shop", "market stall": "shop", "store": "shop",
+    "stone bridge": "bridge",
+    "harbor": "port", "dock": "port", "docks": "port",
+    "cemetery": "graveyard",
+    "toll house": "house", "cottage": "house", "home": "house"
+  };
+  function normMapKind(kind) {
+    var k = (kind || "").toString().toLowerCase().trim();
+    var key = MAP_ICONS[k] ? k : MAP_ICON_ALIASES[k];
+    if (!key) return "Place";
+    return key.charAt(0).toUpperCase() + key.slice(1);
+  }
+  function mapIconFor(kind) {
+    var k = (kind || "").toString().toLowerCase().trim();
+    var key = MAP_ICONS[k] ? k : MAP_ICON_ALIASES[k];
+    if (!key) return null;
+    return '<svg viewBox="0 0 24 24" aria-hidden="true">' + MAP_ICONS[key] + '</svg>';
+  }
+
   function renderMapMarkers() {
     var layer = $("map-markers");
     layer.innerHTML = mapMarkers.map(function (mk) {
       var left = ((mk.x + 0.5) / MAP_COLS * 100).toFixed(2);
       var top = ((mk.y + 0.5) / MAP_ROWS * 100).toFixed(2);
-      return '<div class="map-marker" data-marker-id="' + mk.id + '" style="left:' + left + '%;top:' + top + '%"><span class="pin"></span></div>';
+      var icon = mapIconFor(mk.kind);
+      var inner = icon ? '<span class="map-icon">' + icon + '</span>' : '<span class="pin"></span>';
+      return '<div class="map-marker" data-marker-id="' + mk.id + '" style="left:' + left + '%;top:' + top + '%">' + inner + '</div>';
     }).join("");
     layer.querySelectorAll(".map-marker").forEach(function (el) {
       el.addEventListener("click", function (e) {
@@ -2723,8 +2794,10 @@
       var entry = npcsByName[normName(mk.label)];
       var img = entry && entry.image_url ? '<img class="place-thumb" src="' + escapeHtml(entry.image_url) + '" alt="">' : "";
       var areaBtn = (mk.area_map_url && (mk.visited || placesEdit)) ? '<button type="button" class="area-map-btn" data-area-map="' + escapeHtml(mk.area_map_url) + '">View area map</button>' : "";
+      var cardIcon = mapIconFor(mk.kind);
+      var iconHtml = cardIcon ? '<span class="place-icon">' + cardIcon + '</span>' : '';
       return '<div class="card place-card" data-marker-id="' + mk.id + '">' + img +
-        '<p class="title">' + escapeHtml(mk.label) + '</p>' +
+        '<p class="title">' + iconHtml + escapeHtml(mk.label) + '</p>' +
         '<p class="meta">' + escapeHtml(mk.kind || "Place") + '</p>' +
         areaBtn +
         '<div class="actions"><button type="button" class="small-danger" data-marker-delete="' + mk.id + '">Delete</button></div></div>';
@@ -2846,7 +2919,9 @@
       }
       var label = prompt("Place name:");
       if (!label || !label.trim()) return;
-      var resMark = await db.from("map_markers").insert({ map_id: currentMapId, x: x, y: y, label: label.trim(), kind: "Place" });
+      var kindInput = prompt("Kind (" + MAP_KINDS.join(", ") + "). Leave blank for a plain dot:", "Place");
+      var kind = normMapKind(kindInput);
+      var resMark = await db.from("map_markers").insert({ map_id: currentMapId, x: x, y: y, label: label.trim(), kind: kind });
       if (resMark.error) {
         alert("Could not add the place. Check the connection and try again.");
         return;

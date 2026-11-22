@@ -41,8 +41,85 @@ const DIE_DESIGNS = [
   { id: "glitter", name: "Glitter", girly: true },
   { id: "pearl", name: "Pearl", girly: true }
 ];
+// The tray rim: gold by default, or a wood grain like a real tray.
+const TRAY_MATERIALS = [
+  { id: "gold", name: "Gold", girly: false },
+  { id: "walnut", name: "Walnut", girly: false },
+  { id: "oak", name: "Oak", girly: false },
+  { id: "ebony", name: "Ebony", girly: false }
+];
+// Wood tones: base, dark grain, light grain.
+const WOOD_TONES = {
+  walnut: { base: "#4a2c17", dark: "rgba(30,15,5,0.55)", light: "rgba(190,130,70,0.35)" },
+  oak: { base: "#8a5a28", dark: "rgba(70,40,10,0.5)", light: "rgba(230,180,110,0.35)" },
+  ebony: { base: "#241a14", dark: "rgba(5,3,2,0.6)", light: "rgba(120,90,60,0.3)" }
+};
 
-const DEFAULT_STYLE = { feltColor: "charcoal", feltDesign: "plain", dieColor: "cream", dieDesign: "classic" };
+const DEFAULT_STYLE = { feltColor: "charcoal", feltDesign: "plain", dieColor: "cream", dieDesign: "classic", tray: "gold" };
+
+// Wood grain for the tray rim: long wavy grain lines running along
+// the length, a few darker streaks, and a knot or two. Drawn on a
+// wide canvas so the grain runs along the rim, not across it.
+function makeWoodTexture(tone) {
+  var c = document.createElement("canvas");
+  c.width = 512; c.height = 128;
+  var ctx = c.getContext("2d");
+  ctx.fillStyle = tone.base;
+  ctx.fillRect(0, 0, 512, 128);
+  // long grain lines, gently wavy
+  for (var i = 0; i < 60; i++) {
+    var y = randRange(0, 128);
+    var dark = Math.random() < 0.65;
+    ctx.beginPath();
+    ctx.moveTo(-10, y);
+    var segs = 5;
+    for (var k = 1; k <= segs; k++) {
+      ctx.lineTo((k / segs) * 522 - 10, y + randRange(-6, 6));
+    }
+    ctx.strokeStyle = dark ? tone.dark : tone.light;
+    ctx.lineWidth = randRange(0.8, 2.4);
+    ctx.stroke();
+  }
+  // a few darker streaks
+  for (var j = 0; j < 10; j++) {
+    var y2 = randRange(0, 128);
+    ctx.beginPath();
+    ctx.moveTo(-10, y2);
+    for (var k2 = 1; k2 <= 4; k2++) {
+      ctx.lineTo((k2 / 4) * 522 - 10, y2 + randRange(-4, 4));
+    }
+    ctx.strokeStyle = tone.dark;
+    ctx.lineWidth = randRange(2.5, 5);
+    ctx.globalAlpha = 0.5;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  // a knot
+  var kx = randRange(80, 432), ky = randRange(30, 98);
+  for (var r = 12; r > 0; r -= 3) {
+    ctx.beginPath();
+    ctx.ellipse(kx, ky, r * 1.8, r, 0, 0, Math.PI * 2);
+    ctx.strokeStyle = tone.dark;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  }
+  var tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(2, 1);
+  tex.anisotropy = 4;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+// The tray rim material: gold metal, or a wood grain.
+function makeRimMaterial() {
+  if (style.tray === "gold") {
+    return new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.65, roughness: 0.38 });
+  }
+  var tone = WOOD_TONES[style.tray] || WOOD_TONES.walnut;
+  return new THREE.MeshStandardMaterial({ map: makeWoodTexture(tone), metalness: 0, roughness: 0.5 });
+}
 
 function findById(list, id, fallback) {
   for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
@@ -51,7 +128,7 @@ function findById(list, id, fallback) {
 
 // ---------- style persistence (per device, like the roller pick) ----------
 function loadStyle() {
-  var s = { feltColor: DEFAULT_STYLE.feltColor, feltDesign: DEFAULT_STYLE.feltDesign, dieColor: DEFAULT_STYLE.dieColor, dieDesign: DEFAULT_STYLE.dieDesign };
+  var s = { feltColor: DEFAULT_STYLE.feltColor, feltDesign: DEFAULT_STYLE.feltDesign, dieColor: DEFAULT_STYLE.dieColor, dieDesign: DEFAULT_STYLE.dieDesign, tray: DEFAULT_STYLE.tray };
   try {
     var raw = window.localStorage.getItem("hub-dice3d-style");
     if (raw) {
@@ -60,6 +137,7 @@ function loadStyle() {
       if (saved.feltDesign) s.feltDesign = saved.feltDesign;
       if (saved.dieColor) s.dieColor = saved.dieColor;
       if (saved.dieDesign) s.dieDesign = saved.dieDesign;
+      if (saved.tray) s.tray = saved.tray;
     }
   } catch (e) {}
   return s;
@@ -187,14 +265,51 @@ function makeFeltTexture() {
         ctx.beginPath(); ctx.arc(randRange(0, s), randRange(0, s), randRange(1, 4), 0, Math.PI * 2); ctx.fill();
       }
     } else if (style.feltDesign === "leather") {
-      // Big defined pebbles with a light top edge and dark base,
-      // like hide. The gloss (low roughness) sells the leather.
-      for (var j = 0; j < 650; j++) {
-        var lx = randRange(0, s), ly = randRange(0, s), lr = randRange(7, 15);
-        ctx.fillStyle = "rgba(0,0,0,0.10)";
-        ctx.beginPath(); ctx.ellipse(lx, ly, lr, lr * 0.75, randRange(0, Math.PI), 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "rgba(255,255,255,0.07)";
-        ctx.beginPath(); ctx.ellipse(lx - lr * 0.25, ly - lr * 0.25, lr * 0.55, lr * 0.35, randRange(0, Math.PI), 0, Math.PI * 2); ctx.fill();
+      // Real hide: a network of fine irregular creases, not round
+      // pebbles, over soft patches of lighter and darker brown.
+      // Warm reddish-brown tint so it reads as leather, and the
+      // gloss (low roughness) sells the sheen.
+      for (var i = 0; i < 12; i++) {
+        var bx = randRange(0, s), by = randRange(0, s), br = randRange(60, 130);
+        var warm = Math.random() < 0.5;
+        var bg = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+        bg.addColorStop(0, warm ? "rgba(200,120,60,0.14)" : "rgba(60,25,10,0.16)");
+        bg.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = bg;
+        ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill();
+      }
+      // fine crease network: short dark strokes with a slight bend
+      for (var j = 0; j < 900; j++) {
+        var cx = randRange(0, s), cy = randRange(0, s);
+        var ang = randRange(0, Math.PI * 2);
+        var len = randRange(6, 22);
+        var bend = randRange(-0.6, 0.6);
+        var mx = cx + Math.cos(ang + bend) * len * 0.5;
+        var my = cy + Math.sin(ang + bend) * len * 0.5;
+        var ex = cx + Math.cos(ang) * len;
+        var ey = cy + Math.sin(ang) * len;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.quadraticCurveTo(mx, my, ex, ey);
+        ctx.strokeStyle = Math.random() < 0.7 ? "rgba(40,15,5,0.16)" : "rgba(255,190,130,0.10)";
+        ctx.lineWidth = randRange(0.6, 1.6);
+        ctx.stroke();
+      }
+      // a few deeper creases
+      for (var k = 0; k < 120; k++) {
+        var dx = randRange(0, s), dy = randRange(0, s);
+        var dang = randRange(0, Math.PI * 2);
+        var dlen = randRange(20, 55);
+        var dmx = dx + Math.cos(dang + 0.4) * dlen * 0.5;
+        var dmy = dy + Math.sin(dang + 0.4) * dlen * 0.5;
+        var dex = dx + Math.cos(dang) * dlen;
+        var dey = dy + Math.sin(dang) * dlen;
+        ctx.beginPath();
+        ctx.moveTo(dx, dy);
+        ctx.quadraticCurveTo(dmx, dmy, dex, dey);
+        ctx.strokeStyle = "rgba(35,12,4,0.22)";
+        ctx.lineWidth = randRange(1, 2);
+        ctx.stroke();
       }
     } else if (style.feltDesign === "roses") {
       // One big dramatic rose with a stem, thorns, leaves, and wisps
@@ -793,6 +908,7 @@ function readDieValue(die) {
 var TRAY_W = 9, TRAY_D = 6, WALL_H = 0.9, WALL_T = 0.45, WALL_PHYS_H = 6;
 var renderer = null, scene = null, camera = null, world = null;
 var trayFloor = null, containerEl = null, initialized = false, rolling = false;
+var rimMeshes = []; // the four tray rim boxes, so the tray style can change them
 var dice = []; // live dice: {group, body, sides, faces, readDown, bodyMesh, facePlanes}
 var rollState = null; // {resolve, reject, dice, deadline, stillFrames, nudges}
 var dieContactMat = null;
@@ -833,14 +949,15 @@ function init(container) {
   trayFloor.rotation.x = -Math.PI / 2;
   trayFloor.receiveShadow = true;
   scene.add(trayFloor);
-  // Gold rim: four raised boxes around the felt.
-  var rimMat = new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.65, roughness: 0.38 });
+  // Tray rim: four raised boxes around the felt. Gold by default,
+  // or a wood grain (walnut, oak, ebony) like a real dice tray.
   function rim(w, d, x, z) {
-    var m = new THREE.Mesh(new THREE.BoxGeometry(w, WALL_H, d), rimMat);
+    var m = new THREE.Mesh(new THREE.BoxGeometry(w, WALL_H, d), makeRimMaterial());
     m.position.set(x, WALL_H / 2, z);
     m.castShadow = true;
     m.receiveShadow = true;
     scene.add(m);
+    rimMeshes.push(m);
   }
   rim(TRAY_W + WALL_T * 2, WALL_T, 0, -(TRAY_D / 2 + WALL_T / 2));
   rim(TRAY_W + WALL_T * 2, WALL_T, 0, TRAY_D / 2 + WALL_T / 2);
@@ -998,6 +1115,19 @@ function rollDice(sides, count) {
 }
 
 // ---------- styles ----------
+// Re-apply the tray rim material (gold or wood).
+function applyTray() {
+  if (!rimMeshes.length) return;
+  rimMeshes.forEach(function (m) {
+    var old = m.material;
+    m.material = makeRimMaterial();
+    if (old) {
+      if (old.map) old.map.dispose();
+      old.dispose();
+    }
+  });
+}
+
 // Re-apply the felt texture to the tray floor.
 function applyFelt() {
   if (!trayFloor) return;
@@ -1029,9 +1159,11 @@ function setStyle(patch) {
   if (patch.feltDesign) style.feltDesign = patch.feltDesign;
   if (patch.dieColor) style.dieColor = patch.dieColor;
   if (patch.dieDesign) style.dieDesign = patch.dieDesign;
+  if (patch.tray) style.tray = patch.tray;
   saveStyle(style);
   applyFelt();
   applyDieStyle();
+  applyTray();
   syncPickers();
 }
 
@@ -1059,6 +1191,7 @@ function buildPickers() {
   buildOne("felt-design-select", FELT_DESIGNS, "feltDesign");
   buildOne("die-color-select", DIE_COLORS, "dieColor");
   buildOne("die-design-select", DIE_DESIGNS, "dieDesign");
+  buildOne("tray-select", TRAY_MATERIALS, "tray");
   syncPickers();
 }
 
@@ -1071,6 +1204,7 @@ function syncPickers() {
   setVal("felt-design-select", style.feltDesign);
   setVal("die-color-select", style.dieColor);
   setVal("die-design-select", style.dieDesign);
+  setVal("tray-select", style.tray);
 }
 
 // ---------- public API ----------
@@ -1081,9 +1215,10 @@ window.HubDice3D = {
   roll: rollDice,
   setStyle: setStyle,
   buildPickers: buildPickers,
-  getStyle: function () { return { feltColor: style.feltColor, feltDesign: style.feltDesign, dieColor: style.dieColor, dieDesign: style.dieDesign }; },
+  getStyle: function () { return { feltColor: style.feltColor, feltDesign: style.feltDesign, dieColor: style.dieColor, dieDesign: style.dieDesign, tray: style.tray }; },
   FELT_COLORS: FELT_COLORS,
   DIE_COLORS: DIE_COLORS,
   FELT_DESIGNS: FELT_DESIGNS,
-  DIE_DESIGNS: DIE_DESIGNS
+  DIE_DESIGNS: DIE_DESIGNS,
+  TRAY_MATERIALS: TRAY_MATERIALS
 };

@@ -438,6 +438,37 @@ button.danger:hover {
   color: #a89a7c;
 }
 
+.dice-faces {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.die-face {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  background: #171410;
+  border: 2px solid #c9a227;
+  border-radius: 10px;
+  color: #e8c96a;
+}
+
+.die-face.rolling {
+  animation: die-tumble 0.12s ease-in-out infinite alternate;
+}
+
+@keyframes die-tumble {
+  from { transform: rotate(-10deg) scale(1); }
+  to { transform: rotate(10deg) scale(1.15); }
+}
+
 /* Battle */
 
 .combatant.current {

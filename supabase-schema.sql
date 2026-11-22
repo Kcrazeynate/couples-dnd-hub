@@ -253,3 +253,8 @@ alter table characters add column if not exists temp_hp integer;
 alter table characters add column if not exists hit_dice_used integer;
 alter table characters add column if not exists death_save_successes integer;
 alter table characters add column if not exists death_save_failures integer;
+-- NPC companions: dismissal flag + join mode on characters, mechanics flag on log entries.
+-- Run this in the Supabase SQL editor (same project as the hub).
+alter table characters add column if not exists dismissed boolean default false;
+alter table characters add column if not exists join_mode text;
+alter table log_entries add column if not exists is_mechanics boolean default false;

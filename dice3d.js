@@ -238,14 +238,20 @@ function makeFaceTexture(value, sides) {
         5: [[0.28, 0.28], [0.72, 0.28], [0.5, 0.5], [0.28, 0.72], [0.72, 0.72]],
         6: [[0.3, 0.27], [0.7, 0.27], [0.3, 0.5], [0.7, 0.5], [0.3, 0.73], [0.7, 0.73]]
       }[value] || [[0.5, 0.5]];
-      var r = s * 0.085;
+      var r = s * 0.11;
       pos.forEach(function (p) {
         ctx.beginPath(); ctx.arc(p[0] * s, p[1] * s, r, 0, Math.PI * 2); ctx.fill();
       });
     } else {
-      ctx.font = "700 " + Math.floor(s * 0.52) + "px Georgia, 'Times New Roman', serif";
+      // Bigger, bolder number with a contrasting outline so it reads
+      // clearly on the die face, even on a busy finish.
+      var stroke = ink === "#e8c96a" ? "#171410" : "#ece5d3";
+      ctx.font = "800 " + Math.floor(s * 0.6) + "px Georgia, 'Times New Roman', serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
+      ctx.lineWidth = Math.max(4, s * 0.045);
+      ctx.strokeStyle = stroke;
+      ctx.strokeText(String(value), s / 2, s / 2 + s * 0.02);
       ctx.fillText(String(value), s / 2, s / 2 + s * 0.02);
     }
   });
@@ -434,12 +440,12 @@ function buildTrapezohedronGeometry(radius) {
 // Base geometry per die type, non-indexed triangles.
 function dieGeometry(sides) {
   var g;
-  if (sides === 4) g = new THREE.TetrahedronGeometry(0.65);
-  else if (sides === 6) g = new THREE.BoxGeometry(0.75, 0.75, 0.75).toNonIndexed();
-  else if (sides === 8) g = new THREE.OctahedronGeometry(0.55);
-  else if (sides === 10) g = buildTrapezohedronGeometry(0.55);
-  else if (sides === 12) g = new THREE.DodecahedronGeometry(0.55);
-  else g = new THREE.IcosahedronGeometry(0.55);
+  if (sides === 4) g = new THREE.TetrahedronGeometry(0.85);
+  else if (sides === 6) g = new THREE.BoxGeometry(0.9, 0.9, 0.9).toNonIndexed();
+  else if (sides === 8) g = new THREE.OctahedronGeometry(0.75);
+  else if (sides === 10) g = buildTrapezohedronGeometry(0.75);
+  else if (sides === 12) g = new THREE.DodecahedronGeometry(0.75);
+  else g = new THREE.IcosahedronGeometry(0.75);
   if (g.index) g = g.toNonIndexed();
   return g;
 }
@@ -485,7 +491,7 @@ function buildDie(sides) {
   var facePlanes = [];
   faces.forEach(function (face, fi) {
     var inr = faceInradius(face);
-    var side = Math.max(0.12, 1.3 * inr);
+    var side = Math.max(0.16, 1.8 * inr);
     var tex = makeFaceTexture(values[fi], sides);
     var mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
     var plane = new THREE.Mesh(new THREE.PlaneGeometry(side, side), mat);
@@ -770,53 +776,45 @@ function setStyle(patch) {
   saveStyle(style);
   applyFelt();
   applyDieStyle();
-  markPickerSelected();
+  syncPickers();
 }
 
 // ---------- pickers ----------
+// The Design section is a collapsed <details> with four dropdowns.
 function buildPickers() {
-  function buildOne(containerId, list, key, isColor) {
-    var wrap = document.getElementById(containerId);
-    if (!wrap) return;
-    wrap.innerHTML = "";
+  function buildOne(selectId, list, key) {
+    var sel = document.getElementById(selectId);
+    if (!sel) return;
+    sel.innerHTML = "";
     list.forEach(function (opt) {
-      var b = document.createElement("button");
-      b.type = "button";
-      b.className = "style-pick" + (opt.girly ? " girly" : "");
-      b.dataset.value = opt.id;
-      b.title = opt.name + (opt.girly ? " (girly)" : "");
-      if (isColor) {
-        b.innerHTML = '<span class="swatch" style="background:' + opt.css + '"></span><span>' + opt.name + '</span>';
-      } else {
-        b.innerHTML = '<span>' + opt.name + '</span>';
-      }
-      b.addEventListener("click", function () {
-        var patch = {};
-        patch[key] = opt.id;
-        setStyle(patch);
-      });
-      wrap.appendChild(b);
+      var o = document.createElement("option");
+      o.value = opt.id;
+      o.textContent = opt.name + (opt.girly ? " (girly)" : "");
+      sel.appendChild(o);
+    });
+    sel.value = style[key];
+    sel.addEventListener("change", function () {
+      var patch = {};
+      patch[key] = sel.value;
+      setStyle(patch);
     });
   }
-  buildOne("felt-color-picks", FELT_COLORS, "feltColor", true);
-  buildOne("felt-design-picks", FELT_DESIGNS, "feltDesign", false);
-  buildOne("die-color-picks", DIE_COLORS, "dieColor", true);
-  buildOne("die-design-picks", DIE_DESIGNS, "dieDesign", false);
-  markPickerSelected();
+  buildOne("felt-color-select", FELT_COLORS, "feltColor");
+  buildOne("felt-design-select", FELT_DESIGNS, "feltDesign");
+  buildOne("die-color-select", DIE_COLORS, "dieColor");
+  buildOne("die-design-select", DIE_DESIGNS, "dieDesign");
+  syncPickers();
 }
 
-function markPickerSelected() {
-  function mark(containerId, value) {
-    var wrap = document.getElementById(containerId);
-    if (!wrap) return;
-    wrap.querySelectorAll(".style-pick").forEach(function (b) {
-      b.classList.toggle("selected", b.dataset.value === value);
-    });
+function syncPickers() {
+  function setVal(id, value) {
+    var sel = document.getElementById(id);
+    if (sel) sel.value = value;
   }
-  mark("felt-color-picks", style.feltColor);
-  mark("felt-design-picks", style.feltDesign);
-  mark("die-color-picks", style.dieColor);
-  mark("die-design-picks", style.dieDesign);
+  setVal("felt-color-select", style.feltColor);
+  setVal("felt-design-select", style.feltDesign);
+  setVal("die-color-select", style.dieColor);
+  setVal("die-design-select", style.dieDesign);
 }
 
 // ---------- public API ----------

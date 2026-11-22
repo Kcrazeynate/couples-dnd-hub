@@ -535,6 +535,69 @@ button.danger:hover {
   cursor: pointer;
 }
 
+.area-map-wrap {
+  position: relative;
+}
+
+.area-tokens {
+  position: absolute;
+  inset: 0;
+}
+
+.area-token {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border-radius: 50%;
+  border: 2px solid #171410;
+  color: #171410;
+  font-weight: bold;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  touch-action: none;
+}
+
+.area-token.party {
+  background: #c9a227;
+}
+
+.area-token.enemy {
+  background: #b0402e;
+  color: #f5e9d0;
+}
+
+.area-token.current {
+  box-shadow: 0 0 0 3px #ece5d3;
+}
+
+.area-tokens.editing .area-token {
+  cursor: grab;
+}
+
+.area-token.dragging {
+  cursor: grabbing;
+  opacity: 0.85;
+  z-index: 5;
+}
+
+.area-drag-label {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  background: rgba(23, 20, 16, 0.92);
+  color: #ece5d3;
+  border: 1px solid #c9a227;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+  z-index: 6;
+  pointer-events: none;
+}
+
 .map-viewport {
   overflow: auto;
   max-height: 75vh;

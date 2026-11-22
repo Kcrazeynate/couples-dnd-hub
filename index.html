@@ -11,9 +11,17 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Hub">
-<link rel="stylesheet" href="styles.css?v=27">
+<link rel="stylesheet" href="styles.css?v=28">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=3"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three.module.js",
+    "cannon-es": "./vendor/cannon-es.js"
+  }
+}
+</script>
 </head>
 <body>
 
@@ -264,6 +272,10 @@
     <section id="tab-dice" class="tab-panel">
       <h2>Dice Roller</h2>
       <p class="hint">Every roll is saved to the roll log below.</p>
+      <div id="dice3d-wrap" class="dice3d-wrap hidden">
+        <div id="dice3d-tray" class="dice3d-tray"></div>
+        <p class="hint dice3d-hint">Real 3D dice. They tumble with physics and the result is whatever lands face up.</p>
+      </div>
       <form id="dice-form" class="form">
         <label for="dice-roller">Rolling as</label>
         <select id="dice-roller"></select>
@@ -295,6 +307,18 @@
         <button type="submit" class="roll-btn">Roll</button>
       </form>
       <div id="dice-result" class="dice-result hidden"></div>
+      <div id="dice3d-style" class="dice3d-style hidden">
+        <h3>Dice &amp; tray style</h3>
+        <label>Felt color</label>
+        <div class="style-picks" id="felt-color-picks"></div>
+        <label>Felt design</label>
+        <div class="style-picks" id="felt-design-picks"></div>
+        <label>Die color</label>
+        <div class="style-picks" id="die-color-picks"></div>
+        <label>Die design</label>
+        <div class="style-picks" id="die-design-picks"></div>
+        <p class="hint">Your style is remembered on this device.</p>
+      </div>
       <h3>Roll log</h3>
       <div id="rolls-list" class="list"></div>
     </section>
@@ -539,6 +563,7 @@
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<script src="app.js?v=33"></script>
+<script type="module" src="dice3d.js?v=1"></script>
+<script src="app.js?v=34"></script>
 </body>
 </html>

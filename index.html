@@ -111,6 +111,11 @@
           <div id="log-location-rows"></div>
           <button type="button" id="log-location-add">Add another group</button>
         </div>
+        <div id="log-area-map-wrap" class="hidden">
+          <label for="log-area-map">Area map for this scene (optional)</label>
+          <select id="log-area-map"></select>
+          <p class="hint">Pick the map for where this entry happens. The Maps tab shows the latest entry's map as the current area.</p>
+        </div>
         <label class="check"><input type="checkbox" id="log-mechanics"> Mechanics or rules note (doesn't start the campaign)</label>
         <button type="submit">Add entry</button>
       </form>
@@ -349,6 +354,7 @@
           <span class="map-scale">1 square = <input type="number" id="map-scale-input" value="12" min="1" step="1"> miles</span>
         </div>
         <button type="button" id="places-edit-toggle" class="edit-toggle-btn">Edit list</button>
+        <div id="current-area"></div>
         <h3>Places on this map</h3>
         <div id="map-markers-list" class="list"></div>
         <div id="map-places-unmarked-wrap" class="hidden">
@@ -495,6 +501,6 @@
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<script src="app.js?v=24"></script>
+<script src="app.js?v=25"></script>
 </body>
 </html>

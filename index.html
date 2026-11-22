@@ -299,6 +299,9 @@
         </div>
         <label for="dice-mod">Modifier</label>
         <input type="number" id="dice-mod" value="0" step="1">
+        <label for="dice-mod-source">Modifier from</label>
+        <select id="dice-mod-source"></select>
+        <p class="hint">Pick an ability, skill, or saving throw and the modifier fills itself from the rolling character's sheet. Pick Manual to type it yourself.</p>
         <label for="dice-mode">Roll type</label>
         <select id="dice-mode">
           <option value="normal">Normal</option>
@@ -566,6 +569,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=11"></script>
-<script src="app.js?v=34"></script>
+<script src="app.js?v=35"></script>
 </body>
 </html>

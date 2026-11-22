@@ -707,6 +707,17 @@
     };
   }
 
+  // The portrait for a combatant's area-map token: the player character's
+  // image_url, or the NPC companion's roster image. Enemies have no
+  // portrait and fall back to their initial letter.
+  function combatantPortrait(c) {
+    var pc = findPlayerChar(c.name);
+    if (pc && pc.image_url) return pc.image_url;
+    var npc = findNpc(c.name);
+    if (npc && npc.image) return npc.image;
+    return null;
+  }
+
   function renderAreaTokens() {
     var layer = $("area-tokens");
     if (!layer || !currentAreaMapUrl) return;
@@ -718,10 +729,14 @@
       var side = combatantSide(c);
       var isCurrent = battleStateReady && c.id === battleState.current_combatant_id;
       var initial = String(c.name || "?").trim().charAt(0).toUpperCase();
+      var portrait = combatantPortrait(c);
+      var inner = portrait
+        ? '<img class="token-face" src="' + escapeHtml(portrait) + '" alt="' + escapeHtml(c.name) + '">'
+        : escapeHtml(initial);
       var pos = tokenLeftTop(c.grid_x, c.grid_y, grid);
       var left = pos.left;
       var top = pos.top;
-      return '<div class="area-token ' + side + (isCurrent ? " current" : "") + '" data-token-id="' + c.id + '" style="left:' + left + '%;top:' + top + '%" title="' + escapeHtml(c.name) + ' - HP ' + c.hp + '/' + c.max_hp + ', Speed ' + combatantSpeed(c) + ' ft">' + escapeHtml(initial) + '</div>';
+      return '<div class="area-token ' + side + (isCurrent ? " current" : "") + (portrait ? " has-face" : "") + '" data-token-id="' + c.id + '" style="left:' + left + '%;top:' + top + '%" title="' + escapeHtml(c.name) + ' - HP ' + c.hp + '/' + c.max_hp + ', Speed ' + combatantSpeed(c) + ' ft">' + inner + '</div>';
     }).join("");
     layer.innerHTML = html;
     layer.querySelectorAll(".area-token").forEach(function (el) {
@@ -730,6 +745,9 @@
   }
 
   var tokenDrag = null;
+  // True while a two-finger pinch is zooming the area map, so a token drag
+  // never starts or moves mid-pinch.
+  var areaPinching = false;
 
   function areaPosFromEvent(ev) {
     var wrap = document.querySelector(".area-map-wrap");
@@ -744,7 +762,7 @@
   }
 
   function onTokenPointerDown(ev) {
-    if (!placesEdit) return;
+    if (!placesEdit || areaPinching) return;
     var id = ev.currentTarget.dataset.tokenId;
     var c = combatants.find(function (cc) { return cc.id === id; });
     if (!c) return;
@@ -769,7 +787,7 @@
   }
 
   function onTokenPointerMove(ev) {
-    if (!tokenDrag) return;
+    if (!tokenDrag || areaPinching) return;
     var sq = areaPosFromEvent(ev);
     if (!sq) return;
     if (Math.abs(ev.clientX - tokenDrag.startClientX) > 6 || Math.abs(ev.clientY - tokenDrag.startClientY) > 6) {
@@ -866,13 +884,15 @@
       return;
     }
     content.innerHTML = '<div class="card"><p class="title">Current area: ' + escapeHtml(currentAreaLabel || "this scene") + '</p>' +
-      '<div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '" alt="Area map">' +
+      '<div class="area-map-viewport"><div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '" alt="Area map">' +
       '<div id="area-tokens" class="area-tokens"></div>' +
-      '<div id="area-drag-label" class="area-drag-label hidden"></div></div>' +
-      '<p class="hint">1 square = 5 feet. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab.</p></div>';
+      '<div id="area-drag-label" class="area-drag-label hidden"></div></div></div>' +
+      '<p class="hint">1 square = 5 feet. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab. Pinch or use Zoom to get closer.</p></div>';
     content.querySelector("img").addEventListener("click", function () {
       openLightbox(currentAreaMapUrl);
     });
+    applyAreaZoom();
+    initAreaZoomGestures();
     renderAreaTokens();
   }
 
@@ -1118,6 +1138,10 @@
     var byPlayer = {};
     res.data.forEach(function (c) { byPlayer[c.player] = c; });
     charByPlayer = byPlayer;
+    // Portraits may have just arrived after the area tokens first rendered
+    // (the Maps tab can open before Characters loads), so refresh the
+    // tokens now that the faces are known.
+    renderAreaTokens();
     var players = PLAYERS.slice();
     var seen = {};
     players.forEach(function (p) { seen[p.player] = true; });
@@ -2939,6 +2963,9 @@
   var suppressMapClick = false;
   var npcsByName = {};
   var mapZoom = 1;
+  // Area map zoom, same range as the world map (1x to 3x). The tokens live
+  // inside .area-map-wrap, so they scale with the map when it zooms.
+  var areaZoom = 1;
   var measureA = null;
   var measureB = null;
   var milesPerSquare = 12;
@@ -2957,6 +2984,9 @@
       tabs.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
       return;
     }
+    // Faces for the area tokens come from the characters table, so make
+    // sure it is loaded even if the Maps tab opens first.
+    loadCharacters();
     var res = await db.from("maps").select("*").order("created_at", { ascending: true });
     if (res.error) {
       tabs.innerHTML = '<p class="error">Could not load maps.</p>';
@@ -3371,6 +3401,64 @@
     applyMapZoom();
   }
 
+  function applyAreaZoom() {
+    var wrap = document.querySelector(".area-map-wrap");
+    if (!wrap) return;
+    wrap.style.transform = "scale(" + areaZoom + ")";
+    wrap.style.transformOrigin = "top left";
+    var label = $("area-zoom-level");
+    if (label) label.textContent = areaZoom.toFixed(1) + "x";
+  }
+
+  function setAreaZoom(z, smooth) {
+    areaZoom = Math.min(3, Math.max(1, smooth ? z : Math.round(z * 2) / 2));
+    applyAreaZoom();
+  }
+
+  // Pinch and ctrl+wheel zoom for the area map. Single-finger drags still
+  // move tokens (when editing) or scroll the viewport; only a two-finger
+  // pinch zooms, so it never fights token dragging.
+  function initAreaZoomGestures() {
+    var viewport = document.querySelector(".area-map-viewport");
+    if (!viewport) return;
+    viewport.addEventListener("wheel", function (e) {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      setAreaZoom(areaZoom + (e.deltaY < 0 ? 0.5 : -0.5));
+    }, { passive: false });
+    var pointers = new Map();
+    var pinchStart = null;
+    viewport.addEventListener("pointerdown", function (e) {
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size === 2) {
+        var pts = Array.from(pointers.values());
+        pinchStart = {
+          dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+          zoom: areaZoom
+        };
+        areaPinching = true;
+      }
+    });
+    viewport.addEventListener("pointermove", function (e) {
+      if (!pointers.has(e.pointerId)) return;
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size === 2 && pinchStart) {
+        var pts2 = Array.from(pointers.values());
+        var dist = Math.hypot(pts2[0].x - pts2[1].x, pts2[0].y - pts2[1].y);
+        if (dist > 0) setAreaZoom(pinchStart.zoom * dist / pinchStart.dist, true);
+      }
+    });
+    function endAreaPointer(e) {
+      pointers.delete(e.pointerId);
+      if (pointers.size < 2) {
+        pinchStart = null;
+        areaPinching = false;
+      }
+    }
+    viewport.addEventListener("pointerup", endAreaPointer);
+    viewport.addEventListener("pointercancel", endAreaPointer);
+  }
+
   async function addMap(e) {
     e.preventDefault();
     if (!configured) return setupNeeded();
@@ -3588,6 +3676,9 @@
     $("map-zoom-in").addEventListener("click", function () { setMapZoom(mapZoom + 0.5); });
     $("map-zoom-out").addEventListener("click", function () { setMapZoom(mapZoom - 0.5); });
     $("map-zoom-reset").addEventListener("click", function () { setMapZoom(1); });
+    $("area-zoom-in").addEventListener("click", function () { setAreaZoom(areaZoom + 0.5); });
+    $("area-zoom-out").addEventListener("click", function () { setAreaZoom(areaZoom - 0.5); });
+    $("area-zoom-reset").addEventListener("click", function () { setAreaZoom(1); });
     $("map-viewport").addEventListener("wheel", function (e) {
       if (!e.ctrlKey) return;
       e.preventDefault();

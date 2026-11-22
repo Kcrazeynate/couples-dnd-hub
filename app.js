@@ -1845,7 +1845,8 @@
       return '<div class="card place-card" data-marker-id="' + mk.id + '">' + img +
         '<p class="title">' + escapeHtml(mk.label) + '</p>' +
         '<p class="meta">' + escapeHtml(mk.kind || "Place") + '</p>' +
-        '<div class="actions">' + areaBtn + '<button type="button" class="small-danger" data-marker-delete="' + mk.id + '">Delete</button></div></div>';
+        areaBtn +
+        '<div class="actions"><button type="button" class="small-danger" data-marker-delete="' + mk.id + '">Delete</button></div></div>';
     }).join("");
     list.querySelectorAll(".place-card").forEach(function (card) {
       card.addEventListener("click", function () {
@@ -1905,7 +1906,8 @@
       return '<div class="card place-card">' + img +
         '<p class="title">' + escapeHtml(n.name) + '</p>' +
         '<p>' + escapeHtml(n.notes || "") + '</p>' +
-        '<div class="actions">' + areaBtn + '<button type="button" class="small-danger" data-place-delete="' + n.id + '">Delete</button></div></div>';
+        areaBtn +
+        '<div class="actions"><button type="button" class="small-danger" data-place-delete="' + n.id + '">Delete</button></div></div>';
     }).join("");
     list.querySelectorAll("[data-area-map]").forEach(function (btn) {
       btn.addEventListener("click", function (e) {

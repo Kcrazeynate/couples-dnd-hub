@@ -1153,6 +1153,8 @@ header {
 }
 
 .area-map-btn {
+  display: inline-block;
+  margin-top: 8px;
   background: #241f18;
   border: 1px solid #c9a227;
   color: #c9a227;

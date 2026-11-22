@@ -11,6 +11,7 @@
   var db = null;
   var configured = false;
   var selectedDie = 20;
+  var selectedCount = 1;
   var combatants = [];
   var currentTurn = 0;
   var battleState = { round: 1, current_combatant_id: null };
@@ -1842,6 +1843,7 @@
       list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
       return;
     }
+    loadDiceRollers();
     var res = await db.from("rolls").select("*").order("created_at", { ascending: false }).limit(50);
     if (res.error) {
       list.innerHTML = '<p class="error">Could not load rolls.</p>';
@@ -1860,43 +1862,142 @@
     }).join("");
   }
 
+  function shortCharName(name) {
+    var n = String(name || "").trim();
+    if (!n) return "Someone";
+    if (n === "Sylvara Dawnmere") return "Sylvie";
+    if (n.indexOf("Sister ") === 0) return n.slice(7).split(" ")[0];
+    return n.split(" ")[0];
+  }
+
+  // Who is rolling, by this phone. The push subscription label (for example
+  // "Nathan's iphone") names the phone's owner, so the roller fills itself
+  // in. The dropdown changes it when someone else is playing on this phone.
+  async function detectDeviceRoller(names) {
+    try {
+      if (typeof pushRegistration === "undefined" || !pushRegistration) return null;
+      var sub = await pushRegistration.pushManager.getSubscription();
+      if (!sub) return null;
+      var res = await db.from("push_subscriptions").select("label").eq("endpoint", sub.endpoint).limit(1);
+      if (!res.data || !res.data.length) return null;
+      var label = String(res.data[0].label || "").toLowerCase();
+      if (!label) return null;
+      var chars = await db.from("characters").select("player, name");
+      if (chars.error || !chars.data) return null;
+      for (var i = 0; i < chars.data.length; i++) {
+        var player = String(chars.data[i].player || "").toLowerCase();
+        if (player && label.indexOf(player) !== -1) {
+          var short = shortCharName(chars.data[i].name);
+          if (names.indexOf(short) !== -1) return short;
+        }
+      }
+    } catch (e) {
+      return null;
+    }
+    return null;
+  }
+
+  async function loadDiceRollers() {
+    var sel = $("dice-roller");
+    if (!sel || !configured) return;
+    var names = [];
+    var res = await db.from("characters").select("name").eq("dismissed", false);
+    if (!res.error && res.data) {
+      res.data.forEach(function (c) {
+        var short = shortCharName(c.name);
+        if (names.indexOf(short) === -1) names.push(short);
+      });
+    }
+    // The DM's party companions, who roll but are not character rows.
+    ["cleric", "wizard", "fighter"].forEach(function (key) {
+      var entry = npcRosterByKey(key);
+      if (entry && names.indexOf(entry.name) === -1) names.push(entry.name);
+    });
+    names.push("DM");
+    var cur = sel.value;
+    sel.innerHTML = names.map(function (n) {
+      return '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>';
+    }).join("");
+    var stored = null;
+    try { stored = window.localStorage.getItem("hub-dice-roller"); } catch (e) {}
+    var picked = null;
+    if (cur && names.indexOf(cur) !== -1) {
+      picked = cur;
+    } else if (stored && names.indexOf(stored) !== -1) {
+      picked = stored;
+    } else {
+      picked = await detectDeviceRoller(names);
+      if (!picked) picked = names[0] || "DM";
+    }
+    sel.value = picked;
+    try { window.localStorage.setItem("hub-dice-roller", picked); } catch (e) {}
+  }
+
+  function updateDiceMode() {
+    var modeSel = $("dice-mode");
+    if (!modeSel) return;
+    var advOk = selectedCount === 1 && selectedDie === 20;
+    modeSel.disabled = !advOk;
+    if (!advOk) modeSel.value = "normal";
+  }
+
   async function doRoll(e) {
     e.preventDefault();
     if (!configured) return setupNeeded();
-    var roller = $("dice-roller").value.trim() || "Someone";
+    var roller = $("dice-roller").value || "Someone";
     var mod = numOrNull($("dice-mod").value) || 0;
     var mode = $("dice-mode").value;
-    var label = "d" + selectedDie;
+    var count = selectedCount;
+    var label = (count > 1 ? count : "") + "d" + selectedDie;
+    var dice = [];
     var result, detail;
-
-    if (selectedDie === 20 && (mode === "advantage" || mode === "disadvantage")) {
+    if (selectedDie === 20 && count === 1 && (mode === "advantage" || mode === "disadvantage")) {
       var r1 = rollDie(20);
       var r2 = rollDie(20);
       var kept = mode === "advantage" ? Math.max(r1, r2) : Math.min(r1, r2);
+      dice = [kept];
       result = kept + mod;
       detail = "d20 (" + mode + ") " + (mod >= 0 ? "+ " : "- ") + Math.abs(mod) + " = " + result + " [rolls " + r1 + ", " + r2 + "]";
     } else {
-      var roll = rollDie(selectedDie);
-      result = roll + mod;
-      detail = "d" + selectedDie + " " + (mod >= 0 ? "+ " : "- ") + Math.abs(mod) + " = " + result + " [roll " + roll + "]";
+      for (var i = 0; i < count; i++) dice.push(rollDie(selectedDie));
+      var sum = dice.reduce(function (a, b) { return a + b; }, 0);
+      result = sum + mod;
+      detail = label + " " + (mod >= 0 ? "+ " : "- ") + Math.abs(mod) + " = " + result + " [rolls " + dice.join(", ") + "]";
     }
-
     var box = $("dice-result");
+    var rollBtn = document.querySelector(".roll-btn");
     box.classList.remove("hidden");
-    box.innerHTML = '<span class="big">' + escapeHtml(String(result)) + '</span>' +
-      '<span class="detail">' + escapeHtml(detail) + '</span>';
-
-    var res = await db.from("rolls").insert({
-      roller: roller,
-      label: label,
-      result: result,
-      detail: detail
-    });
-    if (res.error) {
-      alert("Roll was made but could not be saved. Check the connection.");
-      return;
-    }
-    loadRolls();
+    box.innerHTML = '<div class="dice-faces">' + dice.map(function () {
+      return '<span class="die-face rolling">' + rollDie(selectedDie) + '</span>';
+    }).join("") + '</div>' + '<span class="big">...</span>' + '<span class="detail">Rolling...</span>';
+    if (rollBtn) rollBtn.disabled = true;
+    var faces = box.querySelectorAll(".die-face");
+    var ticks = 0;
+    var timer = setInterval(function () {
+      ticks++;
+      faces.forEach(function (f) { f.textContent = rollDie(selectedDie); });
+      if (ticks < 9) return;
+      clearInterval(timer);
+      faces.forEach(function (f, i) {
+        f.textContent = dice[i];
+        f.classList.remove("rolling");
+      });
+      box.querySelector(".big").textContent = String(result);
+      box.querySelector(".detail").textContent = detail;
+      if (rollBtn) rollBtn.disabled = false;
+      db.from("rolls").insert({
+        roller: roller,
+        label: label,
+        result: result,
+        detail: detail
+      }).then(function (res) {
+        if (res.error) {
+          alert("Roll was made but could not be saved. Check the connection.");
+          return;
+        }
+        loadRolls();
+      });
+    }, 80);
   }
 
   // ---------- Battle ----------
@@ -2763,8 +2864,26 @@
         });
         btn.classList.add("selected");
         selectedDie = parseInt(btn.dataset.die, 10);
+        updateDiceMode();
       });
     });
+
+    document.querySelectorAll("#dice-count-buttons button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        document.querySelectorAll("#dice-count-buttons button").forEach(function (b) {
+          b.classList.remove("selected");
+        });
+        btn.classList.add("selected");
+        selectedCount = parseInt(btn.dataset.count, 10);
+        updateDiceMode();
+      });
+    });
+
+    $("dice-roller").addEventListener("change", function () {
+      try { window.localStorage.setItem("hub-dice-roller", $("dice-roller").value); } catch (e) {}
+    });
+
+    updateDiceMode();
 
     loadMessages();
     setInterval(loadMessages, 15000);

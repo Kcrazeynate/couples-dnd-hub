@@ -1937,8 +1937,7 @@
     var modeSel = $("dice-mode");
     if (!modeSel) return;
     var advOk = selectedCount === 1 && selectedDie === 20;
-    modeSel.disabled = !advOk;
-    if (!advOk) modeSel.value = "normal";
+    if (!advOk && modeSel.value !== "normal") modeSel.value = "normal";
   }
 
   async function doRoll(e) {
@@ -2889,6 +2888,21 @@
 
     $("dice-roller").addEventListener("change", function () {
       try { window.localStorage.setItem("hub-dice-roller", $("dice-roller").value); } catch (e) {}
+    });
+
+    $("dice-mode").addEventListener("change", function () {
+      var modeSel = $("dice-mode");
+      if (modeSel.value === "advantage" || modeSel.value === "disadvantage") {
+        selectedDie = 20;
+        selectedCount = 1;
+        document.querySelectorAll("#dice-buttons button").forEach(function (b) {
+          b.classList.toggle("selected", parseInt(b.dataset.die, 10) === 20);
+        });
+        document.querySelectorAll("#dice-count-buttons button").forEach(function (b) {
+          b.classList.toggle("selected", parseInt(b.dataset.count, 10) === 1);
+        });
+      }
+      updateDiceMode();
     });
 
     updateDiceMode();

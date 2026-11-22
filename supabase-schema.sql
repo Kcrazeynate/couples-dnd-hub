@@ -258,3 +258,30 @@ alter table characters add column if not exists death_save_failures integer;
 alter table characters add column if not exists dismissed boolean default false;
 alter table characters add column if not exists join_mode text;
 alter table log_entries add column if not exists is_mechanics boolean default false;
+create table if not exists party_locations (
+  id uuid primary key default gen_random_uuid(),
+  log_id uuid not null references log_entries(id),
+  label text not null,
+  marker_id uuid not null references map_markers(id),
+  created_at timestamptz not null default now()
+);
+alter table party_locations enable row level security;
+grant select, insert, update, delete on party_locations to anon;
+drop policy if exists "anon all" on party_locations;
+create policy "anon all" on party_locations for all using (true) with check (true);
+create table if not exists party_locations (
+  id uuid primary key default gen_random_uuid(),
+  log_id uuid not null references log_entries(id),
+  label text not null,
+  marker_id uuid not null references map_markers(id),
+  created_at timestamptz not null default now()
+);
+alter table party_locations enable row level security;
+grant select, insert, update, delete on party_locations to anon;
+drop policy if exists "anon all" on party_locations;
+create policy "anon all" on party_locations for all using (true) with check (true);
+
+alter table map_markers add column if not exists visited boolean default false;
+alter table map_markers add column if not exists area_map_url text;
+update map_markers set visited = true where label <> 'The ruins north of Riverton';
+update map_markers set area_map_url = 'https://kcrazeynate.github.io/couples-dnd-hub/assets/area-ruins.jpg' where label = 'The ruins north of Riverton';

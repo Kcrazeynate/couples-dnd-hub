@@ -544,12 +544,12 @@
   // ---------- Area maps on log entries ----------
   var HUB_BASE = "https://kcrazeynate.github.io/couples-dnd-hub/assets/";
   var AREA_MAP_OPTIONS = [
-    { label: "Ruins north of Riverton", url: HUB_BASE + "area-ruins.jpg" },
-    { label: "Lantern Inn", url: HUB_BASE + "area-lantern-inn.jpg" },
-    { label: "Gilded Boar", url: HUB_BASE + "area-gilded-boar.jpg" },
-    { label: "Toll house", url: HUB_BASE + "area-tollhouse.jpg" },
-    { label: "Watchtower ruins", url: HUB_BASE + "area-watchtower.jpg" },
-    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg" }
+    { label: "Ruins north of Riverton", url: HUB_BASE + "area-ruins.jpg", grid: 14 },
+    { label: "Lantern Inn", url: HUB_BASE + "area-lantern-inn.jpg", grid: 14 },
+    { label: "Gilded Boar", url: HUB_BASE + "area-gilded-boar.jpg", grid: 14 },
+    { label: "Toll house", url: HUB_BASE + "area-tollhouse.jpg", grid: 14 },
+    { label: "Watchtower ruins", url: HUB_BASE + "area-watchtower.jpg", grid: 14 },
+    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg", grid: 14 }
   ];
   var logAreaMapReady = false;
 
@@ -584,6 +584,180 @@
     return opt ? opt.label : null;
   }
 
+  function areaGridFor(url) {
+    var opt = AREA_MAP_OPTIONS.find(function (o) { return o.url === url; });
+    return (opt && opt.grid) || 14;
+  }
+
+  function characterForCombatant(name) {
+    var n = String(name || "").toLowerCase().trim();
+    if (!n) return null;
+    var chars = Object.keys(charByPlayer).map(function (k) { return charByPlayer[k]; });
+    for (var i = 0; i < chars.length; i++) {
+      var cn = String(chars[i].name || "").toLowerCase();
+      if (!cn) continue;
+      if (cn.indexOf(n) !== -1 || n.indexOf(cn.split(" ")[0]) !== -1) return chars[i];
+    }
+    return null;
+  }
+
+  function combatantSpeed(c) {
+    if (typeof c.speed === "number" && c.speed > 0) return c.speed;
+    var ch = characterForCombatant(c.name);
+    if (ch) return speedFor(ch.race);
+    return 30;
+  }
+
+  function combatantSide(c) {
+    return c.side || "party";
+  }
+
+  // Grid distance in feet between two squares (each square is 5 ft).
+  function gridFeet(ax, ay, bx, by) {
+    return Math.max(Math.abs(bx - ax), Math.abs(by - ay)) * 5;
+  }
+
+  function renderAreaTokens() {
+    var layer = $("area-tokens");
+    if (!layer || !currentAreaMapUrl) return;
+    var grid = areaGridFor(currentAreaMapUrl);
+    layer.classList.toggle("editing", placesEdit);
+    var html = combatants.filter(function (c) {
+      return c.hp > 0 && typeof c.grid_x === "number" && typeof c.grid_y === "number";
+    }).map(function (c) {
+      var side = combatantSide(c);
+      var isCurrent = battleStateReady && c.id === battleState.current_combatant_id;
+      var initial = String(c.name || "?").trim().charAt(0).toUpperCase();
+      var left = ((c.grid_x + 0.5) / grid * 100).toFixed(2);
+      var top = ((c.grid_y + 0.5) / grid * 100).toFixed(2);
+      return '<div class="area-token ' + side + (isCurrent ? " current" : "") + '" data-token-id="' + c.id + '" style="left:' + left + '%;top:' + top + '%" title="' + escapeHtml(c.name) + ' - HP ' + c.hp + '/' + c.max_hp + ', Speed ' + combatantSpeed(c) + ' ft">' + escapeHtml(initial) + '</div>';
+    }).join("");
+    layer.innerHTML = html;
+    layer.querySelectorAll(".area-token").forEach(function (el) {
+      el.addEventListener("pointerdown", onTokenPointerDown);
+    });
+  }
+
+  var tokenDrag = null;
+
+  function areaSquareFromEvent(ev) {
+    var wrap = document.querySelector(".area-map-wrap");
+    if (!wrap || !currentAreaMapUrl) return null;
+    var rect = wrap.getBoundingClientRect();
+    var grid = areaGridFor(currentAreaMapUrl);
+    var x = Math.floor((ev.clientX - rect.left) / rect.width * grid);
+    var y = Math.floor((ev.clientY - rect.top) / rect.height * grid);
+    x = Math.max(0, Math.min(grid - 1, x));
+    y = Math.max(0, Math.min(grid - 1, y));
+    return { x: x, y: y, grid: grid };
+  }
+
+  function onTokenPointerDown(ev) {
+    if (!placesEdit) return;
+    var id = ev.currentTarget.dataset.tokenId;
+    var c = combatants.find(function (cc) { return cc.id === id; });
+    if (!c) return;
+    ev.preventDefault();
+    var sq = areaSquareFromEvent(ev);
+    if (!sq) return;
+    tokenDrag = {
+      id: id,
+      startX: c.grid_x,
+      startY: c.grid_y,
+      moved: false,
+      startClientX: ev.clientX,
+      startClientY: ev.clientY
+    };
+    ev.currentTarget.classList.add("dragging");
+    ev.currentTarget.setPointerCapture(ev.pointerId);
+    ev.currentTarget.addEventListener("pointermove", onTokenPointerMove);
+    ev.currentTarget.addEventListener("pointerup", onTokenPointerUp);
+    ev.currentTarget.addEventListener("pointercancel", onTokenPointerUp);
+  }
+
+  function onTokenPointerMove(ev) {
+    if (!tokenDrag) return;
+    var sq = areaSquareFromEvent(ev);
+    if (!sq) return;
+    if (Math.abs(ev.clientX - tokenDrag.startClientX) > 6 || Math.abs(ev.clientY - tokenDrag.startClientY) > 6) {
+      tokenDrag.moved = true;
+    }
+    var el = document.querySelector('[data-token-id="' + tokenDrag.id + '"]');
+    if (el) {
+      el.style.left = ((sq.x + 0.5) / sq.grid * 100).toFixed(2) + "%";
+      el.style.top = ((sq.y + 0.5) / sq.grid * 100).toFixed(2) + "%";
+    }
+    var c = combatants.find(function (cc) { return cc.id === tokenDrag.id; });
+    var label = $("area-drag-label");
+    if (c && label) {
+      var feet = gridFeet(tokenDrag.startX, tokenDrag.startY, sq.x, sq.y);
+      label.textContent = c.name + ": " + feet + " ft (speed " + combatantSpeed(c) + " ft)";
+      label.classList.remove("hidden");
+    }
+    tokenDrag.x = sq.x;
+    tokenDrag.y = sq.y;
+  }
+
+  async function onTokenPointerUp(ev) {
+    var drag = tokenDrag;
+    tokenDrag = null;
+    var el = ev.currentTarget;
+    el.classList.remove("dragging");
+    el.removeEventListener("pointermove", onTokenPointerMove);
+    el.removeEventListener("pointerup", onTokenPointerUp);
+    el.removeEventListener("pointercancel", onTokenPointerUp);
+    var label = $("area-drag-label");
+    var c = combatants.find(function (cc) { return cc.id === drag.id; });
+    if (!c) { renderAreaTokens(); return; }
+    if (!drag.moved) {
+      // A tap: show the token's details for a few seconds.
+      if (label) {
+        label.textContent = c.name + " - HP " + c.hp + "/" + c.max_hp + ", Speed " + combatantSpeed(c) + " ft, " + combatantSide(c);
+        label.classList.remove("hidden");
+        setTimeout(function () { label.classList.add("hidden"); }, 3000);
+      }
+      renderAreaTokens();
+      return;
+    }
+    var toX = (typeof drag.x === "number") ? drag.x : drag.startX;
+    var toY = (typeof drag.y === "number") ? drag.y : drag.startY;
+    if (toX === drag.startX && toY === drag.startY) {
+      if (label) label.classList.add("hidden");
+      renderAreaTokens();
+      return;
+    }
+    var feet = gridFeet(drag.startX, drag.startY, toX, toY);
+    var speed = combatantSpeed(c);
+    var side = combatantSide(c);
+    var oa = [];
+    combatants.forEach(function (other) {
+      if (other.id === c.id || other.hp <= 0) return;
+      if (combatantSide(other) === side) return;
+      var startAdj = gridFeet(drag.startX, drag.startY, other.grid_x, other.grid_y) <= 5;
+      var endAdj = gridFeet(toX, toY, other.grid_x, other.grid_y) <= 5;
+      if (startAdj && !endAdj) oa.push(other.name);
+    });
+    var problems = [];
+    if (feet > speed) {
+      problems.push(c.name + " has a speed of " + speed + " ft. This move is " + feet + " ft, so they can't move that far. Dashing would allow " + (speed * 2) + " ft.");
+    }
+    if (oa.length) {
+      problems.push("Moving out of " + oa.join(", ") + "'s reach. " + oa.join(", ") + " get" + (oa.length > 1 ? "" : "s") + " an opportunity attack, unless " + c.name + " Disengaged.");
+    }
+    if (label) label.classList.add("hidden");
+    if (problems.length) {
+      var ok = window.confirm(problems.join("\n\n") + "\n\nMove anyway?");
+      if (!ok) { renderAreaTokens(); return; }
+    }
+    var res = await db.from("combatants").update({ grid_x: toX, grid_y: toY }).eq("id", c.id);
+    if (res.error) {
+      alert("Could not move the token. Check the connection and try again.");
+      renderAreaTokens();
+      return;
+    }
+    loadCombatants();
+  }
+
   function renderAreaMapView() {
     var view = $("area-map-view");
     var content = $("area-map-content");
@@ -593,11 +767,14 @@
       return;
     }
     content.innerHTML = '<div class="card"><p class="title">Current area: ' + escapeHtml(currentAreaLabel || "this scene") + '</p>' +
-      '<img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '" alt="Area map">' +
-      '<p class="hint">1 square = 5 feet. Tap the map to open it large.</p></div>';
+      '<div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '" alt="Area map">' +
+      '<div id="area-tokens" class="area-tokens"></div>' +
+      '<div id="area-drag-label" class="area-drag-label hidden"></div></div>' +
+      '<p class="hint">1 square = 5 feet. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them.</p></div>';
     content.querySelector("img").addEventListener("click", function () {
       openLightbox(currentAreaMapUrl);
     });
+    renderAreaTokens();
   }
 
   function setMapView(view) {
@@ -1781,7 +1958,8 @@
       var isCurrent = i === currentTurn;
       return '<div class="card combatant' + (isCurrent ? " current" : "") + '">' +
         '<p class="title">' + escapeHtml(c.name) + ' ' +
-        '<span class="init">(Init ' + c.initiative + ')</span>' +
+        '<span class="init">(Init ' + c.initiative + ')</span> ' +
+        '<span class="init">Speed ' + combatantSpeed(c) + ' ft</span>' +
         (isCurrent ? ' <span class="turn-tag">Current turn</span>' : '') + '</p>' +
         '<div class="hp-row"><span>HP</span><span class="hp">' + c.hp + ' / ' + c.max_hp + '</span>' +
         '<button type="button" class="hp-btn" data-combat-hp="-1" data-id="' + c.id + '">-</button>' +
@@ -1821,6 +1999,7 @@
         loadCombatants();
       });
     });
+    renderAreaTokens();
   }
 
   async function changeCombatantHp(id, delta) {
@@ -1843,6 +2022,8 @@
       initiative: numOrNull($("combatant-initiative").value) || 0,
       hp: numOrNull($("combatant-hp").value) || 0,
       max_hp: numOrNull($("combatant-max-hp").value) || 1,
+      speed: numOrNull($("combatant-speed").value),
+      side: $("combatant-side").value,
       note: $("combatant-note").value.trim()
     };
     var res = await db.from("combatants").insert(row);
@@ -2355,6 +2536,7 @@
     if (btn) btn.textContent = on ? "Done" : "Edit list";
     renderMapMarkers();
     renderUnmarkedPlaces();
+    renderAreaTokens();
   }
 
   function setQuestsEdit(on) {

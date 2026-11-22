@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Hub">
-<link rel="stylesheet" href="styles.css?v=24">
+<link rel="stylesheet" href="styles.css?v=25">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=3"></script>
 </head>
@@ -210,7 +210,7 @@
       </div>
       <div class="card">
         <p class="title">Battle tracker</p>
-        <p>The Battle tab is the live fight tracker. When you resolve an action on the board, update the tracker the same way so it follows the board: set the combatant's HP in the combatants table, and set the current turn and round in the battle_state table (one row, id 1). The turn and round live in the database, so every player's phone shows the same turn. Players can also tap Damage or Heal with an amount on a combatant's card, or Next Turn to move down the initiative order.</p>
+        <p>The Battle tab is the live fight tracker. When you resolve an action on the board, update the tracker the same way so it follows the board: set the combatant's HP in the combatants table, and set the current turn and round in the battle_state table (one row, id 1). The turn and round live in the database, so every player's phone shows the same turn. Players can also tap Damage or Heal with an amount on a combatant's card, or Next Turn to move down the initiative order. When a battle starts somewhere with an area map, set that map on battle_state (area_map_url) so the Maps tab switches to it automatically; when the battle ends the map switches back to the world map on its own.</p>
       </div>
       <div class="card">
         <p class="title">Quests, NPCs, Maps</p>
@@ -329,6 +329,13 @@
         <input type="url" id="new-map-image" placeholder="https://...">
         <button type="submit">Add map</button>
       </form>
+      <div class="row map-view-toggle">
+        <button type="button" id="map-view-world" class="mode-btn">World map</button>
+        <button type="button" id="map-view-area" class="mode-btn">Area map</button>
+      </div>
+      <div id="area-map-view" class="hidden">
+        <div id="area-map-content"></div>
+      </div>
       <div id="map-view" class="hidden">
         <div class="row map-modes">
           <button type="button" id="map-edit-toggle" class="edit-toggle-btn">Edit map</button>
@@ -506,6 +513,6 @@
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<script src="app.js?v=26"></script>
+<script src="app.js?v=27"></script>
 </body>
 </html>

@@ -473,7 +473,12 @@
     var body = $("log-body").value.trim();
     if (!title || !body) return;
     var isMechanics = $("log-mechanics") ? $("log-mechanics").checked : false;
-    var res = await db.from("log_entries").insert({ title: title, body: body, is_mechanics: isMechanics }).select("id").single();
+    var entryData = { title: title, body: body, is_mechanics: isMechanics };
+    if (logAreaMapReady) {
+      var areaMapSel = $("log-area-map");
+      if (areaMapSel && areaMapSel.value) entryData.area_map_url = areaMapSel.value;
+    }
+    var res = await db.from("log_entries").insert(entryData).select("id").single();
     if (res.error || !res.data) {
       alert("Could not add the entry. Check the connection and try again.");
       return;
@@ -509,11 +514,13 @@
     $("log-title").value = "";
     $("log-body").value = "";
     if ($("log-mechanics")) $("log-mechanics").checked = false;
+    if ($("log-area-map")) $("log-area-map").value = "";
     clearLogEffectRows();
     clearLogLocationRows();
     loadLogEntries();
     loadCharacters();
     loadPartyLocations();
+    loadCurrentArea();
   }
 
   // ---------- Party locations ----------
@@ -530,6 +537,83 @@
     if (addBtn) addBtn.addEventListener("click", addLogLocationRow);
     addLogLocationRow();
     loadLocationOptions();
+  }
+
+  // ---------- Area maps on log entries ----------
+  var HUB_BASE = "https://kcrazeynate.github.io/couples-dnd-hub/assets/";
+  var AREA_MAP_OPTIONS = [
+    { label: "Ruins north of Riverton", url: HUB_BASE + "area-ruins.jpg" },
+    { label: "Lantern Inn", url: HUB_BASE + "area-lantern-inn.jpg" },
+    { label: "Gilded Boar", url: HUB_BASE + "area-gilded-boar.jpg" },
+    { label: "Toll house", url: HUB_BASE + "area-tollhouse.jpg" },
+    { label: "Watchtower ruins", url: HUB_BASE + "area-watchtower.jpg" },
+    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg" }
+  ];
+  var logAreaMapReady = false;
+
+  async function setupLogAreaMap() {
+    var sel = $("log-area-map");
+    if (!sel) return;
+    sel.innerHTML = '<option value="">None</option>' + AREA_MAP_OPTIONS.map(function (o) {
+      return '<option value="' + o.url + '">' + escapeHtml(o.label) + '</option>';
+    }).join("");
+    var res = await db.from("log_entries").select("area_map_url").limit(1);
+    if (res.error) return; // column not there yet (SQL not run): leave the section hidden
+    logAreaMapReady = true;
+    var box = $("log-area-map-wrap");
+    if (box) box.classList.remove("hidden");
+  }
+
+  // Current area: the map for where the party is, from the latest log entry
+  // that carries a map or a location. Entry's own map wins; otherwise the
+  // location marker's map, then the matching place's map. Unvisited places
+  // stay hidden.
+  async function loadCurrentArea() {
+    var wrap = $("current-area");
+    if (!wrap || !configured) return;
+    var res = await db.from("log_entries").select("id, title, created_at, area_map_url").order("created_at", { ascending: false }).limit(20);
+    if (res.error) {
+      // column not there yet (SQL not run): retry without it, location maps still work
+      res = await db.from("log_entries").select("id, title, created_at").order("created_at", { ascending: false }).limit(20);
+    }
+    if (res.error || !res.data || !res.data.length) {
+      wrap.innerHTML = '<p class="empty">No area map for where the party is right now.</p>';
+      return;
+    }
+    var locRes = await db.from("party_locations").select("log_id, marker_id").order("created_at", { ascending: false }).limit(50);
+    var locByLog = {};
+    (locRes.data || []).forEach(function (pl) {
+      (locByLog[pl.log_id] = locByLog[pl.log_id] || []).push(pl.marker_id);
+    });
+    for (var i = 0; i < res.data.length; i++) {
+      var e = res.data[i];
+      var mapUrl = e.area_map_url || null;
+      var placeName = null;
+      if (!mapUrl) {
+        var mids = locByLog[e.id] || [];
+        for (var j = 0; j < mids.length; j++) {
+          var mk = mapMarkers.find(function (m) { return m.id === mids[j]; });
+          if (!mk) continue;
+          placeName = mk.label;
+          if (mk.area_map_url && mk.visited) { mapUrl = mk.area_map_url; break; }
+          var entry = npcsByName[normName(mk.label)];
+          if (entry && entry.area_map_url && entry.visited) { mapUrl = entry.area_map_url; break; }
+        }
+      }
+      if (mapUrl) {
+        var date = e.created_at ? new Date(e.created_at).toLocaleDateString() : "";
+        var where = placeName ? escapeHtml(placeName) : "this scene";
+        wrap.innerHTML = '<div class="card"><p class="title">Current area: ' + where + '</p>' +
+          '<p>As of "' + escapeHtml(e.title) + '"' + (date ? ' (' + escapeHtml(date) + ')' : '') + '</p>' +
+          '<button type="button" class="area-map-btn" data-area-map="' + escapeHtml(mapUrl) + '">View area map</button></div>';
+        wrap.querySelector("[data-area-map]").addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          openLightbox(mapUrl);
+        });
+        return;
+      }
+    }
+    wrap.innerHTML = '<p class="empty">No area map for where the party is right now.</p>';
   }
 
   async function loadLocationOptions() {
@@ -1750,6 +1834,7 @@
     renderMapMarkers();
     loadPartyLocations();
     renderUnmarkedPlaces();
+    loadCurrentArea();
     renderMeasure();
   }
 
@@ -2063,7 +2148,7 @@
     }
     var tables = {
       messages: loadMessages,
-      log_entries: loadLogEntries,
+      log_entries: function () { loadLogEntries(); loadCurrentArea(); },
       characters: loadCharacters,
       quests: loadQuests,
       npcs: loadNpcs,
@@ -2072,7 +2157,7 @@
       maps: loadMaps,
       map_cells: loadMapView,
       map_markers: loadMapView,
-      party_locations: loadPartyLocations
+      party_locations: function () { loadPartyLocations(); loadCurrentArea(); }
     };
     liveChannel = db.channel("hub-live");
     Object.keys(tables).forEach(function (table) {
@@ -2188,6 +2273,7 @@
     setupPush();
     setupLogEffects();
     setupPartyLocations();
+    setupLogAreaMap();
 
     $("message-form").addEventListener("submit", postMessage);
     $("messages-refresh").addEventListener("click", loadMessages);

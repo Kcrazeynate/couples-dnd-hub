@@ -496,6 +496,14 @@
         locations[j].log_id = res.data.id;
         await db.from("party_locations").insert(locations[j]);
         await db.from("map_markers").update({ visited: true }).eq("id", locations[j].marker_id);
+        var mkRes = await db.from("map_markers").select("label").eq("id", locations[j].marker_id).single();
+        if (!mkRes.error && mkRes.data) {
+          var npcRes = await db.from("npcs").select("id, name").eq("kind", "Place");
+          if (!npcRes.error && npcRes.data) {
+            var match = npcRes.data.find(function (n) { return normName(n.name) === normName(mkRes.data.label); });
+            if (match) await db.from("npcs").update({ visited: true }).eq("id", match.id);
+          }
+        }
       }
     }
     $("log-title").value = "";
@@ -1893,11 +1901,18 @@
     wrap.classList.remove("hidden");
     list.innerHTML = rows.map(function (n) {
       var img = n.image_url ? '<img class="place-thumb" src="' + escapeHtml(n.image_url) + '" alt="">' : "";
+      var areaBtn = (n.area_map_url && (n.visited || placesEdit)) ? '<button type="button" class="area-map-btn" data-area-map="' + escapeHtml(n.area_map_url) + '">View area map</button>' : "";
       return '<div class="card place-card">' + img +
         '<p class="title">' + escapeHtml(n.name) + '</p>' +
         '<p>' + escapeHtml(n.notes || "") + '</p>' +
-        '<div class="actions"><button type="button" class="small-danger" data-place-delete="' + n.id + '">Delete</button></div></div>';
+        '<div class="actions">' + areaBtn + '<button type="button" class="small-danger" data-place-delete="' + n.id + '">Delete</button></div></div>';
     }).join("");
+    list.querySelectorAll("[data-area-map]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        openLightbox(btn.dataset.areaMap);
+      });
+    });
     list.querySelectorAll("[data-place-delete]").forEach(function (btn) {
       btn.addEventListener("click", async function () {
         if (!confirm("Delete this place?")) return;
@@ -2110,6 +2125,7 @@
     var btn = $("places-edit-toggle");
     if (btn) btn.textContent = on ? "Done" : "Edit list";
     renderMapMarkers();
+    renderUnmarkedPlaces();
   }
 
   function setQuestsEdit(on) {

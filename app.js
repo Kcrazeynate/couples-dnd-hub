@@ -1560,7 +1560,7 @@
       '<button type="button" class="hp-btn" data-hit-dice-delta="-1" data-player="' + p.player + '">-</button>' +
       '<button type="button" class="hp-btn" data-hit-dice-delta="1" data-player="' + p.player + '">+</button></div>' +
       '<div class="death-saves"><span>Death Saves</span><span class="ds-group"><span class="ds-label">Success</span>' + deathSaveDots(c, "success", p.player) + '</span><span class="ds-group"><span class="ds-label">Failure</span>' + deathSaveDots(c, "failure", p.player) + '</span></div>' +
-      '<div class="sheet-scores">' + scoresHtml + '</div>' +
+      (isNpc ? '<div class="sheet-scores">' + scoresHtml + '</div>' : '') +
       '<p><strong>Saving Throws</strong></p><div class="sheet-list">' + savesHtml + '</div>' +
       '<p><strong>Skills</strong></p><div class="sheet-list">' + skillsHtml + '</div>' +
       '<p class="meta">Passive Perception ' + (10 + perc.bonus) + '</p>' +
@@ -1569,7 +1569,24 @@
       '<p><strong>Inventory</strong></p>' + invHtml +
       (c.notes ? '<p><strong>Notes</strong></p><p>' + escapeHtml(c.notes) + '</p>' : '') +
       '<div class="actions"><button type="button" data-edit="' + p.player + '">Edit</button></div>';
-    if (!isNpc) return '<div class="card sheet">' + inner + '</div>';
+    if (!isNpc) {
+      var picHtml = c.image_url
+        ? '<img class="npc-pic" src="' + escapeHtml(c.image_url) + '" alt="">'
+        : '<div class="npc-pic npc-pic-fallback">' + escapeHtml((c.class || "?").charAt(0)) + '</div>';
+      return '<div class="card sheet">' +
+        '<div class="npc-summary">' + picHtml +
+        '<div class="npc-id"><span class="name">' + escapeHtml(c.name || "Unnamed") + '</span>' +
+        '<span class="meta">' + escapeHtml(c.race || "") + (c.race && c.class ? " " : "") + escapeHtml(c.class || "") + ' - Level ' + (c.level === null || c.level === undefined ? "-" : c.level) + '</span>' +
+        '<span class="meta">HP ' + hpText + (tempHp > 0 ? ' + ' + tempHp + ' temp' : '') + ' · AC ' + (c.ac === null || c.ac === undefined ? "-" : c.ac) + '</span>' +
+        '</div>' +
+        '<button type="button" class="hp-btn" data-hp-delta="-1" data-player="' + p.player + '">-</button>' +
+        '<button type="button" class="hp-btn" data-hp-delta="1" data-player="' + p.player + '">+</button>' +
+        '<button type="button" class="npc-toggle" data-npc-toggle="' + p.player + '">Full sheet</button>' +
+        '</div>' +
+        '<div class="sheet-scores">' + scoresHtml + '</div>' +
+        '<div class="npc-details hidden" data-npc-details="' + p.player + '">' + inner + '</div>' +
+        '</div>';
+    }
     var picHtml = c.image_url
       ? '<img class="npc-pic" src="' + escapeHtml(c.image_url) + '" alt="">'
       : '<div class="npc-pic npc-pic-fallback">' + escapeHtml((c.class || "?").charAt(0)) + '</div>';

@@ -490,12 +490,154 @@
       }
       if (!ok) alert("Entry saved, but its character changes did not apply. Check the connection and try again.");
     }
+    var locations = partyLocationsReady ? readLogLocationRows() : [];
+    if (locations.length) {
+      for (var j = 0; j < locations.length; j++) {
+        locations[j].log_id = res.data.id;
+        await db.from("party_locations").insert(locations[j]);
+        await db.from("map_markers").update({ visited: true }).eq("id", locations[j].marker_id);
+      }
+    }
     $("log-title").value = "";
     $("log-body").value = "";
     if ($("log-mechanics")) $("log-mechanics").checked = false;
     clearLogEffectRows();
+    clearLogLocationRows();
     loadLogEntries();
     loadCharacters();
+    loadPartyLocations();
+  }
+
+  // ---------- Party locations ----------
+
+  var locationOptionsHtml = '<option value="">Where?</option>';
+
+  async function setupPartyLocations() {
+    var res = await db.from("party_locations").select("id").limit(1);
+    if (res.error) return; // table not there yet (SQL not run): leave the section hidden
+    partyLocationsReady = true;
+    var box = $("log-locations");
+    if (box) box.classList.remove("hidden");
+    var addBtn = $("log-location-add");
+    if (addBtn) addBtn.addEventListener("click", addLogLocationRow);
+    addLogLocationRow();
+    loadLocationOptions();
+  }
+
+  async function loadLocationOptions() {
+    var res = await db.from("map_markers").select("id, label").order("label", { ascending: true });
+    if (res.error || !res.data) return;
+    locationOptionsHtml = '<option value="">Where?</option>' + res.data.map(function (m) {
+      return '<option value="' + m.id + '">' + escapeHtml(m.label) + '</option>';
+    }).join("");
+    document.querySelectorAll("#log-location-rows .location-where").forEach(function (sel) {
+      var cur = sel.value;
+      sel.innerHTML = locationOptionsHtml;
+      sel.value = cur;
+    });
+  }
+
+  function addLogLocationRow() {
+    var row = document.createElement("div");
+    row.className = "location-row";
+    row.innerHTML =
+      '<input type="text" class="location-who" placeholder="Who? e.g. Full party">' +
+      '<select class="location-where">' + locationOptionsHtml + '</select>' +
+      '<button type="button" class="effect-remove" title="Remove this group">x</button>';
+    row.querySelector(".effect-remove").addEventListener("click", function () { row.remove(); });
+    $("log-location-rows").appendChild(row);
+  }
+
+  function clearLogLocationRows() {
+    $("log-location-rows").innerHTML = "";
+    if (partyLocationsReady) addLogLocationRow();
+  }
+
+  function readLogLocationRows() {
+    var rows = document.querySelectorAll("#log-location-rows .location-row");
+    var out = [];
+    rows.forEach(function (row) {
+      var who = row.querySelector(".location-who").value.trim() || "Full party";
+      var markerId = row.querySelector(".location-where").value;
+      if (!markerId) return;
+      out.push({ label: who, marker_id: markerId });
+    });
+    return out;
+  }
+
+  async function loadPartyLocations() {
+    var layer = $("party-markers");
+    if (!layer) return;
+    layer.innerHTML = "";
+    partyLocations = [];
+    if (!configured) return;
+    var res = await db.from("party_locations").select("*").order("created_at", { ascending: false });
+    if (res.error || !res.data || !res.data.length) return;
+    var latestLogId = res.data[0].log_id;
+    var rows = res.data.filter(function (r) { return r.log_id === latestLogId; });
+    var entryRes = await db.from("log_entries").select("title, created_at").eq("id", latestLogId).single();
+    partyEntryTitle = (!entryRes.error && entryRes.data) ? entryRes.data.title : "";
+    partyEntryDate = (!entryRes.error && entryRes.data) ? entryRes.data.created_at : "";
+    partyLocations = rows;
+    renderPartyMarkers();
+  }
+
+  function renderPartyMarkers() {
+    var layer = $("party-markers");
+    if (!layer) return;
+    layer.innerHTML = partyLocations.map(function (loc, i) {
+      var mk = mapMarkers.find(function (m) { return m.id === loc.marker_id; });
+      if (!mk) return "";
+      var color = PARTY_COLORS[i % PARTY_COLORS.length];
+      var left = ((mk.x + 0.5) / MAP_COLS * 100).toFixed(2);
+      var top = ((mk.y + 0.5) / MAP_ROWS * 100).toFixed(2);
+      return '<div class="party-marker" data-party-idx="' + i + '" style="left:' + left + '%;top:' + top + '%;--party-color:' + color + '">' +
+        '<span class="party-token"></span><span class="party-label">' + escapeHtml(loc.label) + '</span></div>';
+    }).join("");
+    layer.querySelectorAll(".party-marker").forEach(function (el) {
+      el.addEventListener("click", function (e) {
+        e.stopPropagation();
+        togglePartyTooltip(parseInt(el.dataset.partyIdx, 10));
+      });
+    });
+  }
+
+  function togglePartyTooltip(idx) {
+    var tip = $("map-tooltip");
+    if (!tip) return;
+    var loc = partyLocations[idx];
+    if (!loc) return;
+    var key = "party-" + idx;
+    if (openTooltipMarker === key) {
+      closeMapTooltip();
+      return;
+    }
+    openTooltipMarker = key;
+    var mk = mapMarkers.find(function (m) { return m.id === loc.marker_id; });
+    var place = mk ? mk.label : "somewhere";
+    var html = '<p class="tip-title">Party: ' + escapeHtml(loc.label) + '</p>' +
+      '<p class="tip-notes">At ' + escapeHtml(place) + '</p>';
+    if (partyEntryTitle) html += '<p class="tip-notes">As of "' + escapeHtml(partyEntryTitle) + '"' + (partyEntryDate ? ' (' + escapeHtml(fmtTime(partyEntryDate)) + ')' : '') + '</p>';
+    tip.innerHTML = html;
+    var wrap = $("map-wrap");
+    var px = mk ? (mk.x + 0.5) / MAP_COLS * wrap.clientWidth : wrap.clientWidth / 2;
+    var pinY = mk ? (mk.y + 0.5) / MAP_ROWS * wrap.clientHeight : wrap.clientHeight / 2;
+    tip.classList.remove("hidden");
+    tip.classList.remove("below");
+    tip.style.transform = "";
+    var tipH = tip.offsetHeight;
+    var tipW = tip.offsetWidth;
+    tip.style.left = Math.min(Math.max(px, tipW / 2 + 6), Math.max(tipW / 2 + 6, wrap.clientWidth - tipW / 2 - 6)) + "px";
+    if (pinY - tipH - 14 >= 0) {
+      tip.style.top = pinY + "px";
+    } else if (pinY + 16 + tipH <= wrap.clientHeight) {
+      tip.style.top = pinY + "px";
+      tip.classList.add("below");
+    } else {
+      tip.style.top = Math.max(8, wrap.clientHeight - tipH - 8) + "px";
+      tip.style.transform = "translate(-50%, 0)";
+    }
+    tip.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 
   // ---------- Characters ----------
@@ -1509,6 +1651,11 @@
   var currentMapId = null;
   var mapCells = {};
   var mapMarkers = [];
+  var partyLocations = [];
+  var partyLocationsReady = false;
+  var partyEntryTitle = "";
+  var partyEntryDate = "";
+  var PARTY_COLORS = ["#c9a227", "#6a9bd8", "#b678c9", "#7fb069"];
   var mapMode = "view";
   var mapEdit = false;
   var npcsEdit = false;
@@ -1593,6 +1740,7 @@
     measureB = null;
     renderMapGrid();
     renderMapMarkers();
+    loadPartyLocations();
     renderUnmarkedPlaces();
     renderMeasure();
   }
@@ -1685,14 +1833,21 @@
     list.innerHTML = mapMarkers.map(function (mk) {
       var entry = npcsByName[normName(mk.label)];
       var img = entry && entry.image_url ? '<img class="place-thumb" src="' + escapeHtml(entry.image_url) + '" alt="">' : "";
+      var areaBtn = (mk.area_map_url && mk.visited) ? '<button type="button" class="area-map-btn" data-area-map="' + escapeHtml(mk.area_map_url) + '">View area map</button>' : "";
       return '<div class="card place-card" data-marker-id="' + mk.id + '">' + img +
         '<p class="title">' + escapeHtml(mk.label) + '</p>' +
         '<p class="meta">' + escapeHtml(mk.kind || "Place") + '</p>' +
-        '<div class="actions"><button type="button" class="small-danger" data-marker-delete="' + mk.id + '">Delete</button></div></div>';
+        '<div class="actions">' + areaBtn + '<button type="button" class="small-danger" data-marker-delete="' + mk.id + '">Delete</button></div></div>';
     }).join("");
     list.querySelectorAll(".place-card").forEach(function (card) {
       card.addEventListener("click", function () {
         highlightMapMarker(card.dataset.markerId);
+      });
+    });
+    document.querySelectorAll("[data-area-map]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        openLightbox(btn.dataset.areaMap);
       });
     });
     document.querySelectorAll("[data-marker-delete]").forEach(function (btn) {
@@ -1899,7 +2054,8 @@
       combatants: loadCombatants,
       maps: loadMaps,
       map_cells: loadMapView,
-      map_markers: loadMapView
+      map_markers: loadMapView,
+      party_locations: loadPartyLocations
     };
     liveChannel = db.channel("hub-live");
     Object.keys(tables).forEach(function (table) {
@@ -2012,6 +2168,7 @@
     $("quest-form").classList.add("hidden");
     setupPush();
     setupLogEffects();
+    setupPartyLocations();
 
     $("message-form").addEventListener("submit", postMessage);
     $("messages-refresh").addEventListener("click", loadMessages);

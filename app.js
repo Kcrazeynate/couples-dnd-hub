@@ -2628,12 +2628,22 @@
   // (Old Creek Grove, -18.5 LUFS): a loud track gets a gain below 1, a
   // quiet one stays at 1. Measured: Voyages of the Valiant -13.4 LUFS,
   // To Crush Your Enemies -18.3 LUFS, Black Shadow -14.8 LUFS,
-  // Magical Forest -14.8 LUFS, Old Creek Grove -18.5 LUFS. Add entries here
+  // Magical Forest -14.8 LUFS, Old Creek Grove -18.5 LUFS,
+  // The North Wind -14.3 LUFS, Trouble's Theme -15.8 LUFS,
+  // Scholars of Mysterious Arts -17.7 LUFS, The Herd -27.3 LUFS.
+  // The Herd is a quiet outlier; its true peak is -10.5 dBTP, so its gain
+  // is boosted to 2.76 to match, peaking at -1.7 dBTP, no clipping.
+  // Add entries here when more files arrive.
   var MUSIC_TRACKS = {
     opening: [
       { file: "assets/music/opening-voyages-of-the-valiant.mp3", title: "Voyages of the Valiant", gain: 0.55 }
     ],
-    travel: [],
+    travel: [
+      { file: "assets/music/travel-the-north-wind.mp3", title: "The North Wind", gain: 0.62 },
+      { file: "assets/music/travel-troubles-theme.mp3", title: "Trouble's Theme", gain: 0.73 },
+      { file: "assets/music/travel-scholars-of-mysterious-arts.mp3", title: "Scholars of Mysterious Arts", gain: 0.91 },
+      { file: "assets/music/travel-the-herd.mp3", title: "The Herd", gain: 2.76 }
+    ],
     combat: [
       { file: "assets/music/combat-to-crush-your-enemies.mp3", title: "To Crush Your Enemies", gain: 0.98 },
       { file: "assets/music/combat-black-shadow.mp3", title: "Black Shadow", gain: 0.66 }

@@ -2755,26 +2755,36 @@
       musicAudioB.addEventListener("ended", musicOnTrackEnded);
       musicAudioA.addEventListener("timeupdate", musicMaybeAdvance);
       musicAudioB.addEventListener("timeupdate", musicMaybeAdvance);
+      // Volumes are set only when the elements are created. Setting them
+      // here on every track change used to cut the playing track to 0
+      // before its fade-out ran; the crossfade handles the handover now.
+      musicAudioA.volume = musicTargetVolume();
+      musicAudioB.volume = 0;
     }
-    musicAudioA.volume = musicTargetVolume();
-    musicAudioB.volume = 0;
     return musicActive === "A" ? musicAudioA : musicAudioB;
   }
   function musicOtherEl() {
     return musicActive === "A" ? musicAudioB : musicAudioA;
   }
+  // A fade-in re-reads the live target volume on every tick, so dragging
+  // the volume slider mid-fade is honoured instead of being overwritten by
+  // the target from when the fade started. A fade-out always heads to 0
+  // and pauses the element at the end; a fade-in never pauses, even if
+  // the user mutes mid-fade (it just plays silently).
   function musicFade(el, to, ms) {
     if (!el) return;
     var from = el.volume;
     var steps = Math.max(1, Math.round(ms / 50));
     var i = 0;
+    var isFadeOut = (to === 0);
     var timer = setInterval(function () {
       i++;
-      el.volume = Math.max(0, Math.min(1, from + (to - from) * (i / steps)));
+      var target = isFadeOut ? 0 : musicTargetVolume();
+      el.volume = Math.max(0, Math.min(1, from + (target - from) * (i / steps)));
       if (i >= steps) {
         clearInterval(timer);
-        el.volume = to;
-        if (to === 0) el.pause();
+        el.volume = target;
+        if (isFadeOut) el.pause();
       }
     }, 50);
   }
@@ -3856,6 +3866,9 @@
     });
     document.querySelectorAll("[data-music-volume]").forEach(function (el) {
       el.addEventListener("input", function () { musicSetVolume(parseInt(el.value, 10) / 100); });
+      // The change event fires when the slider is released; a backup for
+      // browsers that swallow input events mid-drag.
+      el.addEventListener("change", function () { musicSetVolume(parseInt(el.value, 10) / 100); });
     });
     document.querySelectorAll("[data-music-goto]").forEach(function (btn) {
       btn.addEventListener("click", function () { switchTab("music"); });

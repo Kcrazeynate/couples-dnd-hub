@@ -292,3 +292,4 @@ update npcs set area_map_url = 'https://kcrazeynate.github.io/couples-dnd-hub/as
 update npcs set area_map_url = 'https://kcrazeynate.github.io/couples-dnd-hub/assets/area-gilded-boar.jpg' where name = 'The Gilded Boar';
 update npcs set area_map_url = 'https://kcrazeynate.github.io/couples-dnd-hub/assets/area-watchtower.jpg' where name = 'The watchtower ruins';
 update map_markers set area_map_url = 'https://kcrazeynate.github.io/couples-dnd-hub/assets/area-tollhouse.jpg' where label = 'Toll house';
+alter table log_entries add column if not exists area_map_url text;

@@ -2631,8 +2631,15 @@
   // Magical Forest -14.8 LUFS, Old Creek Grove -18.5 LUFS,
   // The North Wind -14.3 LUFS, Trouble's Theme -15.8 LUFS,
   // Scholars of Mysterious Arts -17.7 LUFS, The Herd -27.3 LUFS.
+  // Medieval Kitchen -14.8 LUFS, The Ascendancy Festival -19.6 LUFS,
+  // Eldemmor's Market -16.5 LUFS, Lockwood -22.5 LUFS,
+  // Blood Magic -19.9 LUFS, The House of Pleasures -16.3 LUFS,
+  // Underworld -17.0 LUFS.
   // The Herd is a quiet outlier; its true peak is -10.5 dBTP, so its gain
   // is boosted to 2.76 to match, peaking at -1.7 dBTP, no clipping.
+  // Lockwood is also boosted (1.58, peak -1.4 dBTP) for the same reason.
+  // Tracks only slightly quieter than the reference (Ascendancy Festival,
+  // Blood Magic) stay at 1.0; the difference is barely noticeable.
   // Add entries here when more files arrive.
   var MUSIC_TRACKS = {
     opening: [
@@ -2648,8 +2655,17 @@
       { file: "assets/music/combat-to-crush-your-enemies.mp3", title: "To Crush Your Enemies", gain: 0.98 },
       { file: "assets/music/combat-black-shadow.mp3", title: "Black Shadow", gain: 0.66 }
     ],
-    dungeon: [],
-    town: [],
+    dungeon: [
+      { file: "assets/music/dungeon-blood-magic.mp3", title: "Blood Magic", gain: 1.0 },
+      { file: "assets/music/dungeon-the-house-of-pleasures.mp3", title: "The House of Pleasures", gain: 0.78 },
+      { file: "assets/music/dungeon-underworld.mp3", title: "Underworld", gain: 0.85 }
+    ],
+    town: [
+      { file: "assets/music/town-medieval-kitchen.mp3", title: "Medieval Kitchen", gain: 0.65 },
+      { file: "assets/music/town-the-ascendancy-festival.mp3", title: "The Ascendancy Festival", gain: 1.0 },
+      { file: "assets/music/town-eldemmors-market.mp3", title: "Eldemmor's Market", gain: 0.8 },
+      { file: "assets/music/town-lockwood.mp3", title: "Lockwood", gain: 1.58 }
+    ],
     rest: [
       { file: "assets/music/rest-magical-forest.mp3", title: "Magical Forest", gain: 0.66 },
       { file: "assets/music/rest-old-creek-grove.mp3", title: "Old Creek Grove", gain: 1.0 }

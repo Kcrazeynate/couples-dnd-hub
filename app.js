@@ -3873,6 +3873,9 @@
     document.querySelectorAll("[data-music-goto]").forEach(function (btn) {
       btn.addEventListener("click", function () { switchTab("music"); });
     });
+    // A music-start push opens the hub with #music; land straight on the
+    // Music tab instead of the Board. The push itself never starts audio.
+    if (location.hash === "#music") switchTab("music");
     musicUpdateUI();
   }
 

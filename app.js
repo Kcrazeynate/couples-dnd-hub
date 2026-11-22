@@ -2638,6 +2638,11 @@
   // Louis -17.5 LUFS, Out of the Nest -16.4 LUFS, Oarsmarket -18.0 LUFS,
   // The Ogier -14.1 LUFS, March of the Heroes -14.7 LUFS,
   // Protecting Neverwinter -11.6 LUFS.
+  // Trollocs -9.9 LUFS, The Valleys of Death -23.9 LUFS,
+  // Emerald Spear -16.8 LUFS, Spiralling Down -22.9 LUFS.
+  // Valleys of Death and Spiralling Down are quiet outliers; boosted to
+  // a safe peak of -1.5 dBTP (1.64 and 1.48), landing about 1 dB below
+  // the reference instead of fully matching, to avoid clipping.
   // The Herd is a quiet outlier; its true peak is -10.5 dBTP, so its gain
   // is boosted to 2.76 to match, peaking at -1.7 dBTP, no clipping.
   // Lockwood is also boosted (1.58, peak -1.4 dBTP) for the same reason.
@@ -2654,18 +2659,22 @@
       { file: "assets/music/travel-the-north-wind.mp3", title: "The North Wind", gain: 0.62 },
       { file: "assets/music/travel-troubles-theme.mp3", title: "Trouble's Theme", gain: 0.73 },
       { file: "assets/music/travel-scholars-of-mysterious-arts.mp3", title: "Scholars of Mysterious Arts", gain: 0.91 },
-      { file: "assets/music/travel-the-herd.mp3", title: "The Herd", gain: 2.76 }
+      { file: "assets/music/travel-the-herd.mp3", title: "The Herd", gain: 2.76 },
+      { file: "assets/music/travel-the-valleys-of-death.mp3", title: "The Valleys of Death", gain: 1.64 },
+      { file: "assets/music/travel-emerald-spear.mp3", title: "Emerald Spear", gain: 0.83 }
     ],
     combat: [
       { file: "assets/music/combat-to-crush-your-enemies.mp3", title: "To Crush Your Enemies", gain: 0.98 },
       { file: "assets/music/combat-black-shadow.mp3", title: "Black Shadow", gain: 0.66 },
       { file: "assets/music/combat-march-of-the-heroes.mp3", title: "March of the Heroes", gain: 0.65 },
-      { file: "assets/music/combat-protecting-neverwinter.mp3", title: "Protecting Neverwinter", gain: 0.45 }
+      { file: "assets/music/combat-protecting-neverwinter.mp3", title: "Protecting Neverwinter", gain: 0.45 },
+      { file: "assets/music/combat-trollocs.mp3", title: "Trollocs", gain: 0.37 }
     ],
     dungeon: [
       { file: "assets/music/dungeon-blood-magic.mp3", title: "Blood Magic", gain: 1.0 },
       { file: "assets/music/dungeon-the-house-of-pleasures.mp3", title: "The House of Pleasures", gain: 0.78 },
-      { file: "assets/music/dungeon-underworld.mp3", title: "Underworld", gain: 0.85 }
+      { file: "assets/music/dungeon-underworld.mp3", title: "Underworld", gain: 0.85 },
+      { file: "assets/music/dungeon-spiralling-down.mp3", title: "Spiralling Down", gain: 1.48 }
     ],
     town: [
       { file: "assets/music/town-medieval-kitchen.mp3", title: "Medieval Kitchen", gain: 0.65 },

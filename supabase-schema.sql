@@ -306,3 +306,7 @@ create policy "anon all" on battle_state for all using (true) with check (true);
 insert into battle_state (id, current_combatant_id, round) values (1, null, 1) on conflict (id) do nothing;
 alter table battle_state add column if not exists area_map_url text;
 update battle_state set area_map_url = 'https://kcrazeynate.github.io/couples-dnd-hub/assets/area-forest-road.jpg' where id = 1;
+alter table combatants add column if not exists grid_x integer;
+alter table combatants add column if not exists grid_y integer;
+alter table combatants add column if not exists speed integer;
+alter table combatants add column if not exists side text;

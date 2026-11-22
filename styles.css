@@ -523,10 +523,18 @@ button.danger:hover {
 
 .dice3d-style {
   margin: 1rem 0;
+  border: 1px solid #4a3f2c;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  background: #241f18;
 }
 
-.dice3d-style h3 {
-  margin-bottom: 0.25rem;
+.dice3d-style summary {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #e8c96a;
+  cursor: pointer;
+  list-style-position: inside;
 }
 
 .dice3d-style label {
@@ -536,40 +544,14 @@ button.danger:hover {
   color: #ece5d3;
 }
 
-.style-picks {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.style-pick {
-  flex: 1 1 64px;
-  padding: 0.5rem 0.4rem;
-  border: 2px solid #4a3f2c;
-  border-radius: 8px;
-  background: #241f18;
-  color: #ece5d3;
-  font-size: 0.85rem;
-  cursor: pointer;
-  margin-top: 0;
-}
-
-.style-pick span {
-  display: block;
-  text-align: center;
-}
-
-.style-pick .swatch {
+.style-select {
   width: 100%;
-  height: 22px;
-  border-radius: 5px;
-  margin-bottom: 0.3rem;
-  border: 1px solid rgba(0, 0, 0, 0.35);
-}
-
-.style-pick.selected {
-  border-color: #c9a227;
-  box-shadow: 0 0 0 1px #c9a227;
+  padding: 0.6rem;
+  border: 1px solid #4a3f2c;
+  border-radius: 8px;
+  background: #171410;
+  color: #ece5d3;
+  font-size: 1rem;
 }
 
 /* Battle */

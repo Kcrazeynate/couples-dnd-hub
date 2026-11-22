@@ -136,18 +136,30 @@ function makeFeltTexture() {
     ctx.fillStyle = base;
     ctx.fillRect(0, 0, s, s);
     if (style.feltDesign === "mottled") {
-      // Subtle mottled noise, like the Dice Drop felt.
-      for (var i = 0; i < 2600; i++) {
-        var x = randRange(0, s), y = randRange(0, s), r = randRange(1, 7);
-        ctx.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.05)";
-        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      // Big soft blotches, like a real mottled fabric: large cloudy
+      // patches of lighter and darker felt, not fine noise.
+      for (var i = 0; i < 22; i++) {
+        var bx = randRange(0, s), by = randRange(0, s), br = randRange(45, 95);
+        var light = Math.random() < 0.5;
+        var bg = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+        bg.addColorStop(0, light ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.10)");
+        bg.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = bg;
+        ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill();
+      }
+      for (var i2 = 0; i2 < 1200; i2++) {
+        ctx.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.04)";
+        ctx.beginPath(); ctx.arc(randRange(0, s), randRange(0, s), randRange(1, 4), 0, Math.PI * 2); ctx.fill();
       }
     } else if (style.feltDesign === "leather") {
-      // Pebbled leather grain.
-      for (var j = 0; j < 900; j++) {
-        var lx = randRange(0, s), ly = randRange(0, s), lr = randRange(3, 9);
-        ctx.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.08)";
-        ctx.beginPath(); ctx.ellipse(lx, ly, lr, lr * 0.7, randRange(0, Math.PI), 0, Math.PI * 2); ctx.fill();
+      // Big defined pebbles with a light top edge and dark base,
+      // like hide. The gloss (low roughness) sells the leather.
+      for (var j = 0; j < 650; j++) {
+        var lx = randRange(0, s), ly = randRange(0, s), lr = randRange(7, 15);
+        ctx.fillStyle = "rgba(0,0,0,0.10)";
+        ctx.beginPath(); ctx.ellipse(lx, ly, lr, lr * 0.75, randRange(0, Math.PI), 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.07)";
+        ctx.beginPath(); ctx.ellipse(lx - lr * 0.25, ly - lr * 0.25, lr * 0.55, lr * 0.35, randRange(0, Math.PI), 0, Math.PI * 2); ctx.fill();
       }
     } else if (style.feltDesign === "roses") {
       // Big tattoo-art roses, dyed into the felt: deep muted rose
@@ -261,18 +273,25 @@ function makeFeltTexture() {
         ctx.fillRect(Math.random() * s, Math.random() * s, 2, 2);
       }
     } else if (style.feltDesign === "starlight") {
-      // Tiny four-point stars and dots.
-      for (var m = 0; m < 90; m++) {
-        var sx = randRange(10, s - 10), sy = randRange(10, s - 10), sr = randRange(2, 6);
-        ctx.fillStyle = Math.random() < 0.6 ? "rgba(255, 240, 200, 0.85)" : "rgba(255,255,255,0.7)";
+      // Big bright four-point stars with a glow, like a starry sky.
+      for (var m = 0; m < 55; m++) {
+        var sx = randRange(15, s - 15), sy = randRange(15, s - 15), sr = randRange(9, 20);
+        var hg = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 2.2);
+        hg.addColorStop(0, "rgba(255,240,200,0.35)");
+        hg.addColorStop(1, "rgba(255,240,200,0)");
+        ctx.fillStyle = hg;
+        ctx.beginPath(); ctx.arc(sx, sy, sr * 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "rgba(255,246,220,0.95)";
         ctx.beginPath();
         ctx.moveTo(sx, sy - sr); ctx.quadraticCurveTo(sx, sy, sx + sr, sy);
         ctx.quadraticCurveTo(sx, sy, sx, sy + sr); ctx.quadraticCurveTo(sx, sy, sx - sr, sy);
         ctx.quadraticCurveTo(sx, sy, sx, sy - sr); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.95)";
+        ctx.beginPath(); ctx.arc(sx, sy, sr * 0.22, 0, Math.PI * 2); ctx.fill();
       }
-      for (var n = 0; n < 160; n++) {
-        ctx.fillStyle = "rgba(255,255,255,0.35)";
-        ctx.beginPath(); ctx.arc(randRange(0, s), randRange(0, s), randRange(0.5, 1.5), 0, Math.PI * 2); ctx.fill();
+      for (var n = 0; n < 140; n++) {
+        ctx.fillStyle = "rgba(255,255,255,0.5)";
+        ctx.beginPath(); ctx.arc(randRange(0, s), randRange(0, s), randRange(1, 2.5), 0, Math.PI * 2); ctx.fill();
       }
     }
     // Soft dark vignette at the corners, like a real tray.

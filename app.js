@@ -143,6 +143,7 @@
   var TAB_LOADERS = {
     board: loadMessages,
     log: loadLogEntries,
+    state: loadState,
     characters: loadCharacters,
     companions: loadCompanions,
     quests: loadQuests,
@@ -169,6 +170,8 @@
     if (!body) return null;
     if (body.indexOf("[Question] ") === 0) return { tag: "Question", cls: "tag-question", text: body.slice(11) };
     if (body.indexOf("[Decision] ") === 0) return { tag: "Decision", cls: "tag-decision", text: body.slice(11) };
+    if (body.indexOf("[start of scene]") === 0) return { tag: "Scene start", cls: "tag-scene-start", text: body.slice(16).replace(/^\s+/, "") };
+    if (body.indexOf("[end of scene]") === 0) return { tag: "Scene end", cls: "tag-scene-end", text: body.slice(14).replace(/^\s+/, "") };
     return null;
   }
 
@@ -207,6 +210,8 @@
     var type = $("message-type").value;
     if (type === "question") body = "[Question] " + body;
     if (type === "decision") body = "[Decision] " + body;
+    if (type === "scene-start") body = "[start of scene] " + body;
+    if (type === "scene-end") body = "[end of scene] " + body;
     var res = await db.from("messages").insert({ author: author, body: body });
     if (res.error) {
       alert("Could not post the message. Check the connection and try again.");
@@ -346,6 +351,71 @@
         (entry.is_mechanics ? '<p class="meta">Mechanics note</p>' : '') +
         '<p>' + escapeHtml(entry.body) + '</p>' + fxHtml +
         '</div>';
+    }).join("");
+  }
+
+  // ---------- Campaign State (what the AIs read) ----------
+
+  async function loadState() {
+    var wrap = $("state-current");
+    var arch = $("state-archive");
+    if (!wrap) return;
+    wrap.innerHTML = '<p class="empty">Loading state...</p>';
+    try {
+      var res = await fetch("campaign-state.json?t=" + Date.now());
+      if (!res.ok) throw new Error("state fetch failed");
+      var s = await res.json();
+      wrap.innerHTML = renderState(s);
+    } catch (e) {
+      wrap.innerHTML = '<p class="error">Could not load the campaign state.</p>';
+    }
+    if (!arch) return;
+    try {
+      var res2 = await fetch("campaign-state-archive.json?t=" + Date.now());
+      if (!res2.ok) throw new Error("archive fetch failed");
+      var a = await res2.json();
+      arch.innerHTML = renderArchive(a);
+    } catch (e) {
+      arch.innerHTML = '<p class="error">Could not load the archive.</p>';
+    }
+  }
+
+  function renderState(s) {
+    var h = "";
+    if (s.location) h += '<div class="card"><p class="title">Where we are</p><p>' + escapeHtml(s.location) + '</p></div>';
+    if (s.situation) h += '<div class="card"><p class="title">Situation</p><p>' + escapeHtml(s.situation) + '</p></div>';
+    if (s.current_goal) h += '<div class="card"><p class="title">Current goal</p><p>' + escapeHtml(s.current_goal) + '</p></div>';
+    if (s.open_threads && s.open_threads.length) {
+      h += '<div class="card"><p class="title">Open threads</p><ul>' + s.open_threads.map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join("") + '</ul></div>';
+    }
+    if (s.waiting_on) h += '<div class="card"><p class="title">Waiting on</p><p>' + escapeHtml(s.waiting_on) + '</p></div>';
+    if (s.key_facts && s.key_facts.length) {
+      h += '<div class="card"><p class="title">Key facts</p><ul>' + s.key_facts.map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join("") + '</ul></div>';
+    }
+    if (s.party && s.party.length) {
+      h += '<div class="card"><p class="title">Party</p><ul>' + s.party.map(function (p) { return '<li>' + escapeHtml(p.name) + ' — HP ' + escapeHtml(p.hp) + ', XP ' + p.xp + ', level ' + p.level + '</li>'; }).join("") + '</ul></div>';
+    }
+    if (s.last_scene) h += '<p class="hint">Last scene: ' + escapeHtml(s.last_scene) + (s.updated_at ? ' — updated ' + escapeHtml(fmtTime(s.updated_at)) : '') + '</p>';
+    return h || '<p class="empty">No state yet.</p>';
+  }
+
+  function renderArchive(a) {
+    if (!a || !a.length) return '<p class="empty">Nothing archived yet.</p>';
+    var items = a.slice().reverse();
+    return items.map(function (sc) {
+      var h = '<div class="card"><p class="title">' + escapeHtml(sc.scene) + ' — ' + escapeHtml(sc.date || "") + '</p>';
+      if (sc.facts && sc.facts.length) {
+        h += '<ul>' + sc.facts.map(function (f) { return '<li>' + escapeHtml(f) + '</li>'; }).join("") + '</ul>';
+      }
+      if (sc.changes) {
+        h += '<p class="title">Changes</p><ul>';
+        if (sc.changes.xp) h += '<li>XP: ' + escapeHtml(sc.changes.xp) + '</li>';
+        if (sc.changes.gold) h += '<li>Gold: ' + escapeHtml(sc.changes.gold) + '</li>';
+        if (sc.changes.items) sc.changes.items.forEach(function (it) { h += '<li>' + escapeHtml(it) + '</li>'; });
+        h += '</ul>';
+      }
+      h += '</div>';
+      return h;
     }).join("");
   }
 

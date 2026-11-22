@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Hub">
-<link rel="stylesheet" href="styles.css?v=33">
+<link rel="stylesheet" href="styles.css?v=34">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=3"></script>
 <script type="importmap">
@@ -60,6 +60,7 @@
         <button type="button" data-tab="dice" class="tab-btn">Dice</button>
         <button type="button" data-tab="battle" class="tab-btn">Battle</button>
         <button type="button" data-tab="maps" class="tab-btn">Maps</button>
+        <button type="button" data-tab="music" class="tab-btn">Music</button>
       </div>
     </div>
     <div class="tab-group">
@@ -473,7 +474,31 @@
       </div>
       <p id="map-empty" class="empty">No maps yet. Add the first one above.</p>
     </section>
+    <section id="tab-music" class="tab-panel">
+      <h2>Music</h2>
+      <p class="hint">Ambient music for the table. The DM picks the mood and every phone with the hub open follows it. Each phone plays its own copy of the tracks, and volume and mute are per phone, so anyone can turn it off for themselves. It keeps playing when the browser goes to the background or the phone locks.</p>
+      <div class="card music-now">
+        <p class="title">Now: <span data-music-mood-label>Travel</span></p>
+        <p class="meta" data-music-status>No tracks yet.</p>
+        <div class="row music-controls">
+          <button type="button" class="music-btn" data-music-toggle><span data-music-play-label>Play</span></button>
+          <label class="music-vol-label">Volume <input type="range" min="0" max="100" value="70" data-music-volume aria-label="Volume"></label>
+          <button type="button" class="music-btn" data-music-mute><span data-music-mute-label>Mute</span></button>
+        </div>
+      </div>
+      <h3>Moods</h3>
+      <p class="hint">Pick a mood and every phone follows it. A fight flips to Combat on its own and back when the fight ends.</p>
+      <div id="music-mood-list" class="list"></div>
+      <p class="hint">Tracks are royalty-free MP3s Nathan adds under assets/music/. No tracks are loaded yet.</p>
+    </section>
   </main>
+
+  <div id="music-bar" class="music-bar hidden">
+    <button type="button" class="music-bar-mood" data-music-goto><span data-music-mood-label>Travel</span></button>
+    <button type="button" class="music-btn" data-music-toggle><span data-music-play-label>Play</span></button>
+    <input type="range" min="0" max="100" value="70" data-music-volume aria-label="Volume" class="music-bar-vol">
+    <button type="button" class="music-btn" data-music-mute><span data-music-mute-label>Mute</span></button>
+  </div>
 </div>
 
 <div id="char-modal" class="modal hidden">
@@ -611,6 +636,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=13"></script>
-<script src="app.js?v=42"></script>
+<script src="app.js?v=43"></script>
 </body>
 </html>

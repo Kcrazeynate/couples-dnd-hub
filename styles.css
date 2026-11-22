@@ -1089,3 +1089,14 @@ header {
     height: 44px;
   }
 }
+
+/* NPC companions */
+.npc-summary { display: flex; gap: 12px; align-items: center; }
+.npc-pic { width: 64px; height: 96px; object-fit: contain; background: #241f18; border: 1px solid #3a2f22; border-radius: 6px; flex: none; }
+.npc-pic-fallback { display: flex; align-items: center; justify-content: center; font-size: 32px; color: #c9a227; font-weight: 700; }
+.npc-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.npc-id .name { font-size: 1.1rem; font-weight: 700; }
+.npc-toggle { flex: none; background: none; border: 1px solid #3a2f22; color: #c9a227; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+.npc-toggle:hover { background: #241f18; }
+.npc-details { margin-top: 12px; border-top: 1px solid #3a2f22; padding-top: 12px; }
+.npc-details.hidden { display: none; }

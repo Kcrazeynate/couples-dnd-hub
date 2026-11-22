@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Hub">
-<link rel="stylesheet" href="styles.css?v=31">
+<link rel="stylesheet" href="styles.css?v=32">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=3"></script>
 <script type="importmap">
@@ -47,18 +47,28 @@
   </header>
 
   <nav id="tabs" class="tabs">
-    <button type="button" data-tab="board" class="tab-btn active">Board</button>
-    <button type="button" data-tab="log" class="tab-btn">Campaign Log</button>
-    <button type="button" data-tab="state" class="tab-btn">State</button>
-    <button type="button" data-tab="characters" class="tab-btn">Characters</button>
-    <button type="button" data-tab="companions" class="tab-btn">Companions</button>
-    <button type="button" data-tab="howto" class="tab-btn">How to Play</button>
-    <button type="button" data-tab="aiguide" class="tab-btn">AI Guide</button>
-    <button type="button" data-tab="quests" class="tab-btn">Quests</button>
-    <button type="button" data-tab="npcs" class="tab-btn">NPCs</button>
-    <button type="button" data-tab="dice" class="tab-btn">Dice</button>
-    <button type="button" data-tab="battle" class="tab-btn">Battle</button>
-    <button type="button" data-tab="maps" class="tab-btn">Maps</button>
+    <div class="tab-group">
+      <p class="tab-group-label">For players</p>
+      <div class="tab-group-btns">
+        <button type="button" data-tab="board" class="tab-btn active">Board</button>
+        <button type="button" data-tab="log" class="tab-btn">Campaign Log</button>
+        <button type="button" data-tab="characters" class="tab-btn">Characters</button>
+        <button type="button" data-tab="companions" class="tab-btn">Companions</button>
+        <button type="button" data-tab="howto" class="tab-btn">How to Play</button>
+        <button type="button" data-tab="quests" class="tab-btn">Quests</button>
+        <button type="button" data-tab="npcs" class="tab-btn">NPCs</button>
+        <button type="button" data-tab="dice" class="tab-btn">Dice</button>
+        <button type="button" data-tab="battle" class="tab-btn">Battle</button>
+        <button type="button" data-tab="maps" class="tab-btn">Maps</button>
+      </div>
+    </div>
+    <div class="tab-group">
+      <p class="tab-group-label ai-label">For AIs</p>
+      <div class="tab-group-btns">
+        <button type="button" data-tab="state" class="tab-btn ai-tab">State</button>
+        <button type="button" data-tab="aiguide" class="tab-btn ai-tab">AI Guide</button>
+      </div>
+    </div>
   </nav>
 
   <main>

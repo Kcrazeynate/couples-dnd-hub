@@ -175,7 +175,7 @@
       list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
       return;
     }
-    var res = await db.from("messages").select("*").order("created_at", { ascending: true });
+    var res = await db.from("messages").select("*").order("created_at", { ascending: false });
     if (res.error) {
       list.innerHTML = '<p class="error">Could not load messages.</p>';
       return;
@@ -193,7 +193,6 @@
         '<p>' + escapeHtml(bodyText) + '</p>' +
         '</div>';
     }).join("");
-    list.scrollTop = list.scrollHeight;
   }
 
   async function postMessage(e) {

@@ -293,3 +293,14 @@ update npcs set area_map_url = 'https://kcrazeynate.github.io/couples-dnd-hub/as
 update npcs set area_map_url = 'https://kcrazeynate.github.io/couples-dnd-hub/assets/area-watchtower.jpg' where name = 'The watchtower ruins';
 update map_markers set area_map_url = 'https://kcrazeynate.github.io/couples-dnd-hub/assets/area-tollhouse.jpg' where label = 'Toll house';
 alter table log_entries add column if not exists area_map_url text;
+create table if not exists battle_state (
+  id integer primary key default 1,
+  current_combatant_id uuid references combatants(id) on delete set null,
+  round integer not null default 1,
+  updated_at timestamptz not null default now()
+);
+alter table battle_state enable row level security;
+grant select, insert, update, delete on battle_state to anon;
+drop policy if exists "anon all" on battle_state;
+create policy "anon all" on battle_state for all using (true) with check (true);
+insert into battle_state (id, current_combatant_id, round) values (1, null, 1) on conflict (id) do nothing;

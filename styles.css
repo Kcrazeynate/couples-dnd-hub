@@ -839,18 +839,18 @@ button.danger:hover {
 }
 
 .map-marker .pin {
-  width: 12px;
-  height: 12px;
+  width: 9px;
+  height: 9px;
   background: #c9a227;
   border: 2px solid #171410;
   border-radius: 50%;
 }
 
 .map-marker .map-icon {
-  width: 28px;
-  height: 28px;
+  width: 18px;
+  height: 18px;
   background: rgba(23, 20, 16, 0.88);
-  border: 2px solid #c9a227;
+  border: 1.5px solid #c9a227;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -859,8 +859,8 @@ button.danger:hover {
 }
 
 .map-marker .map-icon svg {
-  width: 19px;
-  height: 19px;
+  width: 12px;
+  height: 12px;
   fill: currentColor;
 }
 
@@ -1054,15 +1054,15 @@ header {
   touch-action: none;
 }
 .map-marker.highlight .pin {
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.35), 0 0 14px 5px rgba(201, 162, 39, 0.65);
   animation: pin-pulse 1s ease-in-out infinite;
 }
 
 .map-marker.highlight .map-icon {
-  width: 32px;
-  height: 32px;
+  width: 21px;
+  height: 21px;
   box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.35), 0 0 14px 5px rgba(201, 162, 39, 0.65);
   animation: pin-pulse 1s ease-in-out infinite;
 }
@@ -1447,4 +1447,110 @@ header {
 .area-map-btn:hover {
   background: #c9a227;
   color: #171410;
+}
+
+/* Ambient music player */
+.music-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  background: rgba(23, 20, 16, 0.97);
+  border-top: 1px solid #6b5a2e;
+  color: #ece5d3;
+}
+
+.music-bar-mood {
+  background: none;
+  border: none;
+  color: #e8c96a;
+  font-family: Georgia, "Palatino Linotype", "Book Antiqua", serif;
+  font-size: 15px;
+  padding: 4px 2px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.music-btn {
+  background: #241f18;
+  color: #e8c96a;
+  border: 1px solid #6b5a2e;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.music-btn:hover {
+  border-color: #c9a227;
+}
+
+.music-bar-vol {
+  flex: 1;
+  min-width: 60px;
+  accent-color: #c9a227;
+}
+
+.music-now .music-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.music-vol-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.music-vol-label input[type="range"] {
+  accent-color: #c9a227;
+  width: 140px;
+}
+
+.mood-btn {
+  background: #241f18;
+  color: #e8c96a;
+  border: 1px solid #6b5a2e;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.mood-btn.active {
+  background: #c9a227;
+  color: #171410;
+  border-color: #c9a227;
+}
+
+.music-tracks {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 14px;
+  color: #ece5d3;
+}
+
+/* Keep page content and the back-to-top button clear of the music bar. */
+#app main {
+  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+}
+
+.back-to-top {
+  bottom: calc(64px + max(18px, env(safe-area-inset-bottom)));
+}
+
+@media (max-width: 760px) {
+  .back-to-top {
+    bottom: calc(64px + max(14px, env(safe-area-inset-bottom)));
+  }
 }

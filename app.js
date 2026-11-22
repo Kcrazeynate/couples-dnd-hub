@@ -1843,6 +1843,7 @@
       list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
       return;
     }
+    initDice3D();
     loadDiceRollers();
     var res = await db.from("rolls").select("*").order("created_at", { ascending: false }).limit(50);
     if (res.error) {
@@ -1940,6 +1941,41 @@
     if (!advOk && modeSel.value !== "normal") modeSel.value = "normal";
   }
 
+  // 3D physics roller: start it the first time the Dice tab opens, once
+  // the dice3d module has loaded. If it never loads, the tray stays hidden
+  // and the 2D roller below is used instead.
+  var dice3DStarted = false;
+  function initDice3D() {
+    if (dice3DStarted) return;
+    if (typeof window.HubDice3D === "undefined" || !window.HubDice3D || !window.HubDice3D.init) return;
+    var tray = $("dice3d-tray");
+    if (!tray) return;
+    var ok = false;
+    try { ok = window.HubDice3D.init(tray); } catch (e) { ok = false; }
+    if (!ok) return;
+    dice3DStarted = true;
+    var wrap = $("dice3d-wrap");
+    if (wrap) wrap.classList.remove("hidden");
+    var styleSec = $("dice3d-style");
+    if (styleSec) styleSec.classList.remove("hidden");
+    try { window.HubDice3D.buildPickers(); } catch (e) {}
+  }
+
+  function saveRoll(roller, label, result, detail) {
+    db.from("rolls").insert({
+      roller: roller,
+      label: label,
+      result: result,
+      detail: detail
+    }).then(function (res) {
+      if (res.error) {
+        alert("Roll was made but could not be saved. Check the connection.");
+        return;
+      }
+      loadRolls();
+    });
+  }
+
   async function doRoll(e) {
     e.preventDefault();
     if (!configured) return setupNeeded();
@@ -1948,10 +1984,49 @@
     var mode = $("dice-mode").value;
     var count = selectedCount;
     var label = (count > 1 ? count : "") + "d" + selectedDie;
+    var isAdv = selectedDie === 20 && (mode === "advantage" || mode === "disadvantage");
+    var box = $("dice-result");
+    var rollBtn = document.querySelector(".roll-btn");
+    box.classList.remove("hidden");
+    if (rollBtn) rollBtn.disabled = true;
+
+    // 3D physics path: the dice decide the result, then it is logged
+    // exactly like a 2D roll.
+    var use3D = typeof window.HubDice3D !== "undefined" && window.HubDice3D && window.HubDice3D.ready;
+    if (use3D) {
+      var physCount = isAdv ? 2 : count;
+      box.innerHTML = '<span class="big">...</span><span class="detail">Rolling...</span>';
+      var values = null;
+      try {
+        values = await window.HubDice3D.roll(selectedDie, physCount);
+      } catch (err) {
+        values = null;
+      }
+      if (values && values.length === physCount) {
+        var dice = values;
+        var result, detail;
+        if (isAdv) {
+          var kept = mode === "advantage" ? Math.max(dice[0], dice[1]) : Math.min(dice[0], dice[1]);
+          result = kept + mod;
+          detail = "d20 (" + mode + ") " + (mod >= 0 ? "+ " : "- ") + Math.abs(mod) + " = " + result + " [rolls " + dice[0] + ", " + dice[1] + ", kept " + kept + "]";
+          label = "d20";
+        } else {
+          var sum = dice.reduce(function (a, b) { return a + b; }, 0);
+          result = sum + mod;
+          detail = label + " " + (mod >= 0 ? "+ " : "- ") + Math.abs(mod) + " = " + result + " [rolls " + dice.join(", ") + "]";
+        }
+        box.innerHTML = '<span class="big">' + result + '</span><span class="detail">' + escapeHtml(detail) + '</span>';
+        if (rollBtn) rollBtn.disabled = false;
+        saveRoll(roller, label, result, detail);
+        return;
+      }
+      // 3D roll did not produce a result: fall through to the 2D path.
+    }
+
+    // 2D fallback path (used when the 3D module is not ready).
     var dice = [];
     var keptIdx = [];
     var result, detail;
-    var isAdv = selectedDie === 20 && (mode === "advantage" || mode === "disadvantage");
     if (isAdv) {
       var r1 = rollDie(20);
       var r2 = rollDie(20);
@@ -1969,13 +2044,9 @@
       detail = label + " " + (mod >= 0 ? "+ " : "- ") + Math.abs(mod) + " = " + result + " [rolls " + dice.join(", ") + "]";
     }
     var shapeClass = "die-d" + selectedDie;
-    var box = $("dice-result");
-    var rollBtn = document.querySelector(".roll-btn");
-    box.classList.remove("hidden");
     box.innerHTML = '<div class="dice-faces">' + dice.map(function () {
       return '<span class="die-face ' + shapeClass + ' rolling"><span class="die-num">' + rollDie(selectedDie) + '</span></span>';
     }).join("") + '</div>' + '<span class="big">...</span>' + '<span class="detail">Rolling...</span>';
-    if (rollBtn) rollBtn.disabled = true;
     var nums = box.querySelectorAll(".die-num");
     var faces = box.querySelectorAll(".die-face");
     var ticks = 0;
@@ -1992,18 +2063,7 @@
       box.querySelector(".big").textContent = String(result);
       box.querySelector(".detail").textContent = detail;
       if (rollBtn) rollBtn.disabled = false;
-      db.from("rolls").insert({
-        roller: roller,
-        label: label,
-        result: result,
-        detail: detail
-      }).then(function (res) {
-        if (res.error) {
-          alert("Roll was made but could not be saved. Check the connection.");
-          return;
-        }
-        loadRolls();
-      });
+      saveRoll(roller, label, result, detail);
     }, 100);
   }
 

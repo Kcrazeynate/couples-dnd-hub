@@ -593,6 +593,16 @@ button.danger:hover {
   color: #a8d5a8;
 }
 
+.badge.tag-scene-start {
+  background: #c9a227;
+  color: #171410;
+}
+
+.badge.tag-scene-end {
+  background: #1f4d4d;
+  color: #bfe8e8;
+}
+
 /* How to Play */
 
 #tab-howto .card {

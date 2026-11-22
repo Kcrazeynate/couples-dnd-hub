@@ -2339,7 +2339,7 @@
         musicPreCombatMood = musicMood;
         setMusicMood("combat");
       } else if (wasActive && !battleActive && musicMood === "combat") {
-        setMusicMood(musicPreCombatMood || "travel");
+        setMusicMood(musicPreCombatMood || "opening");
         musicPreCombatMood = null;
       }
     }
@@ -2614,6 +2614,7 @@
   // MP3 only. Tracks live under assets/music/ and are added by Nathan;
   // until he adds them the lists are empty and the player shows that.
   var MUSIC_MOODS = [
+    { id: "opening", label: "Opening", desc: "Before the story starts, setup time" },
     { id: "travel", label: "Travel", desc: "On the road north" },
     { id: "combat", label: "Combat", desc: "A fight is on" },
     { id: "dungeon", label: "Dungeon", desc: "Scary / underground" },
@@ -2629,9 +2630,10 @@
   // To Crush Your Enemies -18.3 LUFS, Black Shadow -14.8 LUFS,
   // Magical Forest -14.8 LUFS, Old Creek Grove -18.5 LUFS. Add entries here
   var MUSIC_TRACKS = {
-    travel: [
-      { file: "assets/music/travel-voyages-of-the-valiant.mp3", title: "Voyages of the Valiant", gain: 0.55 }
+    opening: [
+      { file: "assets/music/opening-voyages-of-the-valiant.mp3", title: "Voyages of the Valiant", gain: 0.55 }
     ],
+    travel: [],
     combat: [
       { file: "assets/music/combat-to-crush-your-enemies.mp3", title: "To Crush Your Enemies", gain: 0.98 },
       { file: "assets/music/combat-black-shadow.mp3", title: "Black Shadow", gain: 0.66 }
@@ -2644,7 +2646,7 @@
     ]
   };
   var MUSIC_FADE_MS = 4000;
-  var musicMood = "travel";
+  var musicMood = "opening";
   var musicReady = false;
   var musicPlaying = false;
   var musicVolume = 0.7;

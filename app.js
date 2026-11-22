@@ -150,7 +150,8 @@
     npcs: loadNpcs,
     dice: loadRolls,
     battle: loadCombatants,
-    maps: loadMaps
+    maps: loadMaps,
+    music: renderMusicTab
   };
 
   function switchTab(name) {
@@ -2329,7 +2330,19 @@
       currentTurn = 0;
     }
     renderCombatants();
-    if (battleActive !== wasActive) loadCurrentArea();
+    if (battleActive !== wasActive) {
+      loadCurrentArea();
+      // A fight starting flips the music to combat; when the last fighter
+      // leaves, it goes back to the mood from before the fight, unless the
+      // DM picked a different mood by hand during the fight.
+      if (!wasActive && battleActive) {
+        musicPreCombatMood = musicMood;
+        setMusicMood("combat");
+      } else if (wasActive && !battleActive && musicMood === "combat") {
+        setMusicMood(musicPreCombatMood || "travel");
+        musicPreCombatMood = null;
+      }
+    }
     updateMapView();
   }
 
@@ -2590,6 +2603,264 @@
     battleState = { round: 1, current_combatant_id: null };
     await saveBattleState();
     loadCombatants();
+  }
+
+  // ---------- Music ----------
+
+  // Ambient music, synced across phones by mood only. Each phone plays its
+  // own copy of the audio files from the site; only the "which mood" signal
+  // travels through Supabase. The DM picks the mood by hand, the battle
+  // tracker flips to combat when a fight starts and back when it ends.
+  // MP3 only. Tracks live under assets/music/ and are added by Nathan;
+  // until he adds them the lists are empty and the player shows that.
+  var MUSIC_MOODS = [
+    { id: "travel", label: "Travel", desc: "On the road north" },
+    { id: "combat", label: "Combat", desc: "A fight is on" },
+    { id: "dungeon", label: "Dungeon", desc: "Scary / underground" },
+    { id: "town", label: "Town / Tavern", desc: "Riverton" },
+    { id: "rest", label: "Rest / Camp", desc: "Campfire rest" }
+  ];
+  // Track lists per mood. A track is { file, title, gain }. Files are MP3s
+  // under assets/music/, named like travel-01.mp3. gain is a per-track
+  // loudness level, 1.0 by default; when Nathan supplies the files, each
+  // track's loudness is measured and gain is set so all tracks play at the
+  // same perceived level (a loud track gets a gain below 1, a quiet one
+  // stays at 1). Add entries here when the files arrive. Empty until then;
+  // the player says so instead of playing anything it should not.
+  var MUSIC_TRACKS = {
+    travel: [],
+    combat: [],
+    dungeon: [],
+    town: [],
+    rest: []
+  };
+  var MUSIC_FADE_MS = 4000;
+  var musicMood = "travel";
+  var musicReady = false;
+  var musicPlaying = false;
+  var musicVolume = 0.7;
+  var musicMuted = false;
+  var musicQueue = [];
+  var musicQueuePos = 0;
+  var musicAudioA = null;
+  var musicAudioB = null;
+  var musicActive = "A";
+  var musicCurrentTitle = "";
+  var musicCurrentGain = 1;
+  var musicLastFile = "";
+  var musicAdvancing = false;
+  var musicPreCombatMood = null;
+  try {
+    var mv = parseFloat(localStorage.getItem("hub-music-volume"));
+    if (!isNaN(mv) && mv >= 0 && mv <= 1) musicVolume = mv;
+    musicMuted = localStorage.getItem("hub-music-muted") === "1";
+  } catch (e) { /* storage unavailable: defaults stand */ }
+
+  function musicMoodLabel(id) {
+    var m = MUSIC_MOODS.find(function (x) { return x.id === id; });
+    return m ? m.label : id;
+  }
+  function musicEffectiveVolume() {
+    return musicMuted ? 0 : musicVolume;
+  }
+  function musicTargetVolume() {
+    return Math.max(0, Math.min(1, musicEffectiveVolume() * musicCurrentGain));
+  }
+  function musicEnsureAudio() {
+    if (!musicAudioA) {
+      musicAudioA = new Audio();
+      musicAudioA.preload = "auto";
+      musicAudioB = new Audio();
+      musicAudioB.preload = "auto";
+      musicAudioA.addEventListener("ended", musicOnTrackEnded);
+      musicAudioB.addEventListener("ended", musicOnTrackEnded);
+      musicAudioA.addEventListener("timeupdate", musicMaybeAdvance);
+      musicAudioB.addEventListener("timeupdate", musicMaybeAdvance);
+    }
+    musicAudioA.volume = musicTargetVolume();
+    musicAudioB.volume = 0;
+    return musicActive === "A" ? musicAudioA : musicAudioB;
+  }
+  function musicOtherEl() {
+    return musicActive === "A" ? musicAudioB : musicAudioA;
+  }
+  function musicFade(el, to, ms) {
+    if (!el) return;
+    var from = el.volume;
+    var steps = Math.max(1, Math.round(ms / 50));
+    var i = 0;
+    var timer = setInterval(function () {
+      i++;
+      el.volume = Math.max(0, Math.min(1, from + (to - from) * (i / steps)));
+      if (i >= steps) {
+        clearInterval(timer);
+        el.volume = to;
+        if (to === 0) el.pause();
+      }
+    }, 50);
+  }
+  function musicShuffleQueue(mood) {
+    var tracks = MUSIC_TRACKS[mood] || [];
+    var idx = tracks.map(function (_, i) { return i; });
+    for (var i = idx.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = idx[i]; idx[i] = idx[j]; idx[j] = t;
+    }
+    // Never play the same track twice in a row across a reshuffle: if the
+    // new queue would open with the track that just played, swap it with
+    // the next one. A one-track list just replays (the only exception).
+    if (idx.length > 1 && musicLastFile && tracks[idx[0]] && tracks[idx[0]].file === musicLastFile) {
+      var tmp = idx[0]; idx[0] = idx[1]; idx[1] = tmp;
+    }
+    musicQueue = idx;
+    musicQueuePos = 0;
+  }
+  function musicNextTrack() {
+    var tracks = MUSIC_TRACKS[musicMood] || [];
+    if (!tracks.length) return null;
+    if (!musicQueue.length || musicQueuePos >= musicQueue.length) {
+      musicShuffleQueue(musicMood);
+    }
+    var track = tracks[musicQueue[musicQueuePos]];
+    musicQueuePos++;
+    musicLastFile = track.file;
+    return track;
+  }
+  function musicPlayTrack(track) {
+    if (!track) return;
+    musicEnsureAudio();
+    var next = musicOtherEl();
+    var cur = musicActive === "A" ? musicAudioA : musicAudioB;
+    next.src = track.file;
+    next.volume = 0;
+    musicCurrentTitle = track.title || track.file;
+    musicCurrentGain = (typeof track.gain === "number" && track.gain > 0) ? track.gain : 1;
+    musicAdvancing = false;
+    var p = next.play();
+    if (p && p.catch) p.catch(function () { /* autoplay blocked: user taps Play again */ });
+    musicFade(next, musicTargetVolume(), MUSIC_FADE_MS);
+    musicFade(cur, 0, MUSIC_FADE_MS);
+    musicActive = musicActive === "A" ? "B" : "A";
+    musicUpdateUI();
+  }
+  // Start the next track a little before the current one ends, so the
+  // outgoing track fades out while the incoming one fades in and there is
+  // no silence gap and no hard cut. The ended event below is the fallback
+  // for tracks too short to pre-roll or if the timer is missed.
+  function musicMaybeAdvance() {
+    if (!musicPlaying || musicAdvancing) return;
+    var el = musicActive === "A" ? musicAudioA : musicAudioB;
+    if (!el || !el.duration || isNaN(el.duration)) return;
+    if (el.duration - el.currentTime <= MUSIC_FADE_MS / 1000 + 0.5) {
+      musicAdvancing = true;
+      var track = musicNextTrack();
+      if (track) musicPlayTrack(track);
+    }
+  }
+  function musicOnTrackEnded(ev) {
+    var el = (ev && (ev.target || ev.currentTarget)) || null;
+    var activeEl = musicActive === "A" ? musicAudioA : musicAudioB;
+    if (el && el !== activeEl) return; // the fading-out element ended; ignore it
+    if (!musicPlaying) return;
+    var track = musicNextTrack();
+    if (track) musicPlayTrack(track);
+  }
+  function musicStart() {
+    var track = musicNextTrack();
+    if (!track) {
+      musicPlaying = false;
+      musicUpdateUI();
+      return;
+    }
+    musicPlaying = true;
+    musicPlayTrack(track);
+  }
+  function musicPause() {
+    musicPlaying = false;
+    if (musicAudioA) musicAudioA.pause();
+    if (musicAudioB) musicAudioB.pause();
+    musicUpdateUI();
+  }
+  function musicToggle() {
+    if (musicPlaying) musicPause();
+    else musicStart();
+  }
+  function musicSetVolume(v) {
+    musicVolume = Math.max(0, Math.min(1, v));
+    try { localStorage.setItem("hub-music-volume", String(musicVolume)); } catch (e) { /* ignore */ }
+    var el = musicActive === "A" ? musicAudioA : musicAudioB;
+    if (el) el.volume = musicTargetVolume();
+    musicUpdateUI();
+  }
+  function musicSetMuted(m) {
+    musicMuted = !!m;
+    try { localStorage.setItem("hub-music-muted", musicMuted ? "1" : "0"); } catch (e) { /* ignore */ }
+    var el = musicActive === "A" ? musicAudioA : musicAudioB;
+    if (el) el.volume = musicTargetVolume();
+    musicUpdateUI();
+  }
+  async function loadMusicState() {
+    var res = await db.from("music_state").select("mood").eq("id", 1).single();
+    if (res.error || !res.data) return; // table not there yet (SQL not run): local mood only
+    var mood = res.data.mood;
+    if (!MUSIC_TRACKS.hasOwnProperty(mood)) return;
+    var changed = mood !== musicMood;
+    musicMood = mood;
+    musicReady = true;
+    if (changed && musicPlaying) {
+      musicShuffleQueue(musicMood);
+      var track = musicNextTrack();
+      if (track) musicPlayTrack(track);
+    }
+    musicUpdateUI();
+  }
+  async function setMusicMood(mood) {
+    if (!MUSIC_TRACKS.hasOwnProperty(mood)) return;
+    var changed = mood !== musicMood;
+    musicMood = mood;
+    if (changed) musicShuffleQueue(mood);
+    musicUpdateUI();
+    if (musicReady) {
+      await db.from("music_state").update({ mood: mood, updated_at: new Date().toISOString() }).eq("id", 1);
+    }
+    if (changed && musicPlaying) {
+      var track = musicNextTrack();
+      if (track) musicPlayTrack(track);
+    }
+  }
+  function musicUpdateUI() {
+    var label = musicMoodLabel(musicMood);
+    var tracks = MUSIC_TRACKS[musicMood] || [];
+    var status = tracks.length ? (musicPlaying ? ("Now playing: " + musicCurrentTitle) : ("Paused: " + (musicCurrentTitle || label))) : "No tracks yet for " + label + ". Nathan will add MP3s.";
+    document.querySelectorAll("[data-music-mood-label]").forEach(function (el) { el.textContent = label; });
+    document.querySelectorAll("[data-music-status]").forEach(function (el) { el.textContent = status; });
+    document.querySelectorAll("[data-music-play-label]").forEach(function (el) { el.textContent = musicPlaying ? "Pause" : "Play"; });
+    document.querySelectorAll("[data-music-mute-label]").forEach(function (el) { el.textContent = musicMuted ? "Unmute" : "Mute"; });
+    document.querySelectorAll("[data-music-volume]").forEach(function (el) { el.value = Math.round(musicVolume * 100); });
+    document.querySelectorAll("[data-music-mood-btn]").forEach(function (btn) {
+      btn.classList.toggle("active", btn.dataset.musicMoodBtn === musicMood);
+    });
+    var bar = $("music-bar");
+    if (bar) bar.classList.toggle("hidden", !configured);
+  }
+  function renderMusicTab() {
+    var list = $("music-mood-list");
+    if (list) {
+      list.innerHTML = MUSIC_MOODS.map(function (m) {
+        var tracks = MUSIC_TRACKS[m.id] || [];
+        var trackHtml = tracks.length
+          ? '<ul class="music-tracks">' + tracks.map(function (t) { return '<li>' + escapeHtml(t.title || t.file) + '</li>'; }).join("") + '</ul>'
+          : '<p class="empty">No tracks yet. Nathan will add MP3s for this mood.</p>';
+        return '<div class="card"><p class="title">' + escapeHtml(m.label) + '</p>' +
+          '<p class="meta">' + escapeHtml(m.desc) + '</p>' +
+          '<button type="button" class="mood-btn" data-music-mood-btn="' + m.id + '">Play ' + escapeHtml(m.label) + '</button>' +
+          trackHtml + '</div>';
+      }).join("");
+      list.querySelectorAll("[data-music-mood-btn]").forEach(function (btn) {
+        btn.addEventListener("click", function () { setMusicMood(btn.dataset.musicMoodBtn); });
+      });
+    }
+    musicUpdateUI();
   }
 
   // ---------- Maps ----------
@@ -3088,6 +3359,7 @@
       rolls: loadRolls,
       combatants: loadCombatants,
       battle_state: loadCombatants,
+      music_state: loadMusicState,
       maps: loadMaps,
       map_cells: loadMapView,
       map_markers: loadMapView,
@@ -3429,6 +3701,20 @@
     loadMessages();
     setInterval(loadMessages, 15000);
     loadCombatants();
+    loadMusicState();
+    document.querySelectorAll("[data-music-toggle]").forEach(function (btn) {
+      btn.addEventListener("click", function () { musicToggle(); });
+    });
+    document.querySelectorAll("[data-music-mute]").forEach(function (btn) {
+      btn.addEventListener("click", function () { musicSetMuted(!musicMuted); });
+    });
+    document.querySelectorAll("[data-music-volume]").forEach(function (el) {
+      el.addEventListener("input", function () { musicSetVolume(parseInt(el.value, 10) / 100); });
+    });
+    document.querySelectorAll("[data-music-goto]").forEach(function (btn) {
+      btn.addEventListener("click", function () { switchTab("music"); });
+    });
+    musicUpdateUI();
   }
 
   initGate();

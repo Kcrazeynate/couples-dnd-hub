@@ -677,7 +677,7 @@ function readDieValue(die) {
 
 // ---------- scene ----------
 // Tray inner size 9 x 6. Dice are about 1 unit across.
-var TRAY_W = 9, TRAY_D = 6, WALL_H = 0.9, WALL_T = 0.45;
+var TRAY_W = 9, TRAY_D = 6, WALL_H = 0.9, WALL_T = 0.45, WALL_PHYS_H = 6;
 var renderer = null, scene = null, camera = null, world = null;
 var trayFloor = null, containerEl = null, initialized = false, rolling = false;
 var dice = []; // live dice: {group, body, sides, faces, readDown, bodyMesh, facePlanes}
@@ -741,9 +741,12 @@ function init(container) {
   var ground = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
   ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
   world.addBody(ground);
+  // Physics walls are much taller than the visible rim (which is only
+  // WALL_H high) so a bouncy die can never hop over the edge and out
+  // of the tray. The extra height is invisible.
   function wall(w, d, x, z) {
-    var b = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Box(new CANNON.Vec3(w / 2, WALL_H, d / 2)) });
-    b.position.set(x, WALL_H / 2, z);
+    var b = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Box(new CANNON.Vec3(w / 2, WALL_PHYS_H / 2, d / 2)) });
+    b.position.set(x, WALL_PHYS_H / 2, z);
     world.addBody(b);
   }
   wall(TRAY_W + WALL_T * 2, WALL_T, 0, -(TRAY_D / 2 + WALL_T / 2));

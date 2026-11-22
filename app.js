@@ -2268,6 +2268,7 @@
       list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
       return;
     }
+    loadEnemyRef();
     var res = await db.from("combatants").select("*").order("initiative", { ascending: false });
     if (res.error) {
       list.innerHTML = '<p class="error">Could not load combatants.</p>';
@@ -2354,14 +2355,126 @@
     loadCombatants();
   }
 
+  // ---------- Enemy reference and combatant auto-fill ----------
+  // The enemy reference (enemy-reference.json, SRD 5.2.1 plus the DM's
+  // homebrew entries under "custom") supplies standard stats so the DM
+  // does not type them by hand. Typing a name fills HP, speed and the
+  // initiative modifier, and initiative rolls itself for NPCs and
+  // enemies. Player characters (Milo, Sylvie) fill HP only; they roll
+  // their own initiative and the DM enters the result.
+  var enemyRef = null;
+  var lastAutofillName = "";
+
+  async function loadEnemyRef() {
+    if (enemyRef) return enemyRef;
+    try {
+      var res = await fetch(HUB_URL + "enemy-reference.json?t=" + Date.now());
+      if (!res.ok) return null;
+      enemyRef = await res.json();
+      return enemyRef;
+    } catch (e) { return null; }
+  }
+
+  function normCombatName(name) {
+    return String(name || "").toLowerCase().trim().replace(/\s+\d+$/, "");
+  }
+
+  function findEnemy(name) {
+    if (!enemyRef) return null;
+    var n = normCombatName(name);
+    if (!n) return null;
+    var lists = [];
+    if (enemyRef.enemies) lists = lists.concat(enemyRef.enemies);
+    if (enemyRef.custom) lists = lists.concat(enemyRef.custom);
+    for (var i = 0; i < lists.length; i++) {
+      if (String(lists[i].name || "").toLowerCase() === n) return lists[i];
+    }
+    return null;
+  }
+
+  function findNpc(name) {
+    var n = normCombatName(name);
+    if (!n) return null;
+    for (var i = 0; i < NPC_ROSTER.length; i++) {
+      if (NPC_ROSTER[i].name.toLowerCase() === n) return NPC_ROSTER[i];
+    }
+    return null;
+  }
+
+  function findPlayerChar(name) {
+    var n = normCombatName(name);
+    if (!n) return null;
+    var chars = Object.keys(charByPlayer).map(function (k) { return charByPlayer[k]; });
+    for (var i = 0; i < chars.length; i++) {
+      var cn = String(chars[i].name || "").toLowerCase();
+      if (!cn) continue;
+      if (cn.indexOf(n) !== -1 || n.indexOf(cn.split(" ")[0]) !== -1) return chars[i];
+      if (n === "sylvie" && chars[i].player === "angela") return chars[i];
+    }
+    return null;
+  }
+
+  function rollD20() { return 1 + Math.floor(Math.random() * 20); }
+
+  async function autofillCombatant() {
+    var name = $("combatant-name").value.trim();
+    if (!name) { lastAutofillName = ""; return; }
+    var base = normCombatName(name);
+    if (base === lastAutofillName) return;
+    if (!Object.keys(charByPlayer).length) await loadCharacters();
+    await loadEnemyRef();
+    var enemy = findEnemy(name);
+    if (enemy) {
+      var eInit = (typeof enemy.init_mod === "number" ? enemy.init_mod : (enemy.dex_mod || 0));
+      $("combatant-hp").value = enemy.hp;
+      $("combatant-max-hp").value = enemy.hp;
+      if (enemy.speed) $("combatant-speed").value = enemy.speed;
+      $("combatant-init-mod").value = eInit;
+      if (!$("combatant-initiative").value) $("combatant-initiative").value = rollD20() + eInit;
+      $("combatant-side").value = "enemy";
+      lastAutofillName = base;
+      return;
+    }
+    var npc = findNpc(name);
+    if (npc) {
+      var rows = Object.keys(charByPlayer).map(function (k) { return charByPlayer[k]; });
+      var hp = npcMaxHp(npc, npcTargetLevel(rows));
+      $("combatant-hp").value = hp;
+      $("combatant-max-hp").value = hp;
+      $("combatant-speed").value = "";
+      $("combatant-init-mod").value = abilityMod(npc.dex);
+      if (!$("combatant-initiative").value) $("combatant-initiative").value = rollD20() + abilityMod(npc.dex);
+      $("combatant-side").value = "party";
+      lastAutofillName = base;
+      return;
+    }
+    var pc = findPlayerChar(name);
+    if (pc) {
+      $("combatant-hp").value = pc.hp;
+      $("combatant-max-hp").value = pc.max_hp;
+      $("combatant-speed").value = "";
+      $("combatant-init-mod").value = abilityMod(pc.dex);
+      $("combatant-side").value = "party";
+      lastAutofillName = base;
+      return;
+    }
+  }
+
+  function rollInitiative() {
+    var mod = numOrNull($("combatant-init-mod").value) || 0;
+    $("combatant-initiative").value = rollD20() + mod;
+  }
+
   async function addCombatant(e) {
     e.preventDefault();
     if (!configured) return setupNeeded();
     var name = $("combatant-name").value.trim();
     if (!name) return;
+    await autofillCombatant();
+    var initVal = numOrNull($("combatant-initiative").value);
     var row = {
       name: name,
-      initiative: numOrNull($("combatant-initiative").value) || 0,
+      initiative: (initVal === null ? 10 : initVal),
       hp: numOrNull($("combatant-hp").value) || 0,
       max_hp: numOrNull($("combatant-max-hp").value) || 1,
       speed: numOrNull($("combatant-speed").value),
@@ -2375,6 +2488,7 @@
     }
     $("combatant-name").value = "";
     $("combatant-note").value = "";
+    lastAutofillName = "";
     loadCombatants();
   }
 
@@ -2961,6 +3075,8 @@
     $("npc-form").addEventListener("submit", addNpc);
     $("dice-form").addEventListener("submit", doRoll);
     $("combatant-form").addEventListener("submit", addCombatant);
+    $("combatant-name").addEventListener("change", autofillCombatant);
+    $("combatant-roll-init-btn").addEventListener("click", rollInitiative);
     $("next-turn-btn").addEventListener("click", nextTurn);
     $("clear-battle-btn").addEventListener("click", clearBattle);
     $("map-view-world").addEventListener("click", function () {

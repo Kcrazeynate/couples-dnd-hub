@@ -1936,7 +1936,7 @@
   function updateDiceMode() {
     var modeSel = $("dice-mode");
     if (!modeSel) return;
-    var advOk = selectedCount === 1 && selectedDie === 20;
+    var advOk = selectedDie === 20 && selectedCount === 2;
     if (!advOk && modeSel.value !== "normal") modeSel.value = "normal";
   }
 
@@ -1951,7 +1951,7 @@
     var dice = [];
     var keptIdx = [];
     var result, detail;
-    var isAdv = selectedDie === 20 && count === 1 && (mode === "advantage" || mode === "disadvantage");
+    var isAdv = selectedDie === 20 && (mode === "advantage" || mode === "disadvantage");
     if (isAdv) {
       var r1 = rollDie(20);
       var r2 = rollDie(20);
@@ -2894,12 +2894,12 @@
       var modeSel = $("dice-mode");
       if (modeSel.value === "advantage" || modeSel.value === "disadvantage") {
         selectedDie = 20;
-        selectedCount = 1;
+        selectedCount = 2;
         document.querySelectorAll("#dice-buttons button").forEach(function (b) {
           b.classList.toggle("selected", parseInt(b.dataset.die, 10) === 20);
         });
         document.querySelectorAll("#dice-count-buttons button").forEach(function (b) {
-          b.classList.toggle("selected", parseInt(b.dataset.count, 10) === 1);
+          b.classList.toggle("selected", parseInt(b.dataset.count, 10) === 2);
         });
       }
       updateDiceMode();

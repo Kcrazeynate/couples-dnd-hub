@@ -2162,7 +2162,12 @@
     applyModSource();
   }
 
-  function applyModSource() {
+  // Fill the Modifier from the selected source. The picker builds its
+  // options from the DB when charByPlayer is not loaded yet, so this
+  // needs the same fallback: without it, picking a skill on a fresh
+  // Dice tab (Characters never opened) showed the bonus in the option
+  // label but left the Modifier at 0, and the roll logged +0.
+  async function applyModSource() {
     var sel = $("dice-mod-source");
     var modInput = $("dice-mod");
     if (!sel || !modInput) return;
@@ -2171,6 +2176,10 @@
     if (source === "manual") return;
     var roller = $("dice-roller") ? $("dice-roller").value : "";
     var rows = Object.keys(charByPlayer).map(function (k) { return charByPlayer[k]; });
+    if (!rows.length) {
+      var res = await db.from("characters").select("*").eq("dismissed", false);
+      if (!res.error && res.data) rows = res.data;
+    }
     var c = charForRoller(roller, rows);
     var bonus = modSourceBonus(c, source);
     if (bonus !== null && bonus !== undefined) modInput.value = String(bonus);

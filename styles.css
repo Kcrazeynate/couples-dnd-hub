@@ -351,6 +351,12 @@ button.danger:hover {
   line-height: 1;
 }
 
+.hp-amount {
+  width: 4.5rem;
+  margin-top: 0;
+  padding: 0.35rem 0.5rem;
+}
+
 .scores {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

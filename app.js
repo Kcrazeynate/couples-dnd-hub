@@ -570,52 +570,135 @@
   // that carries a map or a location. Entry's own map wins; otherwise the
   // location marker's map, then the matching place's map. Unvisited places
   // stay hidden.
+  // ---------- Map view: world vs area ----------
+  var currentAreaMapUrl = null;
+  var currentAreaLabel = "";
+  var battleActive = false;
+  var prevBattleActive = false;
+  var prevHasAreaMap = false;
+  var mapViewOverride = null;
+  var mapView = "world";
+
+  function areaMapLabel(url) {
+    var opt = AREA_MAP_OPTIONS.find(function (o) { return o.url === url; });
+    return opt ? opt.label : null;
+  }
+
+  function renderAreaMapView() {
+    var view = $("area-map-view");
+    var content = $("area-map-content");
+    if (!view || !content) return;
+    if (!currentAreaMapUrl) {
+      content.innerHTML = '<p class="empty">No area map for where the party is right now.</p>';
+      return;
+    }
+    content.innerHTML = '<div class="card"><p class="title">Current area: ' + escapeHtml(currentAreaLabel || "this scene") + '</p>' +
+      '<img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '" alt="Area map">' +
+      '<p class="hint">1 square = 5 feet. Tap the map to open it large.</p></div>';
+    content.querySelector("img").addEventListener("click", function () {
+      openLightbox(currentAreaMapUrl);
+    });
+  }
+
+  function setMapView(view) {
+    mapView = view;
+    var worldView = $("map-view");
+    var areaView = $("area-map-view");
+    if (worldView) worldView.classList.toggle("hidden", view !== "world" || !mapsList.length);
+    if (areaView) areaView.classList.toggle("hidden", view !== "area");
+    var worldBtn = $("map-view-world");
+    var areaBtn = $("map-view-area");
+    if (worldBtn) worldBtn.classList.toggle("selected", view === "world");
+    if (areaBtn) {
+      areaBtn.classList.toggle("selected", view === "area");
+      areaBtn.disabled = !currentAreaMapUrl;
+    }
+  }
+
+  // Auto-switch: a battle with an area map shows the area map; when the
+  // battle ends, or the party leaves a mapped area, it goes back to the
+  // world map. A manual tap on World/Area map sticks until the next
+  // battle start or end.
+  function updateMapView() {
+    var hasAreaMap = !!currentAreaMapUrl;
+    var inBattle = battleActive;
+    if (inBattle !== prevBattleActive) mapViewOverride = null;
+    if (!hasAreaMap && prevHasAreaMap) mapViewOverride = null;
+    prevBattleActive = inBattle;
+    prevHasAreaMap = hasAreaMap;
+    var auto = (inBattle && hasAreaMap) ? "area" : "world";
+    setMapView(mapViewOverride || auto);
+  }
+
   async function loadCurrentArea() {
     var wrap = $("current-area");
     if (!wrap || !configured) return;
+    var mapUrl = null;
+    var placeName = null;
+    var entryTitle = null;
+    var entryDate = null;
+    // A battle's area map wins while the battle is on.
+    var battleRes = await db.from("battle_state").select("area_map_url").eq("id", 1).single();
+    var combatRes = await db.from("combatants").select("id").limit(1);
+    var inBattle = !combatRes.error && combatRes.data && combatRes.data.length > 0;
+    battleActive = inBattle;
+    if (inBattle && !battleRes.error && battleRes.data && battleRes.data.area_map_url) {
+      mapUrl = battleRes.data.area_map_url;
+      placeName = areaMapLabel(mapUrl) || "Battle";
+    }
+    // Otherwise fall back to the latest log entry.
     var res = await db.from("log_entries").select("id, title, created_at, area_map_url").order("created_at", { ascending: false }).limit(20);
     if (res.error) {
       // column not there yet (SQL not run): retry without it, location maps still work
       res = await db.from("log_entries").select("id, title, created_at").order("created_at", { ascending: false }).limit(20);
     }
-    if (res.error || !res.data || !res.data.length) {
-      wrap.innerHTML = '<p class="empty">No area map for where the party is right now.</p>';
-      return;
-    }
-    var locRes = await db.from("party_locations").select("log_id, marker_id").order("created_at", { ascending: false }).limit(50);
-    var locByLog = {};
-    (locRes.data || []).forEach(function (pl) {
-      (locByLog[pl.log_id] = locByLog[pl.log_id] || []).push(pl.marker_id);
-    });
-    for (var i = 0; i < res.data.length; i++) {
-      var e = res.data[i];
-      var mapUrl = e.area_map_url || null;
-      var placeName = null;
-      if (!mapUrl) {
-        var mids = locByLog[e.id] || [];
-        for (var j = 0; j < mids.length; j++) {
-          var mk = mapMarkers.find(function (m) { return m.id === mids[j]; });
-          if (!mk) continue;
-          placeName = mk.label;
-          if (mk.area_map_url && mk.visited) { mapUrl = mk.area_map_url; break; }
-          var entry = npcsByName[normName(mk.label)];
-          if (entry && entry.area_map_url && entry.visited) { mapUrl = entry.area_map_url; break; }
+    if (!mapUrl && !res.error && res.data && res.data.length) {
+      var locRes = await db.from("party_locations").select("log_id, marker_id").order("created_at", { ascending: false }).limit(50);
+      var locByLog = {};
+      (locRes.data || []).forEach(function (pl) {
+        (locByLog[pl.log_id] = locByLog[pl.log_id] || []).push(pl.marker_id);
+      });
+      for (var i = 0; i < res.data.length; i++) {
+        var e = res.data[i];
+        var m = e.area_map_url || null;
+        var pn = null;
+        if (!m) {
+          var mids = locByLog[e.id] || [];
+          for (var j = 0; j < mids.length; j++) {
+            var mk = mapMarkers.find(function (mm) { return mm.id === mids[j]; });
+            if (!mk) continue;
+            pn = mk.label;
+            if (mk.area_map_url && mk.visited) { m = mk.area_map_url; break; }
+            var entry = npcsByName[normName(mk.label)];
+            if (entry && entry.area_map_url && entry.visited) { m = entry.area_map_url; break; }
+          }
+        }
+        if (m) {
+          mapUrl = m;
+          placeName = pn;
+          entryTitle = e.title;
+          entryDate = e.created_at;
+          break;
         }
       }
-      if (mapUrl) {
-        var date = e.created_at ? new Date(e.created_at).toLocaleDateString() : "";
-        var where = placeName ? escapeHtml(placeName) : "this scene";
-        wrap.innerHTML = '<div class="card"><p class="title">Current area: ' + where + '</p>' +
-          '<p>As of "' + escapeHtml(e.title) + '"' + (date ? ' (' + escapeHtml(date) + ')' : '') + '</p>' +
-          '<button type="button" class="area-map-btn" data-area-map="' + escapeHtml(mapUrl) + '">View area map</button></div>';
-        wrap.querySelector("[data-area-map]").addEventListener("click", function (ev) {
-          ev.stopPropagation();
-          openLightbox(mapUrl);
-        });
-        return;
-      }
     }
-    wrap.innerHTML = '<p class="empty">No area map for where the party is right now.</p>';
+    currentAreaMapUrl = mapUrl;
+    currentAreaLabel = placeName || entryTitle || "";
+    if (mapUrl) {
+      var date = entryDate ? new Date(entryDate).toLocaleDateString() : "";
+      var where = placeName ? escapeHtml(placeName) : "this scene";
+      wrap.innerHTML = '<div class="card"><p class="title">Current area: ' + where + '</p>' +
+        (entryTitle ? '<p>As of "' + escapeHtml(entryTitle) + '"' + (date ? ' (' + escapeHtml(date) + ')' : '') + '</p>' : '') +
+        '<button type="button" class="area-map-btn" data-area-map="' + escapeHtml(mapUrl) + '">View area map</button></div>';
+      wrap.querySelector("[data-area-map]").addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        openLightbox(mapUrl);
+      });
+    } else {
+      wrap.innerHTML = '<p class="empty">No area map for where the party is right now.</p>';
+    }
+    renderAreaMapView();
+    updateMapView();
   }
 
   async function loadLocationOptions() {
@@ -1645,7 +1728,7 @@
   // and follow the board: the DM updates combatant HP and this row as it
   // resolves actions, and the tracker reloads live.
   async function loadBattleState() {
-    var res = await db.from("battle_state").select("current_combatant_id, round").eq("id", 1).single();
+    var res = await db.from("battle_state").select("current_combatant_id, round, area_map_url").eq("id", 1).single();
     if (res.error || !res.data) return; // table not there yet (SQL not run): local turn only
     battleState = res.data;
     battleStateReady = true;
@@ -1672,6 +1755,8 @@
       return;
     }
     combatants = res.data || [];
+    var wasActive = battleActive;
+    battleActive = combatants.length > 0;
     await loadBattleState();
     if (battleStateReady) {
       var idx = combatants.findIndex(function (c) { return c.id === battleState.current_combatant_id; });
@@ -1680,6 +1765,8 @@
       currentTurn = 0;
     }
     renderCombatants();
+    if (battleActive !== wasActive) loadCurrentArea();
+    updateMapView();
   }
 
   function renderCombatants() {
@@ -2351,6 +2438,15 @@
     $("combatant-form").addEventListener("submit", addCombatant);
     $("next-turn-btn").addEventListener("click", nextTurn);
     $("clear-battle-btn").addEventListener("click", clearBattle);
+    $("map-view-world").addEventListener("click", function () {
+      mapViewOverride = "world";
+      setMapView("world");
+    });
+    $("map-view-area").addEventListener("click", function () {
+      if (!currentAreaMapUrl) return;
+      mapViewOverride = "area";
+      setMapView("area");
+    });
     $("add-map-form").addEventListener("submit", addMap);
     document.querySelectorAll(".map-modes .mode-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {

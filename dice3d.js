@@ -667,7 +667,7 @@ function init(container) {
   scene.add(fill);
   // Felt floor.
   var floorGeo = new THREE.PlaneGeometry(TRAY_W, TRAY_D);
-  var floorMat = new THREE.MeshStandardMaterial({ map: makeFeltTexture(), roughness: 0.95, metalness: 0 });
+  var floorMat = new THREE.MeshStandardMaterial({ map: makeFeltTexture(), roughness: style.feltDesign === "leather" ? 0.35 : 0.95, metalness: 0 });
   trayFloor = new THREE.Mesh(floorGeo, floorMat);
   trayFloor.rotation.x = -Math.PI / 2;
   trayFloor.receiveShadow = true;
@@ -839,6 +839,8 @@ function applyFelt() {
   if (!trayFloor) return;
   var old = trayFloor.material.map;
   trayFloor.material.map = makeFeltTexture();
+  // Leather is polished and glossy; the other felts are matte cloth.
+  trayFloor.material.roughness = style.feltDesign === "leather" ? 0.35 : 0.95;
   trayFloor.material.needsUpdate = true;
   if (old) old.dispose();
 }

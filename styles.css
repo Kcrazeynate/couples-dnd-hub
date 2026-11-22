@@ -1100,3 +1100,68 @@ header {
 .npc-toggle:hover { background: #241f18; }
 .npc-details { margin-top: 12px; border-top: 1px solid #3a2f22; padding-top: 12px; }
 .npc-details.hidden { display: none; }
+
+.party-markers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.party-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.party-token {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--party-color, #c9a227);
+  border: 3px solid #171410;
+  box-shadow: 0 0 0 2px var(--party-color, #c9a227);
+}
+
+.party-label {
+  background: #171410;
+  color: #ece5d3;
+  border: 1px solid var(--party-color, #c9a227);
+  border-radius: 8px;
+  padding: 1px 6px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.location-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.location-row .location-who {
+  flex: 1;
+}
+
+.location-row .location-where {
+  flex: 1;
+}
+
+.area-map-btn {
+  background: #241f18;
+  border: 1px solid #c9a227;
+  color: #c9a227;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.area-map-btn:hover {
+  background: #c9a227;
+  color: #171410;
+}

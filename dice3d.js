@@ -122,25 +122,115 @@ function makeFeltTexture() {
         ctx.beginPath(); ctx.ellipse(lx, ly, lr, lr * 0.7, randRange(0, Math.PI), 0, Math.PI * 2); ctx.fill();
       }
     } else if (style.feltDesign === "roses") {
-      // Scattered stylized roses: pink petals, darker center, green leaves.
-      for (var k = 0; k < 14; k++) {
-        var cx = randRange(40, s - 40), cy = randRange(40, s - 40), cr = randRange(16, 26);
-        // Leaves.
-        ctx.fillStyle = "rgba(46, 90, 52, 0.85)";
-        ctx.beginPath(); ctx.ellipse(cx - cr, cy + cr * 0.5, cr * 0.7, cr * 0.35, -0.6, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(cx + cr, cy + cr * 0.5, cr * 0.7, cr * 0.35, 0.6, 0, Math.PI * 2); ctx.fill();
-        // Petals.
-        ctx.fillStyle = "rgba(214, 120, 145, 0.9)";
-        for (var p = 0; p < 5; p++) {
-          var pa = (p / 5) * Math.PI * 2;
+      // Big tattoo-art roses, dyed into the felt: deep muted rose
+      // reds, bold dark outlines, dark green leaves, a few large
+      // blooms linked by stems. A wash of the felt colour and fresh
+      // grain over the top so they read as part of the fabric, not
+      // stickers on it.
+      var outline = "#241016";
+      var petal = "#8e2f42";
+      var petalDark = "#6d2233";
+      var petalLight = "#a84a5c";
+      var leaf = "#33502e";
+      var leafDark = "#22331e";
+      var leafVein = "#54703f";
+      function leafShape(x, y, len, wid, angle) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(len * 0.4, -wid, len, 0);
+        ctx.quadraticCurveTo(len * 0.4, wid, 0, 0);
+        ctx.closePath();
+        ctx.fillStyle = leaf;
+        ctx.fill();
+        ctx.lineWidth = Math.max(2, len * 0.05);
+        ctx.strokeStyle = outline;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(len * 0.1, 0);
+        ctx.lineTo(len * 0.9, 0);
+        ctx.lineWidth = Math.max(1.5, len * 0.03);
+        ctx.strokeStyle = leafVein;
+        ctx.stroke();
+        ctx.restore();
+      }
+      function rose(x, y, r) {
+        leafShape(x - r * 0.55, y + r * 0.35, r * 0.85, r * 0.28, Math.PI * 0.78);
+        leafShape(x + r * 0.55, y + r * 0.3, r * 0.8, r * 0.26, Math.PI * 0.22);
+        leafShape(x, y - r * 0.7, r * 0.75, r * 0.24, -Math.PI * 0.5);
+        ctx.lineWidth = Math.max(3, r * 0.055);
+        ctx.strokeStyle = outline;
+        for (var i = 0; i < 5; i++) {
+          var a = (i / 5) * Math.PI * 2 + 0.3;
+          var px = x + Math.cos(a) * r * 0.48;
+          var py = y + Math.sin(a) * r * 0.48;
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.rotate(a + Math.PI / 2);
           ctx.beginPath();
-          ctx.arc(cx + Math.cos(pa) * cr * 0.45, cy + Math.sin(pa) * cr * 0.45, cr * 0.5, 0, Math.PI * 2);
+          ctx.ellipse(0, 0, r * 0.34, r * 0.52, 0, 0, Math.PI * 2);
+          ctx.fillStyle = petal;
           ctx.fill();
+          ctx.stroke();
+          ctx.restore();
         }
-        ctx.fillStyle = "rgba(150, 40, 70, 0.9)";
-        ctx.beginPath(); ctx.arc(cx, cy, cr * 0.32, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "rgba(255, 200, 210, 0.7)";
-        ctx.beginPath(); ctx.arc(cx, cy, cr * 0.14, 0, Math.PI * 2); ctx.fill();
+        for (var j = 0; j < 5; j++) {
+          var b = (j / 5) * Math.PI * 2 + 0.3 + Math.PI / 5;
+          var qx = x + Math.cos(b) * r * 0.26;
+          var qy = y + Math.sin(b) * r * 0.26;
+          ctx.save();
+          ctx.translate(qx, qy);
+          ctx.rotate(b + Math.PI / 2);
+          ctx.beginPath();
+          ctx.ellipse(0, 0, r * 0.22, r * 0.34, 0, 0, Math.PI * 2);
+          ctx.fillStyle = petalDark;
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.beginPath();
+        ctx.arc(x, y, r * 0.2, 0, Math.PI * 2);
+        ctx.fillStyle = petalLight;
+        ctx.fill();
+        ctx.lineWidth = Math.max(2.5, r * 0.04);
+        ctx.strokeStyle = outline;
+        ctx.stroke();
+        ctx.beginPath();
+        var turns = 1.6;
+        for (var t = 0; t <= turns * Math.PI * 2; t += 0.15) {
+          var rr = (t / (turns * Math.PI * 2)) * r * 0.16;
+          var sx = x + Math.cos(t) * rr;
+          var sy = y + Math.sin(t) * rr;
+          if (t === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+        }
+        ctx.lineWidth = Math.max(2, r * 0.03);
+        ctx.strokeStyle = petalDark;
+        ctx.stroke();
+      }
+      function stem(x1, y1, x2, y2) {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo((x1 + x2) / 2, Math.min(y1, y2) - 30, x2, y2);
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = leafDark;
+        ctx.stroke();
+      }
+      stem(170, 180, 360, 340);
+      stem(360, 340, 420, 110);
+      rose(170, 180, 110);
+      rose(360, 340, 120);
+      rose(420, 110, 45);
+      // wash the felt colour over the top so the roses sit IN the
+      // fabric, then re-grain so the cloth texture covers them too.
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = base;
+      ctx.fillRect(0, 0, s, s);
+      ctx.globalAlpha = 1;
+      for (var n = 0; n < 500; n++) {
+        ctx.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.05)";
+        ctx.fillRect(Math.random() * s, Math.random() * s, 2, 2);
       }
     } else if (style.feltDesign === "starlight") {
       // Tiny four-point stars and dots.
@@ -509,8 +599,8 @@ function buildDie(sides) {
     sleepSpeedLimit: 0.35,
     sleepTimeLimit: 0.35
   });
-  body.linearDamping = 0.12;
-  body.angularDamping = 0.12;
+  body.linearDamping = 0.07;
+  body.angularDamping = 0.07;
   // A d4 rests on a face, so its result is the face pointing down.
   return {
     group: group,
@@ -598,8 +688,8 @@ function init(container) {
   // Physics world.
   world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
   world.allowSleep = true;
-  world.defaultContactMaterial.friction = 0.35;
-  world.defaultContactMaterial.restitution = 0.3;
+  world.defaultContactMaterial.friction = 0.25;
+  world.defaultContactMaterial.restitution = 0.5;
   var ground = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
   ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
   world.addBody(ground);
@@ -706,7 +796,7 @@ function spawnDie(sides) {
   var e = new CANNON.Vec3(randRange(0, Math.PI * 2), randRange(0, Math.PI * 2), randRange(0, Math.PI * 2));
   die.body.quaternion.setFromEuler(e.x, e.y, e.z);
   die.body.velocity.set(randRange(-2.5, 2.5), randRange(-3.5, -1), randRange(-2.5, 2.5));
-  die.body.angularVelocity.set(randRange(-9, 9), randRange(-9, 9), randRange(-9, 9));
+  die.body.angularVelocity.set(randRange(-12, 12), randRange(-12, 12), randRange(-12, 12));
   die.body.wakeUp();
   scene.add(die.group);
   world.addBody(die.body);

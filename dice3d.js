@@ -932,7 +932,7 @@ function buildPickers() {
     list.forEach(function (opt) {
       var o = document.createElement("option");
       o.value = opt.id;
-      o.textContent = opt.name + (opt.girly ? " (girly)" : "");
+      o.textContent = opt.name;
       sel.appendChild(o);
     });
     sel.value = style[key];

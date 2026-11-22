@@ -1950,37 +1950,45 @@
     var count = selectedCount;
     var label = (count > 1 ? count : "") + "d" + selectedDie;
     var dice = [];
+    var keptIdx = [];
     var result, detail;
-    if (selectedDie === 20 && count === 1 && (mode === "advantage" || mode === "disadvantage")) {
+    var isAdv = selectedDie === 20 && count === 1 && (mode === "advantage" || mode === "disadvantage");
+    if (isAdv) {
       var r1 = rollDie(20);
       var r2 = rollDie(20);
+      dice = [r1, r2];
       var kept = mode === "advantage" ? Math.max(r1, r2) : Math.min(r1, r2);
-      dice = [kept];
+      keptIdx = [r1 === kept ? 0 : 1];
       result = kept + mod;
-      detail = "d20 (" + mode + ") " + (mod >= 0 ? "+ " : "- ") + Math.abs(mod) + " = " + result + " [rolls " + r1 + ", " + r2 + "]";
+      detail = "d20 (" + mode + ") " + (mod >= 0 ? "+ " : "- ") + Math.abs(mod) + " = " + result + " [rolls " + r1 + ", " + r2 + ", kept " + kept + "]";
+      label = "d20";
     } else {
       for (var i = 0; i < count; i++) dice.push(rollDie(selectedDie));
+      keptIdx = dice.map(function (_, i) { return i; });
       var sum = dice.reduce(function (a, b) { return a + b; }, 0);
       result = sum + mod;
       detail = label + " " + (mod >= 0 ? "+ " : "- ") + Math.abs(mod) + " = " + result + " [rolls " + dice.join(", ") + "]";
     }
+    var shapeClass = "die-d" + selectedDie;
     var box = $("dice-result");
     var rollBtn = document.querySelector(".roll-btn");
     box.classList.remove("hidden");
     box.innerHTML = '<div class="dice-faces">' + dice.map(function () {
-      return '<span class="die-face rolling">' + rollDie(selectedDie) + '</span>';
+      return '<span class="die-face ' + shapeClass + ' rolling"><span class="die-num">' + rollDie(selectedDie) + '</span></span>';
     }).join("") + '</div>' + '<span class="big">...</span>' + '<span class="detail">Rolling...</span>';
     if (rollBtn) rollBtn.disabled = true;
+    var nums = box.querySelectorAll(".die-num");
     var faces = box.querySelectorAll(".die-face");
     var ticks = 0;
     var timer = setInterval(function () {
       ticks++;
-      faces.forEach(function (f) { f.textContent = rollDie(selectedDie); });
-      if (ticks < 9) return;
+      nums.forEach(function (n) { n.textContent = rollDie(selectedDie); });
+      if (ticks < 12) return;
       clearInterval(timer);
+      nums.forEach(function (n, i) { n.textContent = dice[i]; });
       faces.forEach(function (f, i) {
-        f.textContent = dice[i];
         f.classList.remove("rolling");
+        if (keptIdx.indexOf(i) === -1) f.classList.add("dropped");
       });
       box.querySelector(".big").textContent = String(result);
       box.querySelector(".detail").textContent = detail;
@@ -1997,7 +2005,7 @@
         }
         loadRolls();
       });
-    }, 80);
+    }, 100);
   }
 
   // ---------- Battle ----------

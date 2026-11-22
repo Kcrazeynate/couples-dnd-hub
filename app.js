@@ -2621,18 +2621,26 @@
     { id: "rest", label: "Rest / Camp", desc: "Campfire rest" }
   ];
   // Track lists per mood. A track is { file, title, gain }. Files are MP3s
-  // under assets/music/, named like travel-01.mp3. gain is a per-track
-  // loudness level, 1.0 by default; when Nathan supplies the files, each
-  // track's loudness is measured and gain is set so all tracks play at the
-  // same perceived level (a loud track gets a gain below 1, a quiet one
-  // stays at 1). Add entries here when the files arrive. Empty until then;
-  // the player says so instead of playing anything it should not.
+  // under assets/music/. gain is a per-track loudness level; each track's
+  // loudness was measured (ffmpeg loudnorm, integrated LUFS) and gain is set
+  // so all tracks play at the same perceived level as the quietest track
+  // (Old Creek Grove, -18.5 LUFS): a loud track gets a gain below 1, a
+  // quiet one stays at 1. Measured: Voyages of the Valiant -13.4 LUFS,
+  // To Crush Your Enemies -18.3 LUFS, Magical Forest -14.8 LUFS,
+  // Old Creek Grove -18.5 LUFS. Add entries here when more files arrive.
   var MUSIC_TRACKS = {
-    travel: [],
-    combat: [],
+    travel: [
+      { file: "assets/music/travel-voyages-of-the-valiant.mp3", title: "Voyages of the Valiant", gain: 0.55 }
+    ],
+    combat: [
+      { file: "assets/music/combat-to-crush-your-enemies.mp3", title: "To Crush Your Enemies", gain: 0.98 }
+    ],
     dungeon: [],
     town: [],
-    rest: []
+    rest: [
+      { file: "assets/music/rest-magical-forest.mp3", title: "Magical Forest", gain: 0.66 },
+      { file: "assets/music/rest-old-creek-grove.mp3", title: "Old Creek Grove", gain: 1.0 }
+    ]
   };
   var MUSIC_FADE_MS = 4000;
   var musicMood = "travel";

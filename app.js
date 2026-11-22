@@ -141,6 +141,7 @@
     board: loadMessages,
     log: loadLogEntries,
     characters: loadCharacters,
+    companions: loadCompanions,
     quests: loadQuests,
     npcs: loadNpcs,
     dice: loadRolls,
@@ -340,6 +341,7 @@
       return '<div class="card">' +
         '<p class="meta">' + escapeHtml(fmtTime(entry.created_at)) + '</p>' +
         '<p class="title">' + escapeHtml(entry.title) + '</p>' +
+        (entry.is_mechanics ? '<p class="meta">Mechanics note</p>' : '') +
         '<p>' + escapeHtml(entry.body) + '</p>' + fxHtml +
         '</div>';
     }).join("");
@@ -442,6 +444,7 @@
       var res = await db.from("characters").select("xp, gold, hp, max_hp, temp_hp, inventory, level").eq("player", targets[i]).single();
       if (res.error || !res.data) continue;
       var c = res.data, patch = {};
+      if (isNpcPlayer(targets[i]) && (fx.kind === "xp" || fx.kind === "gold" || fx.kind === "level")) continue;
       if (fx.kind === "xp") patch.xp = (c.xp || 0) + (fx.amount || 0);
       if (fx.kind === "gold") patch.gold = (c.gold || 0) + (fx.amount || 0);
       if (fx.kind === "hp") {
@@ -470,7 +473,8 @@
     var title = $("log-title").value.trim();
     var body = $("log-body").value.trim();
     if (!title || !body) return;
-    var res = await db.from("log_entries").insert({ title: title, body: body }).select("id").single();
+    var isMechanics = $("log-mechanics") ? $("log-mechanics").checked : false;
+    var res = await db.from("log_entries").insert({ title: title, body: body, is_mechanics: isMechanics }).select("id").single();
     if (res.error || !res.data) {
       alert("Could not add the entry. Check the connection and try again.");
       return;
@@ -489,6 +493,7 @@
     }
     $("log-title").value = "";
     $("log-body").value = "";
+    if ($("log-mechanics")) $("log-mechanics").checked = false;
     clearLogEffectRows();
     loadLogEntries();
     loadCharacters();
@@ -515,6 +520,7 @@
       list.innerHTML = '<p class="error">Could not load characters.</p>';
       return;
     }
+    await syncNpcLevels(res.data);
     var byPlayer = {};
     res.data.forEach(function (c) { byPlayer[c.player] = c; });
     charByPlayer = byPlayer;
@@ -522,7 +528,7 @@
     var seen = {};
     players.forEach(function (p) { seen[p.player] = true; });
     res.data.forEach(function (c) {
-      if (c.player && !seen[c.player]) {
+      if (c.player && !seen[c.player] && !(isNpcPlayer(c.player) && c.dismissed)) {
         seen[c.player] = true;
         players.push({ player: c.player, label: labelFromPlayer(c.player) });
       }
@@ -534,6 +540,173 @@
       return charCard(p, c);
     }).join("");
     bindCharCards();
+  }
+
+  async function loadCompanions() {
+    var statusEl = $("companions-status");
+    var list = $("companions-list");
+    if (!configured) {
+      statusEl.innerHTML = "";
+      list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
+      return;
+    }
+    var res = await db.from("characters").select("*");
+    if (res.error) {
+      list.innerHTML = '<p class="error">Could not load companions.</p>';
+      return;
+    }
+    var rows = res.data || [];
+    var byPlayer = {};
+    rows.forEach(function (c) { byPlayer[c.player] = c; });
+    var counts = partyCounts(rows);
+    var locked = await recruitmentLocked();
+    var targetLevel = npcTargetLevel(rows);
+    var open = 6 - counts.real - counts.npcs;
+    var status = "";
+    if (locked) status = '<p class="meta">Recruitment is closed. The campaign has started, so no companions can be added.</p>';
+    else status = '<p class="meta">Recruitment is open. Pick up to ' + open + ' companion' + (open === 1 ? '' : 's') + ' to fill the party of 6. Once the first story entry is posted, recruitment closes.</p>';
+    status += '<p class="meta">Party: ' + counts.real + ' player' + (counts.real === 1 ? '' : 's') + ' + ' + counts.npcs + ' companion' + (counts.npcs === 1 ? '' : 's') + ' of 6. Companions scale to level ' + targetLevel + ' (average of the players, rounded up) and carry no gold.</p>';
+    statusEl.innerHTML = status;
+    list.innerHTML = NPC_ROSTER.map(function (entry) {
+      return npcRosterCard(entry, byPlayer["npc_" + entry.key], locked, counts, targetLevel);
+    }).join("");
+    bindCompanionCards();
+  }
+
+  function npcRosterDetails(entry, targetLevel) {
+    var pseudo = { level: targetLevel, str: entry.str, dex: entry.dex, con: entry.con, int: entry.int, wis: entry.wis, cha: entry.cha, skills: entry.skills, class: entry.class };
+    var pb = profBonus(targetLevel);
+    var scoresHtml = ["str", "dex", "con", "int", "wis", "cha"].map(function (ab) {
+      return '<div class="sheet-score"><span class="mod">' + fmtMod(abilityMod(entry[ab])) + '</span><span class="score-name">' + ab.toUpperCase() + '</span><span class="score-val">' + entry[ab] + '</span></div>';
+    }).join("");
+    var saveProfs = SAVE_PROFS[classKey(entry.class)] || [];
+    var saveNames = { str: "Strength", dex: "Dexterity", con: "Constitution", int: "Intelligence", wis: "Wisdom", cha: "Charisma" };
+    var savesHtml = ["str", "dex", "con", "int", "wis", "cha"].map(function (ab) {
+      var prof = saveProfs.indexOf(ab) !== -1;
+      var bonus = abilityMod(entry[ab]) + (prof ? pb : 0);
+      return '<div class="sheet-line' + (prof ? ' prof' : '') + '"><span class="dot">' + (prof ? "●" : "○") + '</span><span>' + saveNames[ab] + '</span><span class="num">' + fmtMod(bonus) + '</span></div>';
+    }).join("");
+    var skillsHtml = SKILLS.map(function (sk) {
+      var r = skillBonus(pseudo, sk[0], sk[1]);
+      return '<div class="sheet-line' + (r.proficient ? ' prof' : '') + '"><span class="dot">' + (r.proficient ? "●" : "○") + '</span><span>' + sk[0] + ' (' + sk[1].toUpperCase() + ')</span><span class="num">' + fmtMod(r.bonus) + '</span></div>';
+    }).join("");
+    var perc = skillBonus(pseudo, "Perception", "wis");
+    var atkLines = textLines(entry.attacks);
+    var attacksHtml = "";
+    if (atkLines.length) {
+      var rows = atkLines.map(function (line) {
+        var parts = line.split(",").map(function (s) { return s.trim(); });
+        return "<tr><td>" + escapeHtml(parts[0] || line) + "</td><td>" + escapeHtml(parts[1] || "-") + "</td><td>" + escapeHtml(parts.slice(2).join(", ") || "-") + "</td></tr>";
+      }).join("");
+      attacksHtml = '<p><strong>Attacks</strong></p><table class="sheet-attacks"><tr><th>Name</th><th>Attack</th><th>Damage</th></tr>' + rows + '</table>';
+    }
+    var spellLines = textLines(entry.spells);
+    var sp = spellStats(pseudo);
+    var spellsHtml = "";
+    if (spellLines.length) {
+      spellsHtml = '<p><strong>Spells</strong></p>' +
+        (sp ? '<p class="meta">Spell save DC ' + sp.dc + ' · Spell attack ' + fmtMod(sp.attack) + '</p>' : '') +
+        listHtml(spellLines);
+    }
+    var featLines = textLines(entry.features);
+    var featuresHtml = featLines.length ? '<p><strong>Features &amp; Traits</strong></p>' + listHtml(featLines) : "";
+    var invLines = textLines(entry.inventory);
+    var invHtml = invLines.length ? listHtml(invLines) : '<p class="empty">No items yet.</p>';
+    return '<div class="sheet-scores">' + scoresHtml + '</div>' +
+      '<p><strong>Saving Throws</strong></p><div class="sheet-list">' + savesHtml + '</div>' +
+      '<p><strong>Skills</strong></p><div class="sheet-list">' + skillsHtml + '</div>' +
+      '<p class="meta">Passive Perception ' + (10 + perc.bonus) + '</p>' +
+      attacksHtml + spellsHtml + featuresHtml +
+      '<p><strong>Inventory</strong></p>' + invHtml;
+  }
+
+  function npcRosterCard(entry, row, locked, counts, targetLevel) {
+    var recruited = !!row && !row.dismissed;
+    var dismissed = !!row && !!row.dismissed;
+    var maxHp = npcMaxHp(entry, targetLevel);
+    var hpLine = recruited ? (row.hp + " / " + row.max_hp) : (maxHp + " max");
+    var picHtml = entry.image
+      ? '<img class="npc-pic" src="' + escapeHtml(entry.image) + '" alt="">'
+      : '<div class="npc-pic npc-pic-fallback">' + escapeHtml(entry.class.charAt(0)) + '</div>';
+    var action = "";
+    if (dismissed) {
+      action = '<p class="meta">Dismissed. Gone for this campaign.</p>';
+    } else if (recruited) {
+      action = '<p class="meta">In the party · ' + escapeHtml(joinModeLabel(row.join_mode)) + '</p>' +
+        '<div class="actions"><button type="button" data-dismiss-npc="' + entry.key + '">Dismiss</button></div>';
+    } else if (locked) {
+      action = '<p class="meta">Recruitment closed.</p>';
+    } else if (counts.real + counts.npcs >= 6) {
+      action = '<p class="meta">The party is full (6).</p>';
+    } else {
+      action = '<div class="actions"><label>Join as <select data-join-mode="' + entry.key + '"><option value="story">Met in the story</option><option value="start">Started with the party</option></select></label>' +
+        '<button type="button" data-recruit-npc="' + entry.key + '">Recruit</button></div>';
+    }
+    return '<div class="card sheet npc">' +
+      '<div class="npc-summary">' + picHtml +
+      '<div class="npc-id"><span class="name">' + escapeHtml(entry.name) + '</span>' +
+      '<span class="meta">' + escapeHtml(entry.race) + ' ' + escapeHtml(entry.class) + ' - Level ' + targetLevel + '</span>' +
+      '<span class="meta">HP ' + hpLine + ' · AC ' + entry.ac + '</span>' +
+      '<span class="meta">' + escapeHtml(entry.blurb) + '</span></div>' +
+      '<button type="button" class="npc-toggle" data-npc-toggle="roster-' + entry.key + '">Full stats</button>' +
+      '</div>' +
+      '<div class="npc-details hidden" data-npc-details="roster-' + entry.key + '">' + npcRosterDetails(entry, targetLevel) + '</div>' +
+      action +
+      '</div>';
+  }
+
+  function bindCompanionCards() {
+    document.querySelectorAll('[data-npc-toggle^="roster-"]').forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var details = document.querySelector('[data-npc-details="' + btn.dataset.npcToggle + '"]');
+        if (!details) return;
+        var hidden = details.classList.toggle("hidden");
+        btn.textContent = hidden ? "Full stats" : "Hide full stats";
+      });
+    });
+    document.querySelectorAll("[data-recruit-npc]").forEach(function (btn) {
+      btn.addEventListener("click", function () { recruitNpc(btn.dataset.recruitNpc); });
+    });
+    document.querySelectorAll("[data-dismiss-npc]").forEach(function (btn) {
+      btn.addEventListener("click", function () { dismissNpc(btn.dataset.dismissNpc); });
+    });
+  }
+
+  async function recruitNpc(key) {
+    var entry = npcRosterByKey(key);
+    if (!entry) return;
+    var sel = document.querySelector('[data-join-mode="' + key + '"]');
+    var mode = sel ? sel.value : "story";
+    var res = await db.from("characters").select("*");
+    var rows = (res.data || []);
+    var counts = partyCounts(rows);
+    if (counts.real + counts.npcs >= 6) { alert("The party is full (6)."); return; }
+    if (await recruitmentLocked()) { alert("Recruitment is closed. The campaign has started."); loadCompanions(); return; }
+    var targetLevel = npcTargetLevel(rows);
+    var maxHp = npcMaxHp(entry, targetLevel);
+    var insert = {
+      player: "npc_" + key,
+      name: entry.name, race: entry.race, class: entry.class, background: entry.background,
+      level: targetLevel, hp: maxHp, max_hp: maxHp, temp_hp: 0, ac: entry.ac,
+      str: entry.str, dex: entry.dex, con: entry.con, int: entry.int, wis: entry.wis, cha: entry.cha,
+      skills: entry.skills, attacks: entry.attacks, spells: entry.spells, features: entry.features,
+      inventory: entry.inventory, gold: 0, join_mode: mode, dismissed: false,
+      hit_dice_used: 0, death_save_successes: 0, death_save_failures: 0,
+      updated_at: new Date().toISOString()
+    };
+    var ins = await db.from("characters").insert(insert);
+    if (ins.error) { alert("Could not recruit " + entry.name + "."); return; }
+    loadCompanions();
+    loadCharacters();
+  }
+
+  async function dismissNpc(key) {
+    var entry = npcRosterByKey(key);
+    if (!entry) return;
+    if (!window.confirm("Dismiss " + entry.name + "? They leave the party and cannot come back until a new campaign.")) return;
+    await db.from("characters").update({ dismissed: true, updated_at: new Date().toISOString() }).eq("player", "npc_" + key);
+    loadCompanions();
+    loadCharacters();
   }
 
   function labelFromPlayer(player) {
@@ -667,7 +840,89 @@
     return dots;
   }
 
+  var HUB_URL = "https://kcrazeynate.github.io/couples-dnd-hub/";
+
+  function isNpcPlayer(player) {
+    return String(player || "").indexOf("npc_") === 0;
+  }
+
+  var NPC_ROSTER = [
+    { key: "barbarian", name: "Ghorza", race: "Half-orc", class: "Barbarian", background: "Outlander", ac: 13, str: 15, dex: 13, con: 14, int: 8, wis: 12, cha: 10, skills: "Athletics, Intimidation, Survival", attacks: "Greataxe, +4, 1d12+2 slashing\nHandaxe, +4, 1d6+2 slashing", spells: "", features: "Rage", inventory: "Greataxe\n2x Handaxe\nJavelin\nExplorer's Pack", image: HUB_URL + "assets/npc-ghorza.jpg", blurb: "Laughs first, hits second." },
+    { key: "bard", name: "Pip", race: "Half-elf", class: "Bard", background: "Entertainer", ac: 13, str: 8, dex: 14, con: 13, int: 12, wis: 10, cha: 15, skills: "Performance, Persuasion, Insight", attacks: "Rapier, +4, 1d8+2 piercing\nDagger, +4, 1d4+2 piercing", spells: "Cantrips: Vicious Mockery, Minor Illusion\n1st level: Healing Word, Cure Wounds", features: "Bardic Inspiration (d6)\nJack of All Trades\nSpellcasting", inventory: "Rapier\nLute\nLeather armor\nEntertainer's Pack", image: HUB_URL + "assets/npc-pip.jpg", blurb: "Sings the party's deeds before they've done them." },
+    { key: "cleric", name: "Liora", race: "Half-elf", class: "Cleric", background: "Acolyte", ac: 16, str: 10, dex: 13, con: 14, int: 8, wis: 15, cha: 12, skills: "Medicine, Insight, Religion", attacks: "Mace, +2, 1d6 bludgeoning\nLight crossbow, +3, 1d8+1 piercing\nDagger, +2, 1d4 piercing", spells: "Cantrips: Sacred Flame, Guidance, Light\n1st level: Bless, Cure Wounds", features: "Disciple of Life\nSpellcasting", inventory: "Mace\nLight crossbow\n20x Bolt\nDagger\nHoly symbol\nExplorer's Pack", image: HUB_URL + "assets/npc-liora.jpg", blurb: "Warm, steady, the one who looks away when the party gets rough." },
+    { key: "druid", name: "Ash", race: "Wood elf", class: "Druid", background: "Hermit", ac: 14, str: 10, dex: 14, con: 13, int: 12, wis: 15, cha: 8, skills: "Nature, Survival, Animal Handling", attacks: "Quarterstaff, +2, 1d6 bludgeoning\nDagger, +4, 1d4+2 piercing", spells: "Cantrips: Druidcraft, Produce Flame\n1st level: Cure Wounds, Entangle", features: "Wild Shape\nSpellcasting", inventory: "Quarterstaff\nLeather armor\nHerbalism kit\nExplorer's Pack", image: HUB_URL + "assets/npc-ash.jpg", blurb: "Talks to the road more than to people." },
+    { key: "fighter", name: "Bram", race: "Human", class: "Fighter", background: "Soldier", ac: 19, str: 16, dex: 14, con: 18, int: 10, wis: 12, cha: 8, skills: "Athletics, Intimidation", attacks: "Longsword, +5, 1d8+3 slashing", spells: "", features: "Second Wind\nAction Surge", inventory: "Longsword\nShield\nSplint armor\nExplorer's Pack", image: HUB_URL + "assets/npc-bram.jpg", blurb: "Big, loyal, carries the shield and the debt." },
+    { key: "monk", name: "Kira", race: "Human", class: "Monk", background: "Acolyte", ac: 14, str: 12, dex: 15, con: 13, int: 10, wis: 14, cha: 8, skills: "Acrobatics, Stealth, Insight", attacks: "Unarmed strike, +4, 1d4+2 bludgeoning\nQuarterstaff, +4, 1d6+2 bludgeoning", spells: "", features: "Unarmored Defense\nMartial Arts", inventory: "Quarterstaff\n10x Dart\nExplorer's Pack", image: HUB_URL + "assets/npc-kira.jpg", blurb: "Calm hands, fast feet." },
+    { key: "paladin", name: "Ser Aldric", race: "Human", class: "Paladin", background: "Soldier", ac: 18, str: 15, dex: 10, con: 13, int: 8, wis: 12, cha: 14, skills: "Athletics, Religion, Persuasion", attacks: "Longsword, +4, 1d8+2 slashing", spells: "1st level: Cure Wounds, Bless", features: "Divine Sense\nLay on Hands", inventory: "Longsword\nShield\nChain mail\nHoly symbol\nExplorer's Pack", image: HUB_URL + "assets/npc-aldric.jpg", blurb: "An oath he keeps, even when it costs him." },
+    { key: "ranger", name: "Sable", race: "Wood elf", class: "Ranger", background: "Outlander", ac: 14, str: 12, dex: 15, con: 13, int: 10, wis: 14, cha: 8, skills: "Perception, Survival, Stealth", attacks: "Longbow, +4, 1d8+2 piercing\nShortsword, +4, 1d6+2 piercing", spells: "", features: "Favored Enemy\nNatural Explorer", inventory: "Longbow\n20x Arrow\nShortsword\nStudded leather armor\nExplorer's Pack", image: HUB_URL + "assets/npc-sable.jpg", blurb: "Reads the ground like a letter." },
+    { key: "rogue", name: "Nix", race: "Halfling", class: "Rogue", background: "Criminal", ac: 13, str: 8, dex: 15, con: 13, int: 14, wis: 12, cha: 10, skills: "Stealth, Sleight of Hand, Perception, Investigation", attacks: "Shortsword, +4, 1d6+2 piercing\nDagger, +4, 1d4+2 piercing\nShortbow, +4, 1d6+2 piercing", spells: "", features: "Sneak Attack\nThieves' Cant\nCunning Action", inventory: "Shortsword\nDagger\nShortbow\n20x Arrow\nThieves' tools\nLeather armor\nBurglar's Pack", image: HUB_URL + "assets/npc-nix.jpg", blurb: "Small, quick, already gone." },
+    { key: "sorcerer", name: "Ember", race: "Tiefling", class: "Sorcerer", background: "Sage", ac: 11, str: 8, dex: 13, con: 14, int: 12, wis: 10, cha: 15, skills: "Arcana, Persuasion, Deception", attacks: "Dagger, +3, 1d4+1 piercing", spells: "Cantrips: Fire Bolt, Mage Hand, Prestidigitation\n1st level: Magic Missile, Burning Hands", features: "Spellcasting\nSorcerous Origin", inventory: "Dagger\nComponent pouch\nExplorer's Pack", image: HUB_URL + "assets/npc-ember.jpg", blurb: "The magic came first, the control came later." },
+    { key: "warlock", name: "Morvain", race: "Half-elf", class: "Warlock", background: "Charlatan", ac: 13, str: 8, dex: 13, con: 14, int: 12, wis: 10, cha: 15, skills: "Arcana, Deception, Intimidation", attacks: "Dagger, +3, 1d4+1 piercing", spells: "Cantrips: Eldritch Blast, Minor Illusion\n1st level: Hex, Arms of Hadar", features: "Spellcasting\nOtherworldly Patron", inventory: "Dagger\nLeather armor\nComponent pouch\nExplorer's Pack", image: HUB_URL + "assets/npc-morvain.jpg", blurb: "Made a deal, won't say with who." },
+    { key: "wizard", name: "Finn", race: "Gnome", class: "Wizard", background: "Sage", ac: 12, str: 8, dex: 14, con: 13, int: 15, wis: 12, cha: 10, skills: "Arcana, Investigation", attacks: "Dagger, +4, 1d4+2 piercing", spells: "Cantrips: Fire Bolt, Mage Hand, Prestidigitation\n1st level: Sleep, Magic Missile, Detect Magic", features: "Darkvision\nGnome Cunning\nSpellcasting\nArcane Recovery", inventory: "Spellbook\nComponent pouch\nDagger\nExplorer's Pack", image: HUB_URL + "assets/npc-finn.jpg", blurb: "Quiet, clever, stays back by the trees until he's needed." }
+  ];
+
+  function npcRosterByKey(key) {
+    for (var i = 0; i < NPC_ROSTER.length; i++) {
+      if (NPC_ROSTER[i].key === key) return NPC_ROSTER[i];
+    }
+    return null;
+  }
+
+  function npcTargetLevel(rows) {
+    var levels = rows.filter(function (r) { return !isNpcPlayer(r.player) && !r.dismissed; }).map(function (r) { return r.level || 1; });
+    if (!levels.length) return 1;
+    var sum = levels.reduce(function (a, b) { return a + b; }, 0);
+    return Math.ceil(sum / levels.length);
+  }
+
+  function npcMaxHp(entry, level) {
+    var die = HIT_DICE[entry.key] || 8;
+    var conMod = abilityMod(entry.con);
+    var perLevel = Math.ceil((die + 1) / 2) + conMod;
+    return (die + conMod) + (level - 1) * perLevel;
+  }
+
+  async function syncNpcLevels(rows) {
+    var target = npcTargetLevel(rows);
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (!isNpcPlayer(r.player) || r.dismissed) continue;
+      var entry = npcRosterByKey(classKey(r.class));
+      if (!entry) continue;
+      var newMax = npcMaxHp(entry, target);
+      if (r.level === target && r.max_hp === newMax) continue;
+      var newHp = (r.hp || 0) + (newMax - (r.max_hp || 0));
+      if (newHp < 0) newHp = 0;
+      if (newHp > newMax) newHp = newMax;
+      await db.from("characters").update({ level: target, max_hp: newMax, hp: newHp, updated_at: new Date().toISOString() }).eq("player", r.player);
+      r.level = target;
+      r.max_hp = newMax;
+      r.hp = newHp;
+    }
+  }
+
+  function partyCounts(rows) {
+    var real = 0, npcs = 0;
+    rows.forEach(function (r) {
+      if (r.dismissed) return;
+      if (isNpcPlayer(r.player)) npcs++;
+      else real++;
+    });
+    return { real: real, npcs: npcs };
+  }
+
+  async function recruitmentLocked() {
+    var res = await db.from("log_entries").select("id").or("is_mechanics.is.null,is_mechanics.eq.false").limit(1);
+    if (res.error) return true;
+    return !!(res.data && res.data.length);
+  }
+
+  function joinModeLabel(mode) {
+    return mode === "story" ? "Met in the story" : "Started with the party";
+  }
+
   function charCard(p, c) {
+    var isNpc = isNpcPlayer(p.player);
     var pb = profBonus(c.level);
     var hpText = (c.hp === null || c.hp === undefined ? "-" : c.hp) +
       " / " + (c.max_hp === null || c.max_hp === undefined ? "-" : c.max_hp);
@@ -718,7 +973,7 @@
     if (c.background) subMeta.push(c.background);
     if (c.alignment) subMeta.push(c.alignment);
     if (c.xp !== null && c.xp !== undefined) subMeta.push(c.xp + " XP");
-    return '<div class="card sheet">' +
+    var inner =
       (c.image_url ? '<img class="char-img" src="' + escapeHtml(c.image_url) + '" alt="">' : '') +
       '<div class="char-head"><span class="name">' + escapeHtml(c.name || "Unnamed") + '</span>' +
       '<span class="level">' + escapeHtml(p.label) + '</span></div>' +
@@ -744,14 +999,38 @@
       '<p><strong>Skills</strong></p><div class="sheet-list">' + skillsHtml + '</div>' +
       '<p class="meta">Passive Perception ' + (10 + perc.bonus) + '</p>' +
       attacksHtml + spellsHtml + featuresHtml + persHtml +
-      '<p>Gold: ' + (c.gold === null || c.gold === undefined ? "-" : c.gold) + '</p>' +
+      (isNpc ? '' : '<p>Gold: ' + (c.gold === null || c.gold === undefined ? "-" : c.gold) + '</p>') +
       '<p><strong>Inventory</strong></p>' + invHtml +
       (c.notes ? '<p><strong>Notes</strong></p><p>' + escapeHtml(c.notes) + '</p>' : '') +
-      '<div class="actions"><button type="button" data-edit="' + p.player + '">Edit</button></div>' +
+      '<div class="actions"><button type="button" data-edit="' + p.player + '">Edit</button></div>';
+    if (!isNpc) return '<div class="card sheet">' + inner + '</div>';
+    var picHtml = c.image_url
+      ? '<img class="npc-pic" src="' + escapeHtml(c.image_url) + '" alt="">'
+      : '<div class="npc-pic npc-pic-fallback">' + escapeHtml((c.class || "?").charAt(0)) + '</div>';
+    var joinHtml = c.join_mode ? '<span class="meta">' + escapeHtml(joinModeLabel(c.join_mode)) + '</span>' : '';
+    return '<div class="card sheet npc">' +
+      '<div class="npc-summary">' + picHtml +
+      '<div class="npc-id"><span class="name">' + escapeHtml(c.name || "Unnamed") + '</span>' +
+      '<span class="meta">' + escapeHtml(c.race || "") + (c.race && c.class ? " " : "") + escapeHtml(c.class || "") + ' - Level ' + (c.level === null || c.level === undefined ? "-" : c.level) + '</span>' +
+      '<span class="meta">HP ' + hpText + (tempHp > 0 ? ' + ' + tempHp + ' temp' : '') + ' · AC ' + (c.ac === null || c.ac === undefined ? "-" : c.ac) + '</span>' +
+      joinHtml + '</div>' +
+      '<button type="button" class="hp-btn" data-hp-delta="-1" data-player="' + p.player + '">-</button>' +
+      '<button type="button" class="hp-btn" data-hp-delta="1" data-player="' + p.player + '">+</button>' +
+      '<button type="button" class="npc-toggle" data-npc-toggle="' + p.player + '">Full sheet</button>' +
+      '</div>' +
+      '<div class="npc-details hidden" data-npc-details="' + p.player + '">' + inner + '</div>' +
       '</div>';
   }
 
   function bindCharCards() {
+    document.querySelectorAll("[data-npc-toggle]:not([data-npc-toggle^='roster-'])").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var details = document.querySelector('[data-npc-details="' + btn.dataset.npcToggle + '"]');
+        if (!details) return;
+        var hidden = details.classList.toggle("hidden");
+        btn.textContent = hidden ? "Full sheet" : "Hide full sheet";
+      });
+    });
     document.querySelectorAll("[data-build]").forEach(function (btn) {
       btn.addEventListener("click", function () { openCharModal(btn.dataset.build, null); });
     });
@@ -846,6 +1125,7 @@
     $("char-max-hp").value = c && c.max_hp !== null && c.max_hp !== undefined ? c.max_hp : "";
     $("char-ac").value = c && c.ac !== null && c.ac !== undefined ? c.ac : "";
     $("char-gold").value = c && c.gold !== null && c.gold !== undefined ? c.gold : 0;
+    $("char-gold-field").style.display = isNpcPlayer(player) ? "none" : "";
     $("char-temp-hp").value = c && c.temp_hp !== null && c.temp_hp !== undefined ? c.temp_hp : "";
     $("char-hit-dice-used").value = c && c.hit_dice_used !== null && c.hit_dice_used !== undefined ? c.hit_dice_used : "";
     $("char-death-successes").value = c && c.death_save_successes !== null && c.death_save_successes !== undefined ? c.death_save_successes : "";
@@ -896,7 +1176,7 @@
       wis: numOrNull($("char-wis").value),
       cha: numOrNull($("char-cha").value),
       skills: $("char-skills").value.trim(),
-      gold: numOrNull($("char-gold").value),
+      gold: isNpcPlayer($("char-player").value) ? 0 : numOrNull($("char-gold").value),
       temp_hp: numOrNull($("char-temp-hp").value),
       hit_dice_used: numOrNull($("char-hit-dice-used").value),
       death_save_successes: numOrNull($("char-death-successes").value),

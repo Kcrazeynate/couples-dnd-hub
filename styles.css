@@ -520,6 +520,21 @@ button.danger:hover {
   color: #171410;
 }
 
+.mode-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.map-view-toggle {
+  margin: 0.5rem 0;
+}
+
+.area-map-img {
+  width: 100%;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
 .map-viewport {
   overflow: auto;
   max-height: 75vh;

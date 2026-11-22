@@ -18,14 +18,24 @@ const FELT_COLORS = [
   { id: "forest", name: "Forest Green", css: "#1a3d2e", hex: 0x1a3d2e, girly: false },
   { id: "burgundy", name: "Burgundy", css: "#5a1f24", hex: 0x5a1f24, girly: false },
   { id: "rose", name: "Rose Pink", css: "#c96f8a", hex: 0xc96f8a, girly: true },
-  { id: "lavender", name: "Lavender", css: "#9b8ac4", hex: 0x9b8ac4, girly: true }
+  { id: "lavender", name: "Lavender", css: "#9b8ac4", hex: 0x9b8ac4, girly: true },
+  { id: "navy", name: "Navy", css: "#1e2a4a", hex: 0x1e2a4a, girly: false },
+  { id: "teal", name: "Teal", css: "#14524a", hex: 0x14524a, girly: false },
+  { id: "royal", name: "Royal Purple", css: "#4a2a6a", hex: 0x4a2a6a, girly: false },
+  { id: "chocolate", name: "Chocolate", css: "#4a3220", hex: 0x4a3220, girly: false },
+  { id: "slate", name: "Slate", css: "#3a3f44", hex: 0x3a3f44, girly: false }
 ];
 const DIE_COLORS = [
   { id: "cream", name: "Cream", css: "#ece5d3", hex: 0xece5d3, girly: false },
   { id: "gold", name: "Gold", css: "#c9a227", hex: 0xc9a227, girly: false },
-  { id: "bloodred", name: "Blood Red", css: "#7a1f1f", hex: 0x7a1f1f, girly: false },
+  { id: "bloodred", name: "Blood Red", css: "#7a1f1f", hex: 0x7a1f1f, girly: false, dark: true },
   { id: "rosepink", name: "Rose Pink", css: "#e8a0b4", hex: 0xe8a0b4, girly: true },
-  { id: "lavender", name: "Lavender", css: "#b8a0d8", hex: 0xb8a0d8, girly: true }
+  { id: "lavender", name: "Lavender", css: "#b8a0d8", hex: 0xb8a0d8, girly: true },
+  { id: "silver", name: "Silver", css: "#c0c0c0", hex: 0xc0c0c0, girly: false },
+  { id: "copper", name: "Copper", css: "#b87333", hex: 0xb87333, girly: false },
+  { id: "emerald", name: "Emerald", css: "#1a6a3a", hex: 0x1a6a3a, girly: false, dark: true },
+  { id: "sapphire", name: "Sapphire", css: "#1a3a8a", hex: 0x1a3a8a, girly: false, dark: true },
+  { id: "onyx", name: "Onyx", css: "#1a1a1a", hex: 0x1a1a1a, girly: false, dark: true }
 ];
 const FELT_DESIGNS = [
   { id: "plain", name: "Plain", girly: false },
@@ -161,8 +171,7 @@ function randRange(min, max) {
 function faceInkColor() {
   var die = findById(DIE_COLORS, style.dieColor, DIE_COLORS[0]);
   if (style.dieDesign === "metal") return "#e8c96a";
-  if (die.id === "bloodred") return "#e8c96a";
-  if (die.id === "gold") return "#171410";
+  if (die.dark) return "#e8c96a";
   return "#171410";
 }
 
@@ -312,9 +321,10 @@ function makeFeltTexture() {
         ctx.stroke();
       }
     } else if (style.feltDesign === "roses") {
-      // One big dramatic rose with a stem, thorns, leaves, and wisps
-      // of smoke, like tattoo flash on black. The felt wash over the
-      // top keeps it dyed into the fabric, not a sticker.
+      // One big realistic red rose with a stem, thorns, leaves, and
+      // wisps of smoke, like the reference. Soft shaded petals with
+      // depth, no bold tattoo outlines; the felt wash over the top
+      // keeps it dyed into the fabric, not a sticker.
       var outline = "#1a0a0e";
       var petal = "#c22737";
       var petalDark = "#8e1a28";
@@ -377,8 +387,8 @@ function makeFeltTexture() {
         ctx.closePath();
         ctx.fillStyle = color;
         ctx.fill();
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = outline;
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = "rgba(20,30,15,0.6)";
         ctx.stroke();
         ctx.beginPath();
         ctx.moveTo(len * 0.1, 0);
@@ -390,45 +400,48 @@ function makeFeltTexture() {
       }
       leafShape(250, 380, 95, 32, Math.PI * 0.82, leaf);
       leafShape(262, 400, 90, 30, Math.PI * 0.18, leafRed);
-      // The bloom: layered petals around a spiral heart.
+      // The bloom: soft shaded petals with depth, like the reference.
+      // Each petal is a gradient from a deep red base to a bright
+      // edge, with only a thin soft rim, no bold tattoo outline.
       var cx = 256, cy = 210, r = 135;
-      ctx.lineWidth = Math.max(3, r * 0.04);
-      ctx.strokeStyle = outline;
+      function shadePetal(px, py, pr, angle, inner, outer) {
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(angle);
+        var g = ctx.createRadialGradient(0, 0, 0, 0, 0, pr * 0.55);
+        g.addColorStop(0, inner);
+        g.addColorStop(0.7, inner);
+        g.addColorStop(1, outer);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, pr * 0.36, pr * 0.55, 0, 0, Math.PI * 2);
+        ctx.fillStyle = g;
+        ctx.fill();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "rgba(60,10,15,0.4)";
+        ctx.stroke();
+        ctx.restore();
+      }
       for (var i = 0; i < 6; i++) {
         var a = (i / 6) * Math.PI * 2 + 0.25;
         var px = cx + Math.cos(a) * r * 0.5;
         var py = cy + Math.sin(a) * r * 0.5;
-        ctx.save();
-        ctx.translate(px, py);
-        ctx.rotate(a + Math.PI / 2);
-        ctx.beginPath();
-        ctx.ellipse(0, 0, r * 0.36, r * 0.55, 0, 0, Math.PI * 2);
-        ctx.fillStyle = petal;
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
+        shadePetal(px, py, r, a + Math.PI / 2, petalDark, petalLight);
       }
       for (var j = 0; j < 6; j++) {
         var b = (j / 6) * Math.PI * 2 + 0.25 + Math.PI / 6;
         var qx = cx + Math.cos(b) * r * 0.28;
         var qy = cy + Math.sin(b) * r * 0.28;
-        ctx.save();
-        ctx.translate(qx, qy);
-        ctx.rotate(b + Math.PI / 2);
-        ctx.beginPath();
-        ctx.ellipse(0, 0, r * 0.24, r * 0.36, 0, 0, Math.PI * 2);
-        ctx.fillStyle = petalDark;
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
+        shadePetal(qx, qy, r * 0.62, b + Math.PI / 2, "#6d1420", petal);
       }
+      // heart: a tight dark spiral with a soft bright center
+      var hg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 0.24);
+      hg.addColorStop(0, petalLight);
+      hg.addColorStop(0.5, petal);
+      hg.addColorStop(1, "#6d1420");
       ctx.beginPath();
-      ctx.arc(cx, cy, r * 0.22, 0, Math.PI * 2);
-      ctx.fillStyle = petalLight;
+      ctx.arc(cx, cy, r * 0.24, 0, Math.PI * 2);
+      ctx.fillStyle = hg;
       ctx.fill();
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = outline;
-      ctx.stroke();
       ctx.beginPath();
       var turns = 1.8;
       for (var t = 0; t <= turns * Math.PI * 2; t += 0.15) {
@@ -437,13 +450,13 @@ function makeFeltTexture() {
         var sy = cy + Math.sin(t) * rr;
         if (t === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
       }
-      ctx.lineWidth = 2.5;
-      ctx.strokeStyle = petalDark;
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(80,15,25,0.7)";
       ctx.stroke();
-      // Bright petal-edge highlights so the bloom reads vivid.
+      // Soft light catching the curled petal edges.
       ctx.strokeStyle = petalEdge;
-      ctx.lineWidth = 3;
-      ctx.globalAlpha = 0.7;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.55;
       ctx.beginPath();
       ctx.arc(cx, cy, r * 0.62, Math.PI * 0.1, Math.PI * 0.5);
       ctx.stroke();
@@ -465,8 +478,9 @@ function makeFeltTexture() {
         ctx.fillRect(Math.random() * s, Math.random() * s, 2, 2);
       }
     } else if (style.feltDesign === "starlight") {
-      // A nebula: deep-space clouds in orange, teal, and violet,
-      // a dense field of tiny stars, and a few bright flared ones.
+      // A nebula like the reference: dense orange clouds on the
+      // right, teal and blue in the center and left, violet through
+      // it, a bright star cluster, and a very dense star field.
       ctx.fillStyle = "rgba(8,10,24,0.55)";
       ctx.fillRect(0, 0, s, s);
       function cloud(x, y, r, rc, gc, bc, alpha) {
@@ -476,26 +490,39 @@ function makeFeltTexture() {
         ctx.fillStyle = g;
         ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
       }
-      // cloud clusters, overlapping so the shapes read billowy
-      cloud(380, 180, 150, 200, 110, 50, 0.5);
-      cloud(420, 260, 130, 180, 90, 40, 0.45);
-      cloud(340, 320, 120, 220, 140, 70, 0.4);
-      cloud(140, 200, 140, 60, 140, 150, 0.45);
-      cloud(200, 300, 130, 50, 110, 140, 0.4);
-      cloud(120, 340, 110, 70, 130, 130, 0.35);
-      cloud(260, 240, 120, 120, 70, 150, 0.35);
-      cloud(300, 140, 100, 90, 60, 130, 0.3);
-      cloud(60, 90, 100, 40, 60, 110, 0.35);
-      cloud(450, 420, 120, 150, 80, 50, 0.35);
+      // orange clouds, right side and lower right
+      cloud(380, 180, 160, 200, 110, 50, 0.55);
+      cloud(430, 260, 140, 180, 90, 40, 0.5);
+      cloud(350, 330, 130, 220, 140, 70, 0.45);
+      cloud(450, 420, 130, 150, 80, 50, 0.45);
+      cloud(300, 420, 120, 190, 110, 60, 0.4);
+      // teal and blue clouds, center and left
+      cloud(140, 200, 150, 60, 140, 150, 0.5);
+      cloud(200, 300, 140, 50, 110, 140, 0.45);
+      cloud(120, 340, 120, 70, 130, 130, 0.4);
+      cloud(220, 150, 120, 70, 150, 160, 0.4);
+      cloud(90, 90, 110, 40, 60, 110, 0.4);
+      // violet clouds through the middle
+      cloud(260, 240, 130, 120, 70, 150, 0.4);
+      cloud(300, 140, 110, 90, 60, 130, 0.35);
+      cloud(180, 420, 110, 100, 60, 140, 0.35);
+      cloud(420, 80, 100, 140, 80, 120, 0.3);
+      // bright star cluster core, center-left
+      var core = ctx.createRadialGradient(210, 270, 0, 210, 270, 90);
+      core.addColorStop(0, "rgba(220,240,255,0.5)");
+      core.addColorStop(0.5, "rgba(160,210,240,0.25)");
+      core.addColorStop(1, "rgba(160,210,240,0)");
+      ctx.fillStyle = core;
+      ctx.beginPath(); ctx.arc(210, 270, 90, 0, Math.PI * 2); ctx.fill();
       // dense tiny star field
-      for (var n = 0; n < 380; n++) {
+      for (var n = 0; n < 600; n++) {
         var starA = randRange(0.35, 1);
         var warm = Math.random() < 0.3;
         ctx.fillStyle = warm ? "rgba(255,220,180," + starA + ")" : "rgba(230,240,255," + starA + ")";
         ctx.beginPath(); ctx.arc(randRange(0, s), randRange(0, s), randRange(0.6, 2), 0, Math.PI * 2); ctx.fill();
       }
-      // a few medium stars with a small glow
-      for (var m2 = 0; m2 < 40; m2++) {
+      // more medium stars with a small glow
+      for (var m2 = 0; m2 < 60; m2++) {
         var mx = randRange(10, s - 10), my = randRange(10, s - 10), mr = randRange(2, 3.5);
         var mg = ctx.createRadialGradient(mx, my, 0, mx, my, mr * 3);
         mg.addColorStop(0, "rgba(255,255,255,0.5)");
@@ -555,7 +582,8 @@ function makeDieMaterial() {
       var second = die.id === "cream" ? "rgba(150, 40, 50, 0.55)" :
         die.id === "bloodred" ? "rgba(230, 220, 200, 0.5)" :
         die.id === "gold" ? "rgba(120, 30, 30, 0.5)" :
-        die.id === "rosepink" ? "rgba(150, 60, 110, 0.5)" : "rgba(60, 40, 120, 0.5)";
+        die.id === "rosepink" ? "rgba(150, 60, 110, 0.5)" :
+        die.dark ? "rgba(230, 220, 200, 0.5)" : "rgba(60, 40, 120, 0.5)";
       for (var i = 0; i < 26; i++) {
         ctx.strokeStyle = second;
         ctx.lineWidth = randRange(3, 12);

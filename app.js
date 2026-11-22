@@ -2157,6 +2157,7 @@
     loadPartyLocations();
     renderUnmarkedPlaces();
     loadCurrentArea();
+    loadCombatants();
     renderMeasure();
   }
 
@@ -2767,6 +2768,7 @@
 
     loadMessages();
     setInterval(loadMessages, 15000);
+    loadCombatants();
   }
 
   initGate();

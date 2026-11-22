@@ -266,7 +266,15 @@
       <p class="hint">Every roll is saved to the roll log below.</p>
       <form id="dice-form" class="form">
         <label for="dice-roller">Rolling as</label>
-        <input type="text" id="dice-roller" placeholder="Your name">
+        <select id="dice-roller"></select>
+        <label>Number of dice</label>
+        <div class="dice-buttons" id="dice-count-buttons">
+          <button type="button" data-count="1" class="selected">1</button>
+          <button type="button" data-count="2">2</button>
+          <button type="button" data-count="3">3</button>
+          <button type="button" data-count="4">4</button>
+          <button type="button" data-count="5">5</button>
+        </div>
         <div class="dice-buttons" id="dice-buttons">
           <button type="button" data-die="4">d4</button>
           <button type="button" data-die="6">d6</button>
@@ -530,6 +538,6 @@
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<script src="app.js?v=29"></script>
+<script src="app.js?v=30"></script>
 </body>
 </html>

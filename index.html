@@ -255,7 +255,7 @@
       </div>
       <div class="card">
         <p class="title">Battle tracker</p>
-        <p>The Battle tab is the live fight tracker. When you resolve an action on the board, update the tracker the same way so it follows the board: set the combatant's HP in the combatants table, and set the current turn and round in the battle_state table (one row, id 1). The turn and round live in the database, so every player's phone shows the same turn. Players can also tap Damage or Heal with an amount on a combatant's card, or Next Turn to move down the initiative order. When a battle starts somewhere with an area map, set that map on battle_state (area_map_url) so the Maps tab switches to it automatically; when the battle ends the map switches back to the world map on its own.</p>
+        <p>The Battle tab is the live fight tracker, and it updates itself from the board. While a battle is on, a check reads new board posts and applies the DM's narration to the tracker: damage and healing change the named combatant's HP, a named enemy that dies is removed from the fight, and the current turn and round follow whoever the narration says is acting. Narrate normally, no special format is needed. Do not also update HP by hand while a battle is on, or the same hit gets applied twice; the Damage and Heal buttons are for correcting a mistake the tracker made, not for routine updates. The turn and round live in the database, so every player's phone shows the same turn. When a battle starts somewhere with an area map, set that map on battle_state (area_map_url) so the Maps tab switches to it automatically; when the battle ends the map switches back to the world map on its own. When the fight is over, clear the battle with the Clear Battle button; the tracker does not clear itself.</p>
       </div>
       <div class="card">
         <p class="title">Moving character tokens</p>
@@ -606,6 +606,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=13"></script>
-<script src="app.js?v=37"></script>
+<script src="app.js?v=38"></script>
 </body>
 </html>

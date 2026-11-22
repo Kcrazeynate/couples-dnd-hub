@@ -2243,8 +2243,9 @@
   // ---------- Battle ----------
 
   // Battle state lives in the DB so the turn and round sync across devices
-  // and follow the board: the DM updates combatant HP and this row as it
-  // resolves actions, and the tracker reloads live.
+  // and follow the board: the auto-tracker updates combatant HP and this row
+  // from the board narration as the DM resolves actions, and the tracker
+  // reloads live. The DM only corrects HP by hand when the tracker gets one wrong.
   async function loadBattleState() {
     var res = await db.from("battle_state").select("current_combatant_id, round, area_map_url").eq("id", 1).single();
     if (res.error || !res.data) return; // table not there yet (SQL not run): local turn only

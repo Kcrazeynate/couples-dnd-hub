@@ -1833,7 +1833,7 @@
     list.innerHTML = mapMarkers.map(function (mk) {
       var entry = npcsByName[normName(mk.label)];
       var img = entry && entry.image_url ? '<img class="place-thumb" src="' + escapeHtml(entry.image_url) + '" alt="">' : "";
-      var areaBtn = (mk.area_map_url && mk.visited) ? '<button type="button" class="area-map-btn" data-area-map="' + escapeHtml(mk.area_map_url) + '">View area map</button>' : "";
+      var areaBtn = (mk.area_map_url && (mk.visited || placesEdit)) ? '<button type="button" class="area-map-btn" data-area-map="' + escapeHtml(mk.area_map_url) + '">View area map</button>' : "";
       return '<div class="card place-card" data-marker-id="' + mk.id + '">' + img +
         '<p class="title">' + escapeHtml(mk.label) + '</p>' +
         '<p class="meta">' + escapeHtml(mk.kind || "Place") + '</p>' +
@@ -2109,6 +2109,7 @@
     if (view) view.classList.toggle("editing", on);
     var btn = $("places-edit-toggle");
     if (btn) btn.textContent = on ? "Done" : "Edit list";
+    renderMapMarkers();
   }
 
   function setQuestsEdit(on) {

@@ -743,6 +743,42 @@ button.danger:hover {
   z-index: 5;
 }
 
+/* Area map zoom: the map and its tokens live inside a scrollable viewport
+   and the wrap scales with the zoom, so tokens grow and shrink with it. */
+.area-map-viewport {
+  overflow: auto;
+  max-height: 75vh;
+  margin: 0.75rem 0;
+  border-radius: 12px;
+}
+
+/* A token with a portrait shows the face instead of the initial. The side
+   is the border colour (gold for the party, red for enemies); the face
+   fills the circle, cropped to the head and shoulders. */
+.area-token.has-face {
+  background: transparent;
+  padding: 0;
+  overflow: hidden;
+}
+
+.area-token.has-face.party {
+  border-color: #c9a227;
+}
+
+.area-token.has-face.enemy {
+  border-color: #b0402e;
+}
+
+.token-face {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  border-radius: 50%;
+  display: block;
+  pointer-events: none;
+}
+
 .area-drag-label {
   position: absolute;
   left: 8px;

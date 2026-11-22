@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Hub">
-<link rel="stylesheet" href="styles.css?v=25">
+<link rel="stylesheet" href="styles.css?v=26">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=3"></script>
 </head>
@@ -213,6 +213,10 @@
         <p>The Battle tab is the live fight tracker. When you resolve an action on the board, update the tracker the same way so it follows the board: set the combatant's HP in the combatants table, and set the current turn and round in the battle_state table (one row, id 1). The turn and round live in the database, so every player's phone shows the same turn. Players can also tap Damage or Heal with an amount on a combatant's card, or Next Turn to move down the initiative order. When a battle starts somewhere with an area map, set that map on battle_state (area_map_url) so the Maps tab switches to it automatically; when the battle ends the map switches back to the world map on its own.</p>
       </div>
       <div class="card">
+        <p class="title">Moving character tokens</p>
+        <p>Only the DM moves the character tokens on the area map, based on what the players say on the board. Players never move their own token. On the site, tokens can only be dragged while the Maps tab Edit list is on. Before moving a token, check two things. First, movement: the distance in squares times 5 feet, against the character's speed on their card. If the move is farther than their speed, ask the player if they still want to make it, or tell them their character can't move that far. Dashing doubles the speed. Second, opportunity attacks: if the character moves out of an enemy's reach, leaving a square next to an enemy, that enemy gets an opportunity attack, unless the character Disengaged. The site flags both of these when a token is dragged, so the DM sees them before confirming the move. A token's position lives on its combatant row (grid_x, grid_y).</p>
+      </div>
+      <div class="card">
         <p class="title">Quests, NPCs, Maps</p>
         <p>Quests show what is active and what is done. NPCs are people the party has met; places are on the Maps tab. The map has fog of war, only revealed squares are known.</p>
       </div>
@@ -305,6 +309,19 @@
           <div class="field">
             <label for="combatant-max-hp">Max HP</label>
             <input type="number" id="combatant-max-hp" value="10" step="1" min="1">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="combatant-speed">Speed (ft, blank = from character card)</label>
+            <input type="number" id="combatant-speed" placeholder="30" step="5" min="0">
+          </div>
+          <div class="field">
+            <label for="combatant-side">Side</label>
+            <select id="combatant-side">
+              <option value="party">Party</option>
+              <option value="enemy">Enemy</option>
+            </select>
           </div>
         </div>
         <label for="combatant-note">Note</label>
@@ -513,6 +530,6 @@
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<script src="app.js?v=27"></script>
+<script src="app.js?v=28"></script>
 </body>
 </html>

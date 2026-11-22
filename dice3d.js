@@ -100,6 +100,34 @@ function canvasTexture(size, draw) {
   return tex;
 }
 
+// A small studio-like cubemap so metals have something to reflect.
+// Without an environment map, a high-metalness die only catches the
+// scene lights and reads as nearly black. Bright warm top, dark floor.
+function makeEnvironment() {
+  function face(top, mid, bottom) {
+    var c = document.createElement("canvas");
+    c.width = 64; c.height = 64;
+    var g = c.getContext("2d");
+    var grad = g.createLinearGradient(0, 0, 0, 64);
+    grad.addColorStop(0, top);
+    grad.addColorStop(0.5, mid);
+    grad.addColorStop(1, bottom);
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+    return c;
+  }
+  var tex = new THREE.CubeTexture([
+    face("#fff2d0", "#c9a227", "#171410"),
+    face("#fff2d0", "#8a7a4a", "#171410"),
+    face("#ffffff", "#fff2d0", "#c9a227"),
+    face("#3a2f22", "#171410", "#0a0806"),
+    face("#fff2d0", "#b8a05a", "#171410"),
+    face("#fff2d0", "#8a7a4a", "#171410")
+  ]);
+  tex.needsUpdate = true;
+  return tex;
+}
+
 // Felt texture for the tray floor. 512px, repeats across the tray.
 function makeFeltTexture() {
   var felt = findById(FELT_COLORS, style.feltColor, FELT_COLORS[0]);
@@ -649,6 +677,7 @@ function init(container) {
   containerEl.appendChild(renderer.domElement);
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x171410);
+  scene.environment = makeEnvironment();
   camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
   camera.position.set(0, 8.2, 6.8);
   camera.lookAt(0, 0, 0.2);

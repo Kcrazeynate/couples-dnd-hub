@@ -1976,15 +1976,13 @@
 
   // ---------- Dice ----------
 
-  async function loadRolls() {
+  // Lightweight roll-list refresh: only re-fetches and re-renders the
+  // list. Used by the live Realtime handler and the 15-second poll, so a
+  // new roll on another phone shows up without rebuilding the "Rolling
+  // as" and "Modifier from" pickers while someone is using them.
+  async function refreshRollsList() {
     var list = $("rolls-list");
-    if (!configured) {
-      list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
-      return;
-    }
-    initDice3D();
-    await loadDiceRollers();
-    buildModSourcePicker();
+    if (!list || !configured) return;
     var res = await db.from("rolls").select("*").order("created_at", { ascending: false }).limit(50);
     if (res.error) {
       list.innerHTML = '<p class="error">Could not load rolls.</p>';
@@ -2001,6 +1999,18 @@
         '<p>' + escapeHtml(r.detail) + '</p>' +
         '</div>';
     }).join("");
+  }
+
+  async function loadRolls() {
+    var list = $("rolls-list");
+    if (!configured) {
+      list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
+      return;
+    }
+    initDice3D();
+    await loadDiceRollers();
+    buildModSourcePicker();
+    refreshRollsList();
   }
 
   function shortCharName(name) {
@@ -3518,7 +3528,7 @@
       characters: loadCharacters,
       quests: loadQuests,
       npcs: loadNpcs,
-      rolls: loadRolls,
+      rolls: refreshRollsList,
       combatants: loadCombatants,
       battle_state: loadCombatants,
       music_state: loadMusicState,
@@ -3864,7 +3874,11 @@
     updateDiceMode();
 
     loadMessages();
-    setInterval(loadMessages, 15000);
+    // The 15-second fallback refresh covers the board AND the roll log.
+    // Realtime drops on phones (sleep, background tabs), and the fallback
+    // used to refresh only the board, so a roll on another phone never
+    // showed up until the Dice tab was reopened.
+    setInterval(function () { loadMessages(); refreshRollsList(); }, 15000);
     loadCombatants();
     loadMusicState();
     document.querySelectorAll("[data-music-toggle]").forEach(function (btn) {

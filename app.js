@@ -616,12 +616,12 @@
   // ---------- Area maps on log entries ----------
   var HUB_BASE = "https://kcrazeynate.github.io/couples-dnd-hub/assets/";
   var AREA_MAP_OPTIONS = [
-    { label: "Ruins north of Riverton", url: HUB_BASE + "area-ruins.jpg", grid: 144 },
-    { label: "Lantern Inn", url: HUB_BASE + "area-lantern-inn.jpg", grid: 144 },
-    { label: "Gilded Boar", url: HUB_BASE + "area-gilded-boar.jpg", grid: 144 },
-    { label: "Toll house", url: HUB_BASE + "area-tollhouse.jpg", grid: 144 },
-    { label: "Watchtower ruins", url: HUB_BASE + "area-watchtower.jpg", grid: 144 },
-    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg", grid: 144 }
+    { label: "Ruins north of Riverton", url: HUB_BASE + "area-ruins.jpg", grid: 144, rows: 216 },
+    { label: "Lantern Inn", url: HUB_BASE + "area-lantern-inn.jpg", grid: 144, rows: 216 },
+    { label: "Gilded Boar", url: HUB_BASE + "area-gilded-boar.jpg", grid: 144, rows: 216 },
+    { label: "Toll house", url: HUB_BASE + "area-tollhouse.jpg", grid: 144, rows: 216 },
+    { label: "Watchtower ruins", url: HUB_BASE + "area-watchtower.jpg", grid: 144, rows: 216 },
+    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg", grid: 144, rows: 216 }
   ];
   var logAreaMapReady = false;
 
@@ -659,60 +659,17 @@
 
   // Cache-buster for area map images. Bump this whenever the image files
   // change content but keep the same filename, or browsers keep showing
-  // the cached copy. v3 = the portrait (rotated) gridless maps.
-  var AREA_IMG_VERSION = 3;
+  // the cached copy. v4 = the large portrait maps with the grid baked in.
+  var AREA_IMG_VERSION = 4;
 
   function areaGridFor(url) {
     var opt = AREA_MAP_OPTIONS.find(function (o) { return o.url === url; });
     return (opt && opt.grid) || 14;
   }
 
-  // Adaptive grid: the overlay groups squares when zoomed out so the grid
-  // never turns into a dense mesh, and splits them as you zoom in. The
-  // steps are picked so a cell stays about 20 to 30 pixels on screen at
-  // every zoom, so zooming in makes cells bigger, not denser. Fully
-  // zoomed in, each cell is 5 feet (1 square). The grid is 144 squares,
-  // which divides cleanly by 1, 2, 3, 4, 6, and 12.
-  function areaGridStep() {
-    if (areaZoom >= 8) return 1;
-    if (areaZoom >= 5) return 2;
-    if (areaZoom >= 3) return 3;
-    if (areaZoom >= 2) return 4;
-    if (areaZoom >= 1.5) return 6;
-    return 12;
-  }
-
-  var lastGridStep = 0;
-  var lastGridWrapWidth = 0;
-  function updateAreaGridOverlay() {
-    var overlay = document.querySelector(".area-grid-overlay");
-    if (!overlay || !currentAreaMapUrl) return;
-    var grid = areaGridFor(currentAreaMapUrl);
-    var step = areaGridStep();
-    var wrap = document.querySelector(".area-map-wrap");
-    var wrapWidth = (wrap && wrap.clientWidth) || 0;
-    // Only touch the layout when the step or the wrap width actually
-    // changed. Recomputing on every pinch move thrashed the layout and
-    // made pinch zoom glitchy.
-    if (step === lastGridStep && wrapWidth === lastGridWrapWidth) {
-      var feet0 = $("area-grid-feet");
-      if (feet0) feet0.textContent = (step * 5) + " ft / square";
-      return;
-    }
-    lastGridStep = step;
-    lastGridWrapWidth = wrapWidth;
-    var cellPx = 0;
-    if (wrapWidth > 0) {
-      cellPx = wrapWidth * step / grid;
-    }
-    if (cellPx > 0) {
-      overlay.style.backgroundSize = cellPx.toFixed(2) + "px " + cellPx.toFixed(2) + "px";
-    } else {
-      var pct = (100 * step / grid).toFixed(4);
-      overlay.style.backgroundSize = pct + "% " + pct + "%";
-    }
-    var feet = $("area-grid-feet");
-    if (feet) feet.textContent = (step * 5) + " ft / square";
+  function areaGridRowsFor(url) {
+    var opt = AREA_MAP_OPTIONS.find(function (o) { return o.url === url; });
+    return (opt && opt.rows) || areaGridFor(url);
   }
 
   function characterForCombatant(name) {
@@ -754,10 +711,10 @@
   // (grid_x/grid_y stay integers).
   var TOKEN_FINE = 10;
   function gridSquare(v) { return Math.floor(v / TOKEN_FINE); }
-  function tokenLeftTop(gx, gy, grid) {
+  function tokenLeftTop(gx, gy, cols, rows) {
     return {
-      left: (gx / TOKEN_FINE / grid * 100).toFixed(2),
-      top: (gy / TOKEN_FINE / grid * 100).toFixed(2)
+      left: (gx / TOKEN_FINE / cols * 100).toFixed(2),
+      top: (gy / TOKEN_FINE / rows * 100).toFixed(2)
     };
   }
 
@@ -776,6 +733,7 @@
     var layer = $("area-tokens");
     if (!layer || !currentAreaMapUrl) return;
     var grid = areaGridFor(currentAreaMapUrl);
+    var rows = areaGridRowsFor(currentAreaMapUrl);
     layer.classList.toggle("editing", placesEdit);
     var html = combatants.filter(function (c) {
       return c.hp > 0 && typeof c.grid_x === "number" && typeof c.grid_y === "number";
@@ -787,7 +745,7 @@
       var inner = portrait
         ? '<img class="token-face" src="' + escapeHtml(portrait) + '" alt="' + escapeHtml(c.name) + '">'
         : escapeHtml(initial);
-      var pos = tokenLeftTop(c.grid_x, c.grid_y, grid);
+      var pos = tokenLeftTop(c.grid_x, c.grid_y, grid, rows);
       var left = pos.left;
       var top = pos.top;
       return '<div class="area-token ' + side + (isCurrent ? " current" : "") + (portrait ? " has-face" : "") + '" data-token-id="' + c.id + '" style="left:' + left + '%;top:' + top + '%" title="' + escapeHtml(c.name) + ' - HP ' + c.hp + '/' + c.max_hp + ', Speed ' + combatantSpeed(c) + ' ft">' + inner + '</div>';
@@ -808,11 +766,12 @@
     if (!wrap || !currentAreaMapUrl) return null;
     var rect = wrap.getBoundingClientRect();
     var grid = areaGridFor(currentAreaMapUrl);
+    var rows = areaGridRowsFor(currentAreaMapUrl);
     var fx = Math.round((ev.clientX - rect.left) / rect.width * grid * TOKEN_FINE);
-    var fy = Math.round((ev.clientY - rect.top) / rect.height * grid * TOKEN_FINE);
+    var fy = Math.round((ev.clientY - rect.top) / rect.height * rows * TOKEN_FINE);
     fx = Math.max(0, Math.min(grid * TOKEN_FINE, fx));
-    fy = Math.max(0, Math.min(grid * TOKEN_FINE, fy));
-    return { x: gridSquare(fx), y: gridSquare(fy), fx: fx, fy: fy, grid: grid };
+    fy = Math.max(0, Math.min(rows * TOKEN_FINE, fy));
+    return { x: gridSquare(fx), y: gridSquare(fy), fx: fx, fy: fy, grid: grid, rows: rows };
   }
 
   function onTokenPointerDown(ev) {
@@ -849,7 +808,7 @@
     }
     var el = document.querySelector('[data-token-id="' + tokenDrag.id + '"]');
     if (el) {
-      var p = tokenLeftTop(sq.fx, sq.fy, sq.grid);
+      var p = tokenLeftTop(sq.fx, sq.fy, sq.grid, sq.rows);
       el.style.left = p.left + "%";
       el.style.top = p.top + "%";
     }
@@ -939,10 +898,9 @@
     }
     content.innerHTML = '<div class="card"><p class="title">Current area: ' + escapeHtml(currentAreaLabel || "this scene") + '</p>' +
       '<div class="area-map-viewport"><div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '?v=' + AREA_IMG_VERSION + '" alt="Area map">' +
-      '<div class="area-grid-overlay"></div>' +
       '<div id="area-tokens" class="area-tokens"></div>' +
       '<div id="area-drag-label" class="area-drag-label hidden"></div></div></div></div>' +
-      '<p class="hint">The grid adapts as you zoom: fully zoomed in each square is 5 feet, and it groups into larger squares as you zoom out, so it never gets dense. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab. Pinch or use Zoom to get closer.</p>';
+      '<p class="hint">1 square = 5 feet. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab. Pinch or use Zoom to get closer.</p>';
     content.querySelector("img").addEventListener("click", function () {
       openLightbox(currentAreaMapUrl + "?v=" + AREA_IMG_VERSION);
     });
@@ -2532,6 +2490,7 @@
     var c = combatants.find(function (cc) { return cc.id === id; });
     if (!c || !currentAreaMapUrl) return;
     var grid = areaGridFor(currentAreaMapUrl);
+    var rows = areaGridRowsFor(currentAreaMapUrl);
     var taken = {};
     combatants.forEach(function (o) {
       if (typeof o.grid_x === "number" && typeof o.grid_y === "number") {
@@ -2539,7 +2498,7 @@
       }
     });
     var sx = 0, sy = 0, found = false;
-    for (var y = 0; y < grid && !found; y++) {
+    for (var y = 0; y < rows && !found; y++) {
       for (var x = 0; x < grid && !found; x++) {
         if (!taken[x + "," + y]) { sx = x; sy = y; found = true; }
       }
@@ -3853,7 +3812,6 @@
     wrap.style.transformOrigin = "top left";
     var label = $("area-zoom-level");
     if (label) label.textContent = areaZoom.toFixed(1) + "x";
-    updateAreaGridOverlay();
   }
 
   function setAreaZoom(z, smooth) {

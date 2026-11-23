@@ -2802,12 +2802,133 @@
     }
     try { return el.volume; } catch (e) { return 0; }
   }
+  // Background playback: iOS suspends the AudioContext when the page is
+  // hidden, so the GainNode path goes silent when the phone locks. A plain
+  // audio element keeps playing in the background, so hand the current
+  // track to one when the page hides and hand it back when the page is
+  // visible again. The background element has no GainNode, so it plays at
+  // the device volume while hidden; the slider takes over again on return.
+  var musicBgAudio = null;
+  var musicBgMode = false;
+  function musicEnsureBgAudio() {
+    if (!musicBgAudio) {
+      musicBgAudio = new Audio();
+      musicBgAudio.preload = "auto";
+      musicBgAudio.addEventListener("ended", musicBgOnEnded);
+    }
+    return musicBgAudio;
+  }
+  function musicBgOnEnded() {
+    if (!musicPlaying || !musicBgMode) return;
+    musicBgAdvance();
+  }
+  function musicBgPlayTrack(track, startAtSec, isContinue) {
+    if (!track) return;
+    musicEnsureBgAudio();
+    musicBgAudio.src = track.file;
+    musicCurrentTitle = track.title || track.file;
+    musicCurrentGain = (typeof track.gain === "number" && track.gain > 0) ? track.gain : 1;
+    musicCurrentFile = track.file;
+    musicBgMode = true;
+    try { musicBgAudio.volume = musicTargetVolume(); } catch (e) {}
+    if (!isContinue) musicWriteTrackState(track);
+    var doPlay = function () {
+      var p = musicBgAudio.play();
+      if (p && p.catch) p.catch(function () {});
+      musicUpdateUI();
+    };
+    if (typeof startAtSec === "number" && startAtSec > 0) {
+      var sought = false;
+      var onMeta = function () {
+        musicBgAudio.removeEventListener("loadedmetadata", onMeta);
+        if (sought) return;
+        sought = true;
+        if (musicBgAudio.duration && startAtSec < musicBgAudio.duration) {
+          try { musicBgAudio.currentTime = startAtSec; } catch (e) {}
+        }
+        doPlay();
+      };
+      musicBgAudio.addEventListener("loadedmetadata", onMeta);
+      if (musicBgAudio.readyState >= 1) {
+        onMeta();
+      } else {
+        setTimeout(function () {
+          if (!sought) {
+            musicBgAudio.removeEventListener("loadedmetadata", onMeta);
+            sought = true;
+            doPlay();
+          }
+        }, 3000);
+      }
+    } else {
+      doPlay();
+    }
+  }
+  function musicBgAdvance() {
+    if (!musicPlaying || !musicBgMode) return;
+    // Follow the shared track if the other phone moved on, otherwise pick
+    // the next track ourselves (which shares it).
+    if (musicSharedTrack && musicSharedStartedAt && musicSharedTrack !== musicCurrentFile) {
+      var tracks = MUSIC_TRACKS[musicMood] || [];
+      var track = null;
+      for (var i = 0; i < tracks.length; i++) if (tracks[i].file === musicSharedTrack) track = tracks[i];
+      if (track) {
+        var offset = (Date.now() - musicSharedStartedAt) / 1000;
+        if (offset >= 0 && offset <= 600) {
+          musicBgPlayTrack(track, offset, true);
+          return;
+        }
+      }
+    }
+    var next = musicNextTrack();
+    if (next) musicBgPlayTrack(next, 0, false);
+  }
+  function musicToBackground() {
+    if (!musicPlaying || musicBgMode) return;
+    var el = musicActive === "A" ? musicAudioA : musicAudioB;
+    if (!el || !musicCurrentFile) return;
+    var trackFile = musicCurrentFile;
+    var pos = 0;
+    try { pos = el.currentTime || 0; } catch (e) {}
+    var tracks = MUSIC_TRACKS[musicMood] || [];
+    var track = null;
+    for (var i = 0; i < tracks.length; i++) if (tracks[i].file === trackFile) track = tracks[i];
+    if (!track) return;
+    try { if (musicAudioA) musicAudioA.pause(); } catch (e) {}
+    try { if (musicAudioB) musicAudioB.pause(); } catch (e) {}
+    // Same track, continuing where the foreground left off: do not
+    // rewrite the shared track state.
+    musicBgPlayTrack(track, pos, true);
+  }
+  function musicToForeground() {
+    if (!musicPlaying || !musicBgMode) return;
+    var trackFile = musicCurrentFile;
+    var pos = 0;
+    try { pos = musicBgAudio ? (musicBgAudio.currentTime || 0) : 0; } catch (e) {}
+    var tracks = MUSIC_TRACKS[musicMood] || [];
+    var track = null;
+    for (var i = 0; i < tracks.length; i++) if (tracks[i].file === trackFile) track = tracks[i];
+    if (!track) return;
+    try { if (musicBgAudio) musicBgAudio.pause(); } catch (e) {}
+    musicBgMode = false;
+    // Rejoin the same track where the background element left off. The
+    // follow flag skips rewriting the shared track state.
+    musicPlayTrack(track, pos, true);
+  }
   function musicMoodLabel(id) {
     var m = MUSIC_MOODS.find(function (x) { return x.id === id; });
     return m ? m.label : id;
   }
+  // Perceptual volume: the slider feels even across its travel, with
+  // finer control at the quiet end, and it never reaches silence. The
+  // floor is the quietest the slider goes; Mute and Pause are for
+  // turning the sound off, not the slider.
+  function musicSliderGain() {
+    var v = Math.max(0, Math.min(1, musicVolume));
+    return 0.05 + 0.95 * v * v;
+  }
   function musicEffectiveVolume() {
-    return musicMuted ? 0 : musicVolume;
+    return musicMuted ? 0 : musicSliderGain();
   }
   function musicTargetVolume() {
     return Math.max(0, Math.min(1, musicEffectiveVolume() * musicCurrentGain));
@@ -3072,8 +3193,14 @@
   function musicPause() {
     musicPlaying = false;
     musicWritePlaying(false);
+    // Forget which file this phone was on, so tapping Play again rejoins
+    // the shared track where the other phone is, instead of starting a
+    // different track. Pause is per-phone: the other phone keeps playing.
+    musicCurrentFile = "";
     if (musicAudioA) musicAudioA.pause();
     if (musicAudioB) musicAudioB.pause();
+    if (musicBgAudio) musicBgAudio.pause();
+    musicBgMode = false;
     musicUpdateUI();
   }
   function musicToggle() {
@@ -4092,6 +4219,18 @@
     // A music-start push opens the hub with #music; land straight on the
     // Music tab instead of the Board. The push itself never starts audio.
     if (location.hash === "#music") switchTab("music");
+    // Keep the music playing when the phone locks or the browser goes to
+    // the background. The GainNode audio path stops when the page is
+    // hidden (iOS suspends the AudioContext), so hand the current track
+    // to a plain audio element, which keeps playing, and hand it back
+    // when the page is visible again.
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) {
+        musicToBackground();
+      } else {
+        musicToForeground();
+      }
+    });
     musicUpdateUI();
   }
 

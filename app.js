@@ -616,12 +616,12 @@
   // ---------- Area maps on log entries ----------
   var HUB_BASE = "https://kcrazeynate.github.io/couples-dnd-hub/assets/";
   var AREA_MAP_OPTIONS = [
-    { label: "Ruins north of Riverton", url: HUB_BASE + "area-ruins.jpg", grid: 150 },
-    { label: "Lantern Inn", url: HUB_BASE + "area-lantern-inn.jpg", grid: 150 },
-    { label: "Gilded Boar", url: HUB_BASE + "area-gilded-boar.jpg", grid: 150 },
-    { label: "Toll house", url: HUB_BASE + "area-tollhouse.jpg", grid: 150 },
-    { label: "Watchtower ruins", url: HUB_BASE + "area-watchtower.jpg", grid: 150 },
-    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg", grid: 150 }
+    { label: "Ruins north of Riverton", url: HUB_BASE + "area-ruins.jpg", grid: 144 },
+    { label: "Lantern Inn", url: HUB_BASE + "area-lantern-inn.jpg", grid: 144 },
+    { label: "Gilded Boar", url: HUB_BASE + "area-gilded-boar.jpg", grid: 144 },
+    { label: "Toll house", url: HUB_BASE + "area-tollhouse.jpg", grid: 144 },
+    { label: "Watchtower ruins", url: HUB_BASE + "area-watchtower.jpg", grid: 144 },
+    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg", grid: 144 }
   ];
   var logAreaMapReady = false;
 
@@ -660,6 +660,28 @@
   function areaGridFor(url) {
     var opt = AREA_MAP_OPTIONS.find(function (o) { return o.url === url; });
     return (opt && opt.grid) || 14;
+  }
+
+  // Adaptive grid: the overlay groups squares when zoomed out so the grid
+  // never turns into a dense mesh. Fully zoomed in, each cell is 5 feet
+  // (1 square). Zoomed out, cells merge to 10, 15, then 20 feet. The grid
+  // is 144 squares, which divides cleanly by 2, 3, and 4.
+  function areaGridStep() {
+    if (areaZoom >= 2.5) return 1;
+    if (areaZoom >= 2) return 2;
+    if (areaZoom >= 1.5) return 3;
+    return 4;
+  }
+
+  function updateAreaGridOverlay() {
+    var overlay = document.querySelector(".area-grid-overlay");
+    if (!overlay || !currentAreaMapUrl) return;
+    var grid = areaGridFor(currentAreaMapUrl);
+    var step = areaGridStep();
+    var pct = (100 * step / grid).toFixed(4);
+    overlay.style.backgroundSize = pct + "% " + pct + "%";
+    var feet = $("area-grid-feet");
+    if (feet) feet.textContent = (step * 5) + " ft / square";
   }
 
   function characterForCombatant(name) {
@@ -886,10 +908,10 @@
     }
     content.innerHTML = '<div class="card"><p class="title">Current area: ' + escapeHtml(currentAreaLabel || "this scene") + '</p>' +
       '<div class="area-map-viewport"><div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '" alt="Area map">' +
-      '<div class="area-grid-overlay" style="background-size:' + (100 / areaGridFor(currentAreaMapUrl)).toFixed(4) + '% ' + (100 / areaGridFor(currentAreaMapUrl)).toFixed(4) + '%"></div>' +
+      '<div class="area-grid-overlay"></div>' +
       '<div id="area-tokens" class="area-tokens"></div>' +
       '<div id="area-drag-label" class="area-drag-label hidden"></div></div></div>' +
-      '<p class="hint">1 square = 5 feet. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab. Pinch or use Zoom to get closer.</p></div>';
+      '<p class="hint">The grid shows 5-foot squares when you are zoomed all the way in, and groups them into 10, 15, or 20 feet as you zoom out, so it never gets dense. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab. Pinch or use Zoom to get closer.</p></div>';
     content.querySelector("img").addEventListener("click", function () {
       openLightbox(currentAreaMapUrl);
     });
@@ -3800,6 +3822,7 @@
     wrap.style.transformOrigin = "top left";
     var label = $("area-zoom-level");
     if (label) label.textContent = areaZoom.toFixed(1) + "x";
+    updateAreaGridOverlay();
   }
 
   function setAreaZoom(z, smooth) {

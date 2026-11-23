@@ -772,15 +772,14 @@ button.danger:hover {
    touch-action pan-x pan-y lets one finger scroll the viewport but keeps
    two-finger pinch for the app, so pinch-to-zoom is not swallowed by the
    browser. Without it, iOS takes over the pinch and the map cannot zoom.
-   The viewport breaks out of the card and the app padding so the map runs
-   full screen width, and it is taller, so the map displays as big as it
-   can on a phone. */
+   The viewport is tall and the map loads zoomed in, so the map fills the
+   card and the description lives below it, outside the box. */
 .area-map-viewport {
   overflow: auto;
-  max-height: 85vh;
-  margin: 0.75rem -2rem;
-  width: calc(100% + 4rem);
-  border-radius: 0;
+  height: 70vh;
+  max-height: 70vh;
+  margin: 0.75rem 0;
+  border-radius: 12px;
   touch-action: pan-x pan-y;
 }
 

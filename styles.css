@@ -1643,3 +1643,52 @@ header {
     bottom: calc(64px + max(14px, env(safe-area-inset-bottom)));
   }
 }
+
+/* Key at the bottom of the area map: who is in this scene. */
+.area-key {
+  margin: 0.75rem 0 0;
+}
+.area-key .key-title {
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 0.5rem;
+}
+.area-key .key-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.area-key .key-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 64px;
+  text-align: center;
+}
+.area-key .key-item img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #c9a227;
+}
+.area-key .key-initial {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #c9a227;
+  color: #171410;
+  font-weight: bold;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.area-key .key-name {
+  font-size: 0.75rem;
+  line-height: 1.2;
+  color: var(--text);
+}

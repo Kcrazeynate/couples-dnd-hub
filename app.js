@@ -753,6 +753,28 @@
     return null;
   }
 
+  // Area markers: player and NPC tokens on the area map outside battle.
+  // They live in the area_markers table (area_map_url, label, grid_x,
+  // grid_y in fine units, kind 'player' or 'npc'). They are display-only
+  // here; the DM repositions them by updating the table.
+  var areaMarkers = [];
+
+  async function loadAreaMarkers() {
+    if (!configured || !currentAreaMapUrl) { areaMarkers = []; renderAreaTokens(); return; }
+    var res = await db.from("area_markers").select("*").eq("area_map_url", currentAreaMapUrl).order("created_at", { ascending: true });
+    if (res.error || !res.data) { areaMarkers = []; renderAreaTokens(); return; }
+    areaMarkers = res.data;
+    renderAreaTokens();
+  }
+
+  function markerPortrait(label) {
+    var pc = findPlayerChar(label);
+    if (pc && pc.image_url) return pc.image_url;
+    var npc = findNpc(label);
+    if (npc && npc.image) return npc.image;
+    return null;
+  }
+
   function renderAreaTokens() {
     var layer = $("area-tokens");
     if (!layer || !currentAreaMapUrl) return;
@@ -774,8 +796,22 @@
       var top = pos.top;
       return '<div class="area-token ' + side + (isCurrent ? " current" : "") + (portrait ? " has-face" : "") + '" data-token-id="' + c.id + '" style="left:' + left + '%;top:' + top + '%" title="' + escapeHtml(c.name) + ' - HP ' + c.hp + '/' + c.max_hp + ', Speed ' + combatantSpeed(c) + ' ft">' + inner + '</div>';
     }).join("");
+    // Area markers (outside battle): one token per person, gold border,
+    // with the area coordinate in the tooltip. Not draggable.
+    html += areaMarkers.filter(function (m) {
+      return typeof m.grid_x === "number" && typeof m.grid_y === "number";
+    }).map(function (m) {
+      var initial = String(m.label || "?").trim().charAt(0).toUpperCase();
+      var portrait = markerPortrait(m.label);
+      var inner = portrait
+        ? '<img class="token-face" src="' + escapeHtml(portrait) + '" alt="' + escapeHtml(m.label) + '">'
+        : escapeHtml(initial);
+      var pos = tokenLeftTop(m.grid_x, m.grid_y, grid, rows);
+      var coord = areaCoord(m.grid_x, m.grid_y, currentAreaLabel || "Area");
+      return '<div class="area-token party area-marker' + (portrait ? " has-face" : "") + '" style="left:' + pos.left + '%;top:' + pos.top + '%" title="' + escapeHtml(m.label) + ' - ' + escapeHtml(coord) + '">' + inner + '</div>';
+    }).join("");
     layer.innerHTML = html;
-    layer.querySelectorAll(".area-token").forEach(function (el) {
+    layer.querySelectorAll(".area-token[data-token-id]").forEach(function (el) {
       el.addEventListener("pointerdown", onTokenPointerDown);
     });
   }
@@ -936,6 +972,7 @@
     });
     applyAreaZoom();
     initAreaZoomGestures();
+    loadAreaMarkers();
     renderAreaTokens();
   }
 
@@ -4017,7 +4054,8 @@
       maps: loadMaps,
       map_cells: loadMapView,
       map_markers: loadMapView,
-      party_locations: function () { loadPartyLocations(); loadCurrentArea(); }
+      party_locations: function () { loadPartyLocations(); loadCurrentArea(); },
+      area_markers: loadAreaMarkers
     };
     liveChannel = db.channel("hub-live");
     Object.keys(tables).forEach(function (table) {

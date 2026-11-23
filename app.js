@@ -780,6 +780,8 @@
     var c = combatants.find(function (cc) { return cc.id === id; });
     if (!c) return;
     ev.preventDefault();
+    // Keep this pointer out of the viewport's pan/pinch handling.
+    ev.stopPropagation();
     var sq = areaPosFromEvent(ev);
     if (!sq) return;
     tokenDrag = {
@@ -3822,6 +3824,12 @@
   // Pinch and ctrl+wheel zoom for the area map. Single-finger drags still
   // move tokens (when editing) or scroll the viewport; only a two-finger
   // pinch zooms, so it never fights token dragging.
+  // One-finger pan and two-finger pinch on the area map, all handled here
+  // so the browser never steals the gesture. The viewport has
+  // touch-action: none, so the app owns every touch. Pointer capture
+  // keeps each finger tracked even if it slides off the element, which
+  // is what made pinch stop working mid-gesture. Pinch zooms toward the
+  // midpoint between the fingers, so the map stays under them.
   function initAreaZoomGestures() {
     var viewport = document.querySelector(".area-map-viewport");
     if (!viewport) return;
@@ -3832,7 +3840,12 @@
     }, { passive: false });
     var pointers = new Map();
     var pinchStart = null;
+    var panStart = null;
     viewport.addEventListener("pointerdown", function (e) {
+      // A token drag owns its own pointer; never let it start a pan.
+      if (e.target && e.target.closest && e.target.closest(".area-token")) return;
+      e.preventDefault();
+      try { viewport.setPointerCapture(e.pointerId); } catch (err) {}
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pointers.size === 2) {
         var pts = Array.from(pointers.values());
@@ -3841,6 +3854,14 @@
           zoom: areaZoom
         };
         areaPinching = true;
+        panStart = null;
+      } else if (pointers.size === 1) {
+        panStart = {
+          x: e.clientX,
+          y: e.clientY,
+          scrollLeft: viewport.scrollLeft,
+          scrollTop: viewport.scrollTop
+        };
       }
     });
     viewport.addEventListener("pointermove", function (e) {
@@ -3849,7 +3870,22 @@
       if (pointers.size === 2 && pinchStart) {
         var pts2 = Array.from(pointers.values());
         var dist = Math.hypot(pts2[0].x - pts2[1].x, pts2[0].y - pts2[1].y);
-        if (dist > 0) setAreaZoom(pinchStart.zoom * dist / pinchStart.dist, true);
+        if (dist <= 0 || pinchStart.dist <= 0) return;
+        var newZoom = pinchStart.zoom * dist / pinchStart.dist;
+        newZoom = Math.min(10, Math.max(1, newZoom));
+        // Anchor the zoom to the midpoint between the fingers.
+        var rect = viewport.getBoundingClientRect();
+        var mx = (pts2[0].x + pts2[1].x) / 2 - rect.left;
+        var my = (pts2[0].y + pts2[1].y) / 2 - rect.top;
+        var cx = (viewport.scrollLeft + mx) / areaZoom;
+        var cy = (viewport.scrollTop + my) / areaZoom;
+        areaZoom = newZoom;
+        applyAreaZoom();
+        viewport.scrollLeft = cx * newZoom - mx;
+        viewport.scrollTop = cy * newZoom - my;
+      } else if (pointers.size === 1 && panStart) {
+        viewport.scrollLeft = panStart.scrollLeft - (e.clientX - panStart.x);
+        viewport.scrollTop = panStart.scrollTop - (e.clientY - panStart.y);
       }
     });
     function endAreaPointer(e) {
@@ -3857,6 +3893,18 @@
       if (pointers.size < 2) {
         pinchStart = null;
         areaPinching = false;
+      }
+      if (pointers.size === 0) {
+        panStart = null;
+      } else if (pointers.size === 1) {
+        // One finger left after a pinch: let it pan from where it is.
+        var remaining = Array.from(pointers.values())[0];
+        panStart = {
+          x: remaining.x,
+          y: remaining.y,
+          scrollLeft: viewport.scrollLeft,
+          scrollTop: viewport.scrollTop
+        };
       }
     }
     viewport.addEventListener("pointerup", endAreaPointer);

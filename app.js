@@ -2934,17 +2934,18 @@
       // context is running again. Runs every few seconds as a safety net
       // for interruptions whose statechange does not fire.
       setInterval(musicResumeIfInterrupted, 3000);
-      // Resume on return and on tap. After an interruption, iOS will not
-      // let a timer wake the audio session back up on its own: it needs
-      // a user action. So also try whenever the page becomes visible
-      // again (switching back to Safari) and whenever the user taps
-      // anywhere on the page. Any tap brings the music back, not just
-      // the Play button.
+      // Resume on return. After an interruption, iOS will not let a
+      // timer wake the audio session back up on its own: it needs a user
+      // action. So also try whenever the page becomes visible again
+      // (switching back to Safari) and whenever the window gets focus.
+      // The pointerdown listener that was here is gone: it fired on the
+      // Play button tap itself and fought the button's own toggle, so
+      // after an interruption a tap resumed the track and the click
+      // then paused it again, and the music would not start.
       document.addEventListener("visibilitychange", function () {
         if (!document.hidden) musicResumeIfInterrupted();
       });
       window.addEventListener("focus", function () { musicResumeIfInterrupted(); });
-      document.addEventListener("pointerdown", function () { musicResumeIfInterrupted(); });
     }
     return musicActive === "A" ? musicAudioA : musicAudioB;
   }

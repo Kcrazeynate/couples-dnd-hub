@@ -684,7 +684,7 @@
   // Cache-buster for area map images. Bump this whenever the image files
   // change content but keep the same filename, or browsers keep showing
   // the cached copy. v4 = the large portrait maps with the grid baked in.
-  var AREA_IMG_VERSION = 5;
+  var AREA_IMG_VERSION = 6;
 
   function areaGridFor(url) {
     var opt = AREA_MAP_OPTIONS.find(function (o) { return o.url === url; });
@@ -775,6 +775,27 @@
     return null;
   }
 
+  // Tokens are exactly one grid square, like a Table Forge tile: the
+  // layout size is one square of the wrap, and the wrap's zoom transform
+  // scales the rendered token with the map, so it stays one square at
+  // every zoom. Called after tokens render and whenever the zoom changes.
+  function sizeAreaTokens() {
+    var wrap = document.querySelector(".area-map-wrap");
+    if (!wrap || !currentAreaMapUrl) return;
+    var grid = areaGridFor(currentAreaMapUrl);
+    if (!grid) return;
+    var cell = wrap.clientWidth / grid;
+    if (!cell || cell <= 0) return;
+    var font = Math.max(1, cell * 0.55);
+    var half = cell / 2;
+    document.querySelectorAll(".area-token").forEach(function (el) {
+      el.style.width = cell + "px";
+      el.style.height = cell + "px";
+      el.style.fontSize = font + "px";
+      el.style.margin = (-half) + "px 0 0 " + (-half) + "px";
+    });
+  }
+
   function renderAreaTokens() {
     var layer = $("area-tokens");
     if (!layer || !currentAreaMapUrl) return;
@@ -814,6 +835,7 @@
     layer.querySelectorAll(".area-token[data-token-id]").forEach(function (el) {
       el.addEventListener("pointerdown", onTokenPointerDown);
     });
+    sizeAreaTokens();
   }
 
   var tokenDrag = null;
@@ -3908,6 +3930,7 @@
     wrap.style.transformOrigin = "top left";
     var label = $("area-zoom-level");
     if (label) label.textContent = areaZoom.toFixed(1) + "x";
+    sizeAreaTokens();
   }
 
   function setAreaZoom(z, smooth) {

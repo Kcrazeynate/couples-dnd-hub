@@ -624,22 +624,25 @@
     { label: "Gilded Boar", url: HUB_BASE + "area-gilded-boar.jpg", grid: 144, rows: 192, wx: 5, wy: 4 },
     { label: "Toll house", url: HUB_BASE + "area-tollhouse.jpg", grid: 144, rows: 192, wx: 4, wy: 4 },
     { label: "Watchtower ruins", url: HUB_BASE + "area-watchtower.jpg", grid: 144, rows: 192, wx: 5, wy: 3 },
-    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg", grid: 144, rows: 192, wx: 5, wy: 3 }
+    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg", grid: 44, rows: 44, wx: 5, wy: 3 }
   ];
 
-  // Scale between the two maps. A world square is 12 miles by default
-  // (editable in the world map settings); an area map is 144 squares by
-  // 216 squares at 5 feet, so 720 by 1080 feet. One world square holds
-  // 88 area maps across and about 59 down, so one area map is a tiny
-  // patch, about 1/88 of a world square wide.
   function worldMilesPerSquare() {
     var v = parseFloat(localStorage.getItem("hub-map-scale"));
     return (isFinite(v) && v > 0) ? v : 12;
   }
 
-  function areaMapsPerWorldSquare() {
+  // Scale between the two maps. A world square is 12 miles by default
+  // (editable in the world map settings); an area map is grid x rows
+  // squares at 5 feet. Computed from the map in view, so a 44 x 44
+  // map (220 ft) tiles 288 across and 288 down, and a 144 x 192 map
+  // tiles 88 across and 66 down.
+  function areaMapsPerWorldSquare(url) {
     var worldFt = worldMilesPerSquare() * 5280;
-    return { across: worldFt / 720, down: worldFt / 1080 };
+    var opt = AREA_MAP_OPTIONS.find(function (o) { return o.url === url; }) || AREA_MAP_OPTIONS[0];
+    var wFt = (opt ? opt.grid : 44) * 5;
+    var hFt = (opt ? opt.rows : 44) * 5;
+    return { across: worldFt / wFt, down: worldFt / hFt };
   }
 
   function worldSquareForArea(url) {
@@ -683,8 +686,9 @@
 
   // Cache-buster for area map images. Bump this whenever the image files
   // change content but keep the same filename, or browsers keep showing
-  // the cached copy. v4 = the large portrait maps with the grid baked in.
-  var AREA_IMG_VERSION = 7;
+  // the cached copy. v8 = the 44 x 44 forest road with the wheel prop at
+  // exact 1-square scale and the grid baked in.
+  var AREA_IMG_VERSION = 8;
 
   function areaGridFor(url) {
     var opt = AREA_MAP_OPTIONS.find(function (o) { return o.url === url; });
@@ -734,6 +738,13 @@
   // instead of only the square centre, with no schema change
   // (grid_x/grid_y stay integers).
   var TOKEN_FINE = 10;
+  // Area map display, no zoom. One grid square is AREA_CELL_PX on
+  // screen, so about 15 squares fit across a phone and you drag to pan
+  // around the rest. Tokens are TOKEN_SIZE_SQUARES squares across,
+  // slightly bigger than one square like Table Forge, so they read
+  // without zooming.
+  var AREA_CELL_PX = 24;
+  var TOKEN_SIZE_SQUARES = 1.5;
   function gridSquare(v) { return Math.floor(v / TOKEN_FINE); }
   function tokenLeftTop(gx, gy, cols, rows) {
     return {
@@ -775,29 +786,27 @@
     return null;
   }
 
-  // Tokens are exactly one grid square, like a Table Forge tile: the
-  // layout size is one square of the wrap, and the wrap's zoom transform
-  // scales the rendered token with the map, so it stays one square at
-  // every zoom. Called after tokens render and whenever the zoom changes.
+  // Tokens are a little bigger than one grid square, like a Table Forge
+  // tile, so they read without zoom. The width is a percentage of the
+  // wrap, so the token stays the same size relative to the map.
+  // Centering is by transform, not a fixed margin, so it holds at any
+  // size. The letter scales with the token.
   function sizeAreaTokens() {
     var wrap = document.querySelector(".area-map-wrap");
     if (!wrap || !currentAreaMapUrl) return;
     var grid = areaGridFor(currentAreaMapUrl);
     if (!grid) return;
-    var cell = wrap.clientWidth / grid;
-    if (!cell || cell <= 0) return;
-    var font = Math.max(1, cell * 0.55);
-    var half = cell / 2;
+    var w = (TOKEN_SIZE_SQUARES * 100 / grid) + "%";
+    var fs = Math.round(AREA_CELL_PX * TOKEN_SIZE_SQUARES * 0.45) + "px";
     document.querySelectorAll(".area-token").forEach(function (el) {
-      el.style.width = cell + "px";
-      el.style.height = cell + "px";
-      el.style.fontSize = font + "px";
-      el.style.margin = (-half) + "px 0 0 " + (-half) + "px";
+      el.style.width = w;
+      el.style.fontSize = fs;
     });
   }
 
   // Key at the bottom of the area map, Table Forge style: who is in
   // this scene, with a portrait and name for each token on the map.
+  // Tapping a name glides the map to that token (see centerAreaOn).
   function renderAreaKey() {
     var key = $("area-key");
     if (!key) return;
@@ -807,17 +816,24 @@
       var inner = portrait
         ? '<img src="' + escapeHtml(portrait) + '" alt="' + escapeHtml(m.label) + '">'
         : '<span class="key-initial">' + escapeHtml(String(m.label || "?").trim().charAt(0).toUpperCase()) + '</span>';
-      items.push('<div class="key-item">' + inner + '<span class="key-name">' + escapeHtml(m.label) + '</span></div>');
+      items.push('<div class="key-item" data-fx="' + m.grid_x + '" data-fy="' + m.grid_y + '" title="Tap to go to ' + escapeHtml(m.label) + '">' + inner + '<span class="key-name">' + escapeHtml(m.label) + '</span></div>');
     });
     combatants.filter(function (c) { return c.hp > 0; }).forEach(function (c) {
       var portrait = combatantPortrait(c);
       var inner = portrait
         ? '<img src="' + escapeHtml(portrait) + '" alt="' + escapeHtml(c.name) + '">'
         : '<span class="key-initial">' + escapeHtml(String(c.name || "?").trim().charAt(0).toUpperCase()) + '</span>';
-      items.push('<div class="key-item">' + inner + '<span class="key-name">' + escapeHtml(c.name) + '</span></div>');
+      items.push('<div class="key-item" data-fx="' + c.grid_x + '" data-fy="' + c.grid_y + '" title="Tap to go to ' + escapeHtml(c.name) + '">' + inner + '<span class="key-name">' + escapeHtml(c.name) + '</span></div>');
     });
     if (!items.length) { key.innerHTML = ""; return; }
     key.innerHTML = '<p class="key-title">In this scene</p><div class="key-row">' + items.join("") + '</div>';
+    key.querySelectorAll(".key-item").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var fx = parseInt(el.dataset.fx, 10);
+        var fy = parseInt(el.dataset.fy, 10);
+        if (isFinite(fx) && isFinite(fy)) centerAreaOn(fx, fy, true);
+      });
+    });
   }
 
   function renderAreaTokens() {
@@ -861,12 +877,96 @@
     });
     sizeAreaTokens();
     renderAreaKey();
+    // First render with markers for this area: center on the followed
+    // token. Later renders (a marker moving, a combatant joining) leave
+    // the view where the player put it.
+    if (!areaMapCentered) {
+      areaMapCentered = true;
+      centerAreaOnFollow(false);
+    }
+  }
+
+  // The map follows one token per phone, so it opens centered on you.
+  // Stored on the device, so Nathan's phone follows Milo and Angela's
+  // follows Sylvie. "Party" centers on the middle of everyone on the map.
+  var areaMapCentered = false;
+
+  function mapFollow() {
+    var v = localStorage.getItem("hub-map-follow");
+    if (v === "sylvie" || v === "party") return v;
+    return "milo";
+  }
+
+  function findAreaTokenPos(name) {
+    var n = String(name || "").toLowerCase().trim();
+    if (!n) return null;
+    var m = areaMarkers.find(function (mm) { return String(mm.label || "").toLowerCase().indexOf(n) !== -1; });
+    if (m && typeof m.grid_x === "number" && typeof m.grid_y === "number") return { fx: m.grid_x, fy: m.grid_y };
+    var c = combatants.find(function (cc) { return String(cc.name || "").toLowerCase().indexOf(n) !== -1 && cc.hp > 0; });
+    if (c && typeof c.grid_x === "number" && typeof c.grid_y === "number") return { fx: c.grid_x, fy: c.grid_y };
+    return null;
+  }
+
+  function partyCenterPos() {
+    var pts = [];
+    areaMarkers.forEach(function (m) {
+      if (typeof m.grid_x === "number" && typeof m.grid_y === "number") pts.push([m.grid_x, m.grid_y]);
+    });
+    combatants.forEach(function (c) {
+      if (c.hp > 0 && typeof c.grid_x === "number" && typeof c.grid_y === "number") pts.push([c.grid_x, c.grid_y]);
+    });
+    if (!pts.length) return null;
+    var sx = 0, sy = 0;
+    pts.forEach(function (p) { sx += p[0]; sy += p[1]; });
+    return { fx: Math.round(sx / pts.length), fy: Math.round(sy / pts.length) };
+  }
+
+  function centerAreaOnFollow(animate) {
+    var follow = mapFollow();
+    var pos = null;
+    if (follow === "party") pos = partyCenterPos();
+    else pos = findAreaTokenPos(follow) || partyCenterPos();
+    if (pos) centerAreaOn(pos.fx, pos.fy, animate);
+  }
+
+  // Scroll the area viewport so a fine-unit position sits in the middle
+  // of the screen. With animate, it glides there over about a second so
+  // you can follow the move and not get lost; without it, it jumps.
+  function centerAreaOn(fx, fy, animate) {
+    var viewport = document.querySelector(".area-map-viewport");
+    var wrap = document.querySelector(".area-map-wrap");
+    if (!viewport || !wrap || !currentAreaMapUrl) return;
+    var grid = areaGridFor(currentAreaMapUrl);
+    var rows = areaGridRowsFor(currentAreaMapUrl);
+    if (!grid || !rows) return;
+    var wrapW = wrap.clientWidth;
+    var wrapH = wrap.clientHeight;
+    if (!wrapW || !wrapH) return;
+    var px = fx / TOKEN_FINE / grid * wrapW;
+    var py = fy / TOKEN_FINE / rows * wrapH;
+    var targetLeft = Math.max(0, Math.min(wrapW - viewport.clientWidth, px - viewport.clientWidth / 2));
+    var targetTop = Math.max(0, Math.min(wrapH - viewport.clientHeight, py - viewport.clientHeight / 2));
+    if (!animate) {
+      viewport.scrollLeft = targetLeft;
+      viewport.scrollTop = targetTop;
+      return;
+    }
+    var startLeft = viewport.scrollLeft;
+    var startTop = viewport.scrollTop;
+    var startTime = null;
+    var duration = 1000;
+    function step(now) {
+      if (startTime === null) startTime = now;
+      var t = Math.min(1, (now - startTime) / duration);
+      var eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      viewport.scrollLeft = startLeft + (targetLeft - startLeft) * eased;
+      viewport.scrollTop = startTop + (targetTop - startTop) * eased;
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
   }
 
   var tokenDrag = null;
-  // True while a two-finger pinch is zooming the area map, so a token drag
-  // never starts or moves mid-pinch.
-  var areaPinching = false;
 
   function areaPosFromEvent(ev) {
     var wrap = document.querySelector(".area-map-wrap");
@@ -882,7 +982,7 @@
   }
 
   function onTokenPointerDown(ev) {
-    if (!placesEdit || areaPinching) return;
+    if (!placesEdit) return;
     var id = ev.currentTarget.dataset.tokenId;
     var c = combatants.find(function (cc) { return cc.id === id; });
     if (!c) return;
@@ -909,7 +1009,7 @@
   }
 
   function onTokenPointerMove(ev) {
-    if (!tokenDrag || areaPinching) return;
+    if (!tokenDrag) return;
     var sq = areaPosFromEvent(ev);
     if (!sq) return;
     if (Math.abs(ev.clientX - tokenDrag.startClientX) > 6 || Math.abs(ev.clientY - tokenDrag.startClientY) > 6) {
@@ -1006,20 +1106,37 @@
       return;
     }
     var ws = worldSquareForArea(currentAreaMapUrl);
-    var per = areaMapsPerWorldSquare();
+    var per = areaMapsPerWorldSquare(currentAreaMapUrl);
     var scaleLine = ws ? '<p class="hint">In ' + escapeHtml(ws) + '. One world square (' + worldMilesPerSquare() + ' miles) holds exactly ' + Math.round(per.across) + ' area maps across and ' + Math.round(per.down) + ' down, so this map is one small patch of that square.</p>' : '';
+    var follow = mapFollow();
     content.innerHTML = '<div class="card"><p class="title">Current area: ' + escapeHtml(currentAreaLabel || "this scene") + '</p>' +
       scaleLine +
+      '<p class="hint">Follow <select id="area-follow" class="follow-select">' +
+      '<option value="milo"' + (follow === "milo" ? " selected" : "") + '>Milo</option>' +
+      '<option value="sylvie"' + (follow === "sylvie" ? " selected" : "") + '>Sylvie</option>' +
+      '<option value="party"' + (follow === "party" ? " selected" : "") + '>Party</option>' +
+      '</select> &mdash; the map opens centered on them. Drag to pan around. Tap a name below to glide to them.</p>' +
       '<div class="area-map-viewport"><div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '?v=' + AREA_IMG_VERSION + '" alt="Area map">' +
       '<div id="area-tokens" class="area-tokens"></div>' +
       '<div id="area-drag-label" class="area-drag-label hidden"></div></div></div></div>' +
-      '<p class="hint">1 square = 5 feet. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab. Pinch or use Zoom to get closer.</p>' +
+      '<p class="hint">1 square = 5 feet. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab.</p>' +
       '<div id="area-key" class="area-key"></div>';
     content.querySelector("img").addEventListener("click", function () {
       openLightbox(currentAreaMapUrl + "?v=" + AREA_IMG_VERSION);
     });
-    applyAreaZoom();
-    initAreaZoomGestures();
+    var followSel = $("area-follow");
+    if (followSel) followSel.addEventListener("change", function () {
+      localStorage.setItem("hub-map-follow", followSel.value);
+      centerAreaOnFollow(true);
+    });
+    // Fixed scale, no zoom: the wrap is grid x rows squares at
+    // AREA_CELL_PX each, so a square reads on a phone and you pan.
+    var wrap = content.querySelector(".area-map-wrap");
+    if (wrap) {
+      wrap.style.width = (areaGridFor(currentAreaMapUrl) * AREA_CELL_PX) + "px";
+      wrap.style.height = (areaGridRowsFor(currentAreaMapUrl) * AREA_CELL_PX) + "px";
+    }
+    areaMapCentered = false;
     loadAreaMarkers();
     renderAreaTokens();
   }
@@ -3505,9 +3622,6 @@
   var suppressMapClick = false;
   var npcsByName = {};
   var mapZoom = 1;
-  // Area map zoom, same range as the world map (1x to 3x). The tokens live
-  // inside .area-map-wrap, so they scale with the map when it zooms.
-  var areaZoom = 1;
   var measureA = null;
   var measureB = null;
   var milesPerSquare = 12;
@@ -3949,113 +4063,6 @@
     applyMapZoom();
   }
 
-  function applyAreaZoom() {
-    var wrap = document.querySelector(".area-map-wrap");
-    if (!wrap) return;
-    wrap.style.transform = "scale(" + areaZoom + ")";
-    wrap.style.transformOrigin = "top left";
-    var label = $("area-zoom-level");
-    if (label) label.textContent = areaZoom.toFixed(1) + "x";
-    sizeAreaTokens();
-  }
-
-  function setAreaZoom(z, smooth) {
-    // No rounding: the zoom is continuous. Rounding to 0.5 steps made the
-    // pinch feel like it snapped to the button steps.
-    areaZoom = Math.min(10, Math.max(1, z));
-    applyAreaZoom();
-  }
-
-  // Pinch and ctrl+wheel zoom for the area map. Single-finger drags still
-  // move tokens (when editing) or scroll the viewport; only a two-finger
-  // pinch zooms, so it never fights token dragging.
-  // One-finger pan and two-finger pinch on the area map, all handled here
-  // so the browser never steals the gesture. The viewport has
-  // touch-action: none, so the app owns every touch. Pointer capture
-  // keeps each finger tracked even if it slides off the element, which
-  // is what made pinch stop working mid-gesture. Pinch zooms toward the
-  // midpoint between the fingers, so the map stays under them.
-  function initAreaZoomGestures() {
-    var viewport = document.querySelector(".area-map-viewport");
-    if (!viewport) return;
-    viewport.addEventListener("wheel", function (e) {
-      if (!e.ctrlKey) return;
-      e.preventDefault();
-      setAreaZoom(areaZoom + (e.deltaY < 0 ? 0.5 : -0.5));
-    }, { passive: false });
-    var pointers = new Map();
-    var pinchStart = null;
-    var panStart = null;
-    viewport.addEventListener("pointerdown", function (e) {
-      // A token drag owns its own pointer; never let it start a pan.
-      if (e.target && e.target.closest && e.target.closest(".area-token")) return;
-      e.preventDefault();
-      try { viewport.setPointerCapture(e.pointerId); } catch (err) {}
-      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (pointers.size === 2) {
-        var pts = Array.from(pointers.values());
-        pinchStart = {
-          dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
-          zoom: areaZoom
-        };
-        areaPinching = true;
-        panStart = null;
-      } else if (pointers.size === 1) {
-        panStart = {
-          x: e.clientX,
-          y: e.clientY,
-          scrollLeft: viewport.scrollLeft,
-          scrollTop: viewport.scrollTop
-        };
-      }
-    });
-    viewport.addEventListener("pointermove", function (e) {
-      if (!pointers.has(e.pointerId)) return;
-      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (pointers.size === 2 && pinchStart) {
-        var pts2 = Array.from(pointers.values());
-        var dist = Math.hypot(pts2[0].x - pts2[1].x, pts2[0].y - pts2[1].y);
-        if (dist <= 0 || pinchStart.dist <= 0) return;
-        var newZoom = pinchStart.zoom * dist / pinchStart.dist;
-        newZoom = Math.min(10, Math.max(1, newZoom));
-        // Anchor the zoom to the midpoint between the fingers.
-        var rect = viewport.getBoundingClientRect();
-        var mx = (pts2[0].x + pts2[1].x) / 2 - rect.left;
-        var my = (pts2[0].y + pts2[1].y) / 2 - rect.top;
-        var cx = (viewport.scrollLeft + mx) / areaZoom;
-        var cy = (viewport.scrollTop + my) / areaZoom;
-        areaZoom = newZoom;
-        applyAreaZoom();
-        viewport.scrollLeft = cx * newZoom - mx;
-        viewport.scrollTop = cy * newZoom - my;
-      } else if (pointers.size === 1 && panStart) {
-        viewport.scrollLeft = panStart.scrollLeft - (e.clientX - panStart.x);
-        viewport.scrollTop = panStart.scrollTop - (e.clientY - panStart.y);
-      }
-    });
-    function endAreaPointer(e) {
-      pointers.delete(e.pointerId);
-      if (pointers.size < 2) {
-        pinchStart = null;
-        areaPinching = false;
-      }
-      if (pointers.size === 0) {
-        panStart = null;
-      } else if (pointers.size === 1) {
-        // One finger left after a pinch: let it pan from where it is.
-        var remaining = Array.from(pointers.values())[0];
-        panStart = {
-          x: remaining.x,
-          y: remaining.y,
-          scrollLeft: viewport.scrollLeft,
-          scrollTop: viewport.scrollTop
-        };
-      }
-    }
-    viewport.addEventListener("pointerup", endAreaPointer);
-    viewport.addEventListener("pointercancel", endAreaPointer);
-  }
-
   async function addMap(e) {
     e.preventDefault();
     if (!configured) return setupNeeded();
@@ -4274,9 +4281,6 @@
     $("map-zoom-in").addEventListener("click", function () { setMapZoom(mapZoom + 0.5); });
     $("map-zoom-out").addEventListener("click", function () { setMapZoom(mapZoom - 0.5); });
     $("map-zoom-reset").addEventListener("click", function () { setMapZoom(1); });
-    $("area-zoom-in").addEventListener("click", function () { setAreaZoom(areaZoom + 0.5); });
-    $("area-zoom-out").addEventListener("click", function () { setAreaZoom(areaZoom - 0.5); });
-    $("area-zoom-reset").addEventListener("click", function () { setAreaZoom(1); });
     $("map-viewport").addEventListener("wheel", function (e) {
       if (!e.ctrlKey) return;
       e.preventDefault();

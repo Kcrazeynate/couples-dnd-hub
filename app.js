@@ -910,8 +910,8 @@
       '<div class="area-map-viewport"><div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '" alt="Area map">' +
       '<div class="area-grid-overlay"></div>' +
       '<div id="area-tokens" class="area-tokens"></div>' +
-      '<div id="area-drag-label" class="area-drag-label hidden"></div></div></div>' +
-      '<p class="hint">The grid shows 5-foot squares when you are zoomed all the way in, and groups them into 10, 15, or 20 feet as you zoom out, so it never gets dense. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab. Pinch or use Zoom to get closer.</p></div>';
+      '<div id="area-drag-label" class="area-drag-label hidden"></div></div></div></div>' +
+      '<p class="hint">The grid shows 5-foot squares when you are zoomed all the way in, and groups them into 10, 15, or 20 feet as you zoom out, so it never gets dense. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab. Pinch or use Zoom to get closer.</p>';
     content.querySelector("img").addEventListener("click", function () {
       openLightbox(currentAreaMapUrl);
     });
@@ -3373,7 +3373,7 @@
   var mapZoom = 1;
   // Area map zoom, same range as the world map (1x to 3x). The tokens live
   // inside .area-map-wrap, so they scale with the map when it zooms.
-  var areaZoom = 1;
+  var areaZoom = 2;
   var measureA = null;
   var measureB = null;
   var milesPerSquare = 12;
@@ -4093,7 +4093,7 @@
     $("map-zoom-reset").addEventListener("click", function () { setMapZoom(1); });
     $("area-zoom-in").addEventListener("click", function () { setAreaZoom(areaZoom + 0.5); });
     $("area-zoom-out").addEventListener("click", function () { setAreaZoom(areaZoom - 0.5); });
-    $("area-zoom-reset").addEventListener("click", function () { setAreaZoom(1); });
+    $("area-zoom-reset").addEventListener("click", function () { setAreaZoom(2); });
     $("map-viewport").addEventListener("wheel", function (e) {
       if (!e.ctrlKey) return;
       e.preventDefault();

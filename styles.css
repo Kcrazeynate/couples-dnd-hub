@@ -717,8 +717,11 @@ button.danger:hover {
 
 .area-token {
   position: absolute;
-  /* Size is set in JS (sizeAreaTokens): exactly one grid square, so the
-     token scales with the map zoom like a Table Forge tile. */
+  /* Size is set in JS (sizeAreaTokens): a little bigger than one grid
+     square, like a Table Forge tile, so it reads without zoom. */
+  box-sizing: border-box;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
   border: 2px solid #171410;
   color: #171410;
@@ -754,22 +757,19 @@ button.danger:hover {
   z-index: 5;
 }
 
-/* Area map zoom: the map and its tokens live inside a scrollable viewport
-   and the wrap scales with the zoom, so tokens grow and shrink with it.
-   touch-action pan-x pan-y lets one finger scroll the viewport but keeps
-   two-finger pinch for the app, so pinch-to-zoom is not swallowed by the
-   browser. Without it, iOS takes over the pinch and the map cannot zoom.
-   The viewport is tall and the map loads zoomed in, so the map fills the
-   card and the description lives below it, outside the box. */
+/* Area map: no zoom. The map sits at one fixed scale (one square is
+   AREA_CELL_PX on screen) inside a scrollable viewport, and you drag
+   to pan around it. touch-action pan-x pan-y lets one finger scroll
+   the viewport natively, which is smooth on iOS. Token drags still
+   own their own pointer (the token has touch-action: none), so a drag
+   never starts a pan. The viewport is tall and the map fills the card. */
 .area-map-viewport {
   overflow: auto;
   height: 70vh;
   max-height: 70vh;
   margin: 0.75rem 0;
   border-radius: 12px;
-  /* The app handles all touch here (one-finger pan and two-finger pinch)
-     so the browser never steals the gesture for page zoom or scroll. */
-  touch-action: none;
+  touch-action: pan-x pan-y;
   overscroll-behavior: contain;
 }
 
@@ -1667,6 +1667,21 @@ header {
   gap: 0.25rem;
   width: 64px;
   text-align: center;
+  cursor: pointer;
+}
+.area-key .key-item:active img,
+.area-key .key-item:active .key-initial {
+  border-color: #ece5d3;
+}
+
+/* Follow select on the area map: which token this phone centers on. */
+.follow-select {
+  background: #241f18;
+  color: #ece5d3;
+  border: 1px solid #4a3f2c;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 0.9rem;
 }
 .area-key .key-item img {
   width: 56px;

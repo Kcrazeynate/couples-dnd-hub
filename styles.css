@@ -768,7 +768,10 @@ button.danger:hover {
   max-height: 70vh;
   margin: 0.75rem 0;
   border-radius: 12px;
-  touch-action: pan-x pan-y;
+  /* The app handles all touch here (one-finger pan and two-finger pinch)
+     so the browser never steals the gesture for page zoom or scroll. */
+  touch-action: none;
+  overscroll-behavior: contain;
 }
 
 /* A token with a portrait shows the face instead of the initial. The side

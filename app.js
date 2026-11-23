@@ -657,6 +657,11 @@
     return opt ? opt.label : null;
   }
 
+  // Cache-buster for area map images. Bump this whenever the image files
+  // change content but keep the same filename, or browsers keep showing
+  // the cached copy. v3 = the portrait (rotated) gridless maps.
+  var AREA_IMG_VERSION = 3;
+
   function areaGridFor(url) {
     var opt = AREA_MAP_OPTIONS.find(function (o) { return o.url === url; });
     return (opt && opt.grid) || 14;
@@ -673,15 +678,28 @@
     return 4;
   }
 
+  var lastGridStep = 0;
+  var lastGridWrapWidth = 0;
   function updateAreaGridOverlay() {
     var overlay = document.querySelector(".area-grid-overlay");
     if (!overlay || !currentAreaMapUrl) return;
     var grid = areaGridFor(currentAreaMapUrl);
     var step = areaGridStep();
     var wrap = document.querySelector(".area-map-wrap");
+    var wrapWidth = (wrap && wrap.clientWidth) || 0;
+    // Only touch the layout when the step or the wrap width actually
+    // changed. Recomputing on every pinch move thrashed the layout and
+    // made pinch zoom glitchy.
+    if (step === lastGridStep && wrapWidth === lastGridWrapWidth) {
+      var feet0 = $("area-grid-feet");
+      if (feet0) feet0.textContent = (step * 5) + " ft / square";
+      return;
+    }
+    lastGridStep = step;
+    lastGridWrapWidth = wrapWidth;
     var cellPx = 0;
-    if (wrap && wrap.clientWidth > 0) {
-      cellPx = wrap.clientWidth * step / grid;
+    if (wrapWidth > 0) {
+      cellPx = wrapWidth * step / grid;
     }
     if (cellPx > 0) {
       overlay.style.backgroundSize = cellPx.toFixed(2) + "px " + cellPx.toFixed(2) + "px";
@@ -916,13 +934,13 @@
       return;
     }
     content.innerHTML = '<div class="card"><p class="title">Current area: ' + escapeHtml(currentAreaLabel || "this scene") + '</p>' +
-      '<div class="area-map-viewport"><div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '" alt="Area map">' +
+      '<div class="area-map-viewport"><div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '?v=' + AREA_IMG_VERSION + '" alt="Area map">' +
       '<div class="area-grid-overlay"></div>' +
       '<div id="area-tokens" class="area-tokens"></div>' +
       '<div id="area-drag-label" class="area-drag-label hidden"></div></div></div></div>' +
       '<p class="hint">The grid shows 5-foot squares when you are zoomed all the way in, and groups them into 10, 15, or 20 feet as you zoom out, so it never gets dense. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab. Pinch or use Zoom to get closer.</p>';
     content.querySelector("img").addEventListener("click", function () {
-      openLightbox(currentAreaMapUrl);
+      openLightbox(currentAreaMapUrl + "?v=" + AREA_IMG_VERSION);
     });
     applyAreaZoom();
     initAreaZoomGestures();

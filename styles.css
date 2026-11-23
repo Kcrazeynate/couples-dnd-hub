@@ -840,6 +840,14 @@ button.danger:hover {
   min-width: 2.5rem;
 }
 
+/* The generic button:hover is light gold, which beats .zoom-btn and stays
+   stuck on iOS after a tap. Keep the zoom buttons dark in every state. */
+.zoom-btn:hover,
+.zoom-btn:active {
+  background: #241f18;
+  border-color: #c9a227;
+}
+
 .zoom-level {
   color: #e8c96a;
   font-weight: 700;

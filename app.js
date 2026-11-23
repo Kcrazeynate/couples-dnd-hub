@@ -879,10 +879,11 @@
     renderAreaKey();
     // First render with markers for this area: center on the followed
     // token. Later renders (a marker moving, a combatant joining) leave
-    // the view where the player put it.
+    // the view where the player put it. Only mark it done when the
+    // centering actually happened; the markers load after the first
+    // render, so an early attempt with no markers must retry.
     if (!areaMapCentered) {
-      areaMapCentered = true;
-      centerAreaOnFollow(false);
+      if (centerAreaOnFollow(false)) areaMapCentered = true;
     }
   }
 
@@ -926,22 +927,25 @@
     var pos = null;
     if (follow === "party") pos = partyCenterPos();
     else pos = findAreaTokenPos(follow) || partyCenterPos();
-    if (pos) centerAreaOn(pos.fx, pos.fy, animate);
+    if (!pos) return false;
+    return centerAreaOn(pos.fx, pos.fy, animate);
   }
 
   // Scroll the area viewport so a fine-unit position sits in the middle
   // of the screen. With animate, it glides there over about a second so
   // you can follow the move and not get lost; without it, it jumps.
+  // Returns true when it scrolled, false when there was nothing to
+  // center on yet, so the caller can retry on the next render.
   function centerAreaOn(fx, fy, animate) {
     var viewport = document.querySelector(".area-map-viewport");
     var wrap = document.querySelector(".area-map-wrap");
-    if (!viewport || !wrap || !currentAreaMapUrl) return;
+    if (!viewport || !wrap || !currentAreaMapUrl) return false;
     var grid = areaGridFor(currentAreaMapUrl);
     var rows = areaGridRowsFor(currentAreaMapUrl);
-    if (!grid || !rows) return;
+    if (!grid || !rows) return false;
     var wrapW = wrap.clientWidth;
     var wrapH = wrap.clientHeight;
-    if (!wrapW || !wrapH) return;
+    if (!wrapW || !wrapH) return false;
     var px = fx / TOKEN_FINE / grid * wrapW;
     var py = fy / TOKEN_FINE / rows * wrapH;
     var targetLeft = Math.max(0, Math.min(wrapW - viewport.clientWidth, px - viewport.clientWidth / 2));
@@ -949,7 +953,7 @@
     if (!animate) {
       viewport.scrollLeft = targetLeft;
       viewport.scrollTop = targetTop;
-      return;
+      return true;
     }
     var startLeft = viewport.scrollLeft;
     var startTop = viewport.scrollTop;
@@ -964,6 +968,7 @@
       if (t < 1) requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
+    return true;
   }
 
   var tokenDrag = null;

@@ -2691,6 +2691,11 @@
   // Lockwood is also boosted (1.58, peak -1.4 dBTP) for the same reason.
   // Tracks only slightly quieter than the reference (Ascendancy Festival,
   // Blood Magic) stay at 1.0; the difference is barely noticeable.
+  // Track sync: music_state also carries track (the file now playing) and
+  // started_at (when it started). The first phone to start a track writes
+  // both; the other phone follows that track at the right offset, so both
+  // hear the same song together. A phone that is paused never follows on
+  // its own; it joins the shared track when Play is tapped.
   // Add entries here when more files arrive.
   var MUSIC_TRACKS = {
     opening: [
@@ -2748,6 +2753,14 @@
   var musicLastFile = "";
   var musicAdvancing = false;
   var musicPreCombatMood = null;
+  // Shared track sync: the music_state row names the track currently
+  // playing and when it started, so both phones play the same song
+  // together instead of each shuffling its own track within the mood.
+  // musicSharedTrack / musicSharedStartedAt are the latest values from
+  // the row; musicCurrentFile is the file this phone is playing now.
+  var musicSharedTrack = null;
+  var musicSharedStartedAt = null;
+  var musicCurrentFile = "";
   try {
     var mv = parseFloat(localStorage.getItem("hub-music-volume"));
     if (!isNaN(mv) && mv >= 0 && mv <= 1) musicVolume = mv;
@@ -2834,7 +2847,45 @@
     musicLastFile = track.file;
     return track;
   }
-  function musicPlayTrack(track) {
+  // Share the track this phone just started, so the other phone follows
+  // it instead of shuffling its own. Fire and forget; the Realtime
+  // update carries it to the other phone, and this phone ignores its
+  // own write because the shared track then matches what it is playing.
+  async function musicWriteTrackState(track) {
+    if (!musicReady || !track) return;
+    var now = new Date().toISOString();
+    musicSharedTrack = track.file;
+    musicSharedStartedAt = Date.parse(now);
+    try {
+      await db.from("music_state").update({ track: track.file, started_at: now, updated_at: now }).eq("id", 1);
+    } catch (e) { /* offline: the other phone just picks its own track */ }
+  }
+  // Join the track the other phone already started, at the right offset
+  // so both phones hear the same song together. Returns true when it
+  // started a follow. A phone that is paused never follows on its own;
+  // it only follows when it is already playing or when Play is tapped.
+  function musicFollowShared() {
+    if (!musicSharedTrack || !musicSharedStartedAt) return false;
+    if (musicSharedTrack === musicCurrentFile) return false;
+    var tracks = MUSIC_TRACKS[musicMood] || [];
+    var track = null;
+    for (var i = 0; i < tracks.length; i++) if (tracks[i].file === musicSharedTrack) track = tracks[i];
+    if (!track) return false; // the shared track is from another mood
+    var offset = (Date.now() - musicSharedStartedAt) / 1000;
+    if (offset < 0) offset = 0;
+    if (offset > 600) return false; // stale: the track is long over
+    musicPlayTrack(track, offset, true);
+    return true;
+  }
+  // Move to the next track: follow the shared one if the other phone
+  // already moved on, otherwise pick the next track ourselves (which
+  // shares it). Used by the natural advance paths and mood changes.
+  function musicAdvance() {
+    if (musicFollowShared()) return;
+    var track = musicNextTrack();
+    if (track) musicPlayTrack(track);
+  }
+  function musicPlayTrack(track, startAtSec, isFollow) {
     if (!track) return;
     musicEnsureAudio();
     var next = musicOtherEl();
@@ -2843,13 +2894,47 @@
     next.volume = 0;
     musicCurrentTitle = track.title || track.file;
     musicCurrentGain = (typeof track.gain === "number" && track.gain > 0) ? track.gain : 1;
+    musicCurrentFile = track.file;
     musicAdvancing = false;
-    var p = next.play();
-    if (p && p.catch) p.catch(function () { /* autoplay blocked: user taps Play again */ });
-    musicFade(next, musicTargetVolume(), MUSIC_FADE_MS);
-    musicFade(cur, 0, MUSIC_FADE_MS);
-    musicActive = musicActive === "A" ? "B" : "A";
-    musicUpdateUI();
+    if (!isFollow) musicWriteTrackState(track);
+    var doPlay = function () {
+      var p = next.play();
+      if (p && p.catch) p.catch(function () { /* autoplay blocked: user taps Play again */ });
+      musicFade(next, musicTargetVolume(), MUSIC_FADE_MS);
+      musicFade(cur, 0, MUSIC_FADE_MS);
+      musicActive = musicActive === "A" ? "B" : "A";
+      musicUpdateUI();
+    };
+    if (typeof startAtSec === "number" && startAtSec > 0) {
+      // Seek to the shared offset once the metadata is in, so this phone
+      // joins the song where the other phone already is. If the metadata
+      // never arrives, play anyway after a few seconds rather than
+      // leaving the phone silent.
+      var sought = false;
+      var onMeta = function () {
+        next.removeEventListener("loadedmetadata", onMeta);
+        if (sought) return;
+        sought = true;
+        if (next.duration && startAtSec < next.duration) {
+          try { next.currentTime = startAtSec; } catch (e) {}
+        }
+        doPlay();
+      };
+      next.addEventListener("loadedmetadata", onMeta);
+      if (next.readyState >= 1) {
+        onMeta();
+      } else {
+        setTimeout(function () {
+          if (!sought) {
+            next.removeEventListener("loadedmetadata", onMeta);
+            sought = true;
+            doPlay();
+          }
+        }, 3000);
+      }
+    } else {
+      doPlay();
+    }
   }
   // Start the next track a little before the current one ends, so the
   // outgoing track fades out while the incoming one fades in and there is
@@ -2861,8 +2946,7 @@
     if (!el || !el.duration || isNaN(el.duration)) return;
     if (el.duration - el.currentTime <= MUSIC_FADE_MS / 1000 + 0.5) {
       musicAdvancing = true;
-      var track = musicNextTrack();
-      if (track) musicPlayTrack(track);
+      musicAdvance();
     }
   }
   function musicOnTrackEnded(ev) {
@@ -2870,17 +2954,22 @@
     var activeEl = musicActive === "A" ? musicAudioA : musicAudioB;
     if (el && el !== activeEl) return; // the fading-out element ended; ignore it
     if (!musicPlaying) return;
-    var track = musicNextTrack();
-    if (track) musicPlayTrack(track);
+    musicAdvance();
   }
   function musicStart() {
+    // If the other phone already started a track, join that one in sync
+    // instead of picking a different song.
+    musicPlaying = true;
+    if (musicFollowShared()) {
+      musicUpdateUI();
+      return;
+    }
     var track = musicNextTrack();
     if (!track) {
       musicPlaying = false;
       musicUpdateUI();
       return;
     }
-    musicPlaying = true;
     musicPlayTrack(track);
   }
   function musicPause() {
@@ -2908,17 +2997,24 @@
     musicUpdateUI();
   }
   async function loadMusicState() {
-    var res = await db.from("music_state").select("mood").eq("id", 1).single();
+    var res = await db.from("music_state").select("mood, track, started_at").eq("id", 1).single();
     if (res.error || !res.data) return; // table not there yet (SQL not run): local mood only
     var mood = res.data.mood;
     if (!MUSIC_TRACKS.hasOwnProperty(mood)) return;
     var changed = mood !== musicMood;
     musicMood = mood;
     musicReady = true;
-    if (changed && musicPlaying) {
-      musicShuffleQueue(musicMood);
-      var track = musicNextTrack();
-      if (track) musicPlayTrack(track);
+    // Remember the shared track so Play and advances can follow it.
+    musicSharedTrack = res.data.track || null;
+    musicSharedStartedAt = res.data.started_at ? Date.parse(res.data.started_at) : null;
+    if (musicPlaying) {
+      if (changed) {
+        musicShuffleQueue(musicMood);
+        musicAdvance();
+      } else {
+        // Same mood, but the other phone moved to a new track: follow it.
+        musicFollowShared();
+      }
     }
     musicUpdateUI();
   }
@@ -2932,8 +3028,7 @@
       await db.from("music_state").update({ mood: mood, updated_at: new Date().toISOString() }).eq("id", 1);
     }
     if (changed && musicPlaying) {
-      var track = musicNextTrack();
-      if (track) musicPlayTrack(track);
+      musicAdvance();
     }
   }
   function musicUpdateUI() {

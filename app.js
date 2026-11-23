@@ -3365,7 +3365,7 @@
   var mapZoom = 1;
   // Area map zoom, same range as the world map (1x to 3x). The tokens live
   // inside .area-map-wrap, so they scale with the map when it zooms.
-  var areaZoom = 2;
+  var areaZoom = 1;
   var measureA = null;
   var measureB = null;
   var milesPerSquare = 12;
@@ -4132,7 +4132,7 @@
     $("map-zoom-reset").addEventListener("click", function () { setMapZoom(1); });
     $("area-zoom-in").addEventListener("click", function () { setAreaZoom(areaZoom + 0.5); });
     $("area-zoom-out").addEventListener("click", function () { setAreaZoom(areaZoom - 0.5); });
-    $("area-zoom-reset").addEventListener("click", function () { setAreaZoom(2); });
+    $("area-zoom-reset").addEventListener("click", function () { setAreaZoom(1); });
     $("map-viewport").addEventListener("wheel", function (e) {
       if (!e.ctrlKey) return;
       e.preventDefault();

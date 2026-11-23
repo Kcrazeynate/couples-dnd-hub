@@ -668,14 +668,18 @@
   }
 
   // Adaptive grid: the overlay groups squares when zoomed out so the grid
-  // never turns into a dense mesh. Fully zoomed in, each cell is 5 feet
-  // (1 square). Zoomed out, cells merge to 10, 15, then 20 feet. The grid
-  // is 144 squares, which divides cleanly by 2, 3, and 4.
+  // never turns into a dense mesh, and splits them as you zoom in. The
+  // steps are picked so a cell stays about 20 to 30 pixels on screen at
+  // every zoom, so zooming in makes cells bigger, not denser. Fully
+  // zoomed in, each cell is 5 feet (1 square). The grid is 144 squares,
+  // which divides cleanly by 1, 2, 3, 4, 6, and 12.
   function areaGridStep() {
-    if (areaZoom >= 2.5) return 1;
-    if (areaZoom >= 2) return 2;
-    if (areaZoom >= 1.5) return 3;
-    return 4;
+    if (areaZoom >= 8) return 1;
+    if (areaZoom >= 5) return 2;
+    if (areaZoom >= 3) return 3;
+    if (areaZoom >= 2) return 4;
+    if (areaZoom >= 1.5) return 6;
+    return 12;
   }
 
   var lastGridStep = 0;
@@ -938,7 +942,7 @@
       '<div class="area-grid-overlay"></div>' +
       '<div id="area-tokens" class="area-tokens"></div>' +
       '<div id="area-drag-label" class="area-drag-label hidden"></div></div></div></div>' +
-      '<p class="hint">The grid shows 5-foot squares when you are zoomed all the way in, and groups them into 10, 15, or 20 feet as you zoom out, so it never gets dense. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab. Pinch or use Zoom to get closer.</p>';
+      '<p class="hint">The grid adapts as you zoom: fully zoomed in each square is 5 feet, and it groups into larger squares as you zoom out, so it never gets dense. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab. Pinch or use Zoom to get closer.</p>';
     content.querySelector("img").addEventListener("click", function () {
       openLightbox(currentAreaMapUrl + "?v=" + AREA_IMG_VERSION);
     });
@@ -3853,7 +3857,7 @@
   }
 
   function setAreaZoom(z, smooth) {
-    areaZoom = Math.min(3, Math.max(1, smooth ? z : Math.round(z * 2) / 2));
+    areaZoom = Math.min(10, Math.max(1, smooth ? z : Math.round(z * 2) / 2));
     applyAreaZoom();
   }
 

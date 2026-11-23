@@ -615,14 +615,38 @@
 
   // ---------- Area maps on log entries ----------
   var HUB_BASE = "https://kcrazeynate.github.io/couples-dnd-hub/assets/";
+  // Each area map sits in one world square (wx, wy are the world-map
+  // grid indices). The world square is the anchor: the area map is a
+  // small patch of ground centered on its marker in that square.
   var AREA_MAP_OPTIONS = [
-    { label: "Ruins north of Riverton", url: HUB_BASE + "area-ruins.jpg", grid: 144, rows: 216 },
-    { label: "Lantern Inn", url: HUB_BASE + "area-lantern-inn.jpg", grid: 144, rows: 216 },
-    { label: "Gilded Boar", url: HUB_BASE + "area-gilded-boar.jpg", grid: 144, rows: 216 },
-    { label: "Toll house", url: HUB_BASE + "area-tollhouse.jpg", grid: 144, rows: 216 },
-    { label: "Watchtower ruins", url: HUB_BASE + "area-watchtower.jpg", grid: 144, rows: 216 },
-    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg", grid: 144, rows: 216 }
+    { label: "Ruins north of Riverton", url: HUB_BASE + "area-ruins.jpg", grid: 144, rows: 216, wx: 5, wy: 2 },
+    { label: "Lantern Inn", url: HUB_BASE + "area-lantern-inn.jpg", grid: 144, rows: 216, wx: 3, wy: 4 },
+    { label: "Gilded Boar", url: HUB_BASE + "area-gilded-boar.jpg", grid: 144, rows: 216, wx: 5, wy: 4 },
+    { label: "Toll house", url: HUB_BASE + "area-tollhouse.jpg", grid: 144, rows: 216, wx: 4, wy: 4 },
+    { label: "Watchtower ruins", url: HUB_BASE + "area-watchtower.jpg", grid: 144, rows: 216, wx: 5, wy: 3 },
+    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg", grid: 144, rows: 216, wx: 5, wy: 3 }
   ];
+
+  // Scale between the two maps. A world square is 12 miles by default
+  // (editable in the world map settings); an area map is 144 squares by
+  // 216 squares at 5 feet, so 720 by 1080 feet. One world square holds
+  // 88 area maps across and about 59 down, so one area map is a tiny
+  // patch, about 1/88 of a world square wide.
+  function worldMilesPerSquare() {
+    var v = parseFloat(localStorage.getItem("hub-map-scale"));
+    return (isFinite(v) && v > 0) ? v : 12;
+  }
+
+  function areaMapsPerWorldSquare() {
+    var worldFt = worldMilesPerSquare() * 5280;
+    return { across: worldFt / 720, down: worldFt / 1080 };
+  }
+
+  function worldSquareForArea(url) {
+    var opt = AREA_MAP_OPTIONS.find(function (o) { return o.url === url; });
+    if (!opt || typeof opt.wx !== "number" || typeof opt.wy !== "number") return null;
+    return worldCoord(opt.wx, opt.wy);
+  }
   var logAreaMapReady = false;
 
   async function setupLogAreaMap() {
@@ -898,7 +922,11 @@
       content.innerHTML = '<p class="empty">No area map for where the party is right now.</p>';
       return;
     }
+    var ws = worldSquareForArea(currentAreaMapUrl);
+    var per = areaMapsPerWorldSquare();
+    var scaleLine = ws ? '<p class="hint">In ' + escapeHtml(ws) + '. One world square (' + worldMilesPerSquare() + ' miles) holds ' + Math.round(per.across) + ' area maps across and about ' + Math.round(per.down) + ' down, so this map is a small patch of that square.</p>' : '';
     content.innerHTML = '<div class="card"><p class="title">Current area: ' + escapeHtml(currentAreaLabel || "this scene") + '</p>' +
+      scaleLine +
       '<div class="area-map-viewport"><div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '?v=' + AREA_IMG_VERSION + '" alt="Area map">' +
       '<div id="area-tokens" class="area-tokens"></div>' +
       '<div id="area-drag-label" class="area-drag-label hidden"></div></div></div></div>' +

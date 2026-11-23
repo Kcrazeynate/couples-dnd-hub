@@ -3071,9 +3071,12 @@
     musicSetAudioSession();
     // The AudioContext must be resumed from a user gesture, or it stays
     // suspended and nothing is heard. Play is that gesture; resuming an
-    // already-running context is a no-op.
+    // already-running context is a no-op. Resume from any non-running
+    // state, not just "suspended": after an interruption iOS leaves the
+    // context "interrupted", and skipping the resume there leaves the
+    // track playing silently even when Play is tapped.
     try {
-      if (musicAudioCtx && musicAudioCtx.state === "suspended") {
+      if (musicAudioCtx && musicAudioCtx.state !== "running") {
         var rp = musicAudioCtx.resume();
         if (rp && rp.catch) rp.catch(function () {});
       }
@@ -3170,10 +3173,13 @@
     musicSetAudioSession();
     // Resume the AudioContext inside this tap (the user gesture), before
     // the fresh-read await below, so the resume is not lost to the
-    // gesture expiring while the network fetch runs.
+    // gesture expiring while the network fetch runs. Resume from any
+    // non-running state: after an interruption iOS leaves the context
+    // "interrupted", not "suspended", and skipping the resume there is
+    // why Play did nothing after a dictation.
     musicEnsureAudio();
     try {
-      if (musicAudioCtx && musicAudioCtx.state === "suspended") {
+      if (musicAudioCtx && musicAudioCtx.state !== "running") {
         var rp = musicAudioCtx.resume();
         if (rp && rp.catch) rp.catch(function () {});
       }

@@ -3817,7 +3817,9 @@
   }
 
   function setAreaZoom(z, smooth) {
-    areaZoom = Math.min(10, Math.max(1, smooth ? z : Math.round(z * 2) / 2));
+    // No rounding: the zoom is continuous. Rounding to 0.5 steps made the
+    // pinch feel like it snapped to the button steps.
+    areaZoom = Math.min(10, Math.max(1, z));
     applyAreaZoom();
   }
 

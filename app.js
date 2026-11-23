@@ -1057,6 +1057,34 @@
     return out;
   }
 
+  // Grid coordinates for the DM only. The letters run down one side and
+  // the numbers down the other, like a spreadsheet, and they are never
+  // drawn on the player-facing map. A coordinate always carries its map,
+  // so there is no confusion between the two scales: "World F3" is a
+  // world-map square (12 miles), "Forest Road CM101" is an area-map
+  // square (5 feet). The world map is 12 columns by 8 rows; area maps
+  // are 144 columns by 216 rows.
+  function colLetters(col) {
+    var s = "";
+    var n = col + 1;
+    while (n > 0) {
+      var rem = (n - 1) % 26;
+      s = String.fromCharCode(65 + rem) + s;
+      n = Math.floor((n - 1) / 26);
+    }
+    return s;
+  }
+
+  function worldCoord(x, y) {
+    return "World " + colLetters(x) + (y + 1);
+  }
+
+  function areaCoord(gridX, gridY, areaLabel) {
+    var col = Math.floor(gridX / TOKEN_FINE);
+    var row = Math.floor(gridY / TOKEN_FINE);
+    return (areaLabel || "Area") + " " + colLetters(col) + (row + 1);
+  }
+
   async function loadPartyLocations() {
     var layer = $("party-markers");
     if (!layer) return;
@@ -1124,6 +1152,7 @@
     var place = mk ? mk.label : "somewhere";
     var html = '<p class="tip-title">Party: ' + escapeHtml(loc.label) + '</p>' +
       '<p class="tip-notes">At ' + escapeHtml(place) + '</p>';
+    if (mk) html += '<p class="tip-notes">' + escapeHtml(worldCoord(mk.x, mk.y)) + '</p>';
     if (partyEntryTitle) html += '<p class="tip-notes">As of "' + escapeHtml(partyEntryTitle) + '"' + (partyEntryDate ? ' (' + escapeHtml(fmtTime(partyEntryDate)) + ')' : '') + '</p>';
     tip.innerHTML = html;
     var wrap = $("map-wrap");
@@ -3493,7 +3522,7 @@
     if (entry && entry.notes) html += '<p class="tip-notes">' + escapeHtml(entry.notes) + '</p>';
     var partyHere = partyLocations.find(function (loc) { return loc.marker_id === markerId; });
     if (partyHere) {
-      html += '<p class="tip-notes">Party is here: ' + escapeHtml(partyHere.label) + '</p>';
+      html += '<p class="tip-notes">Party is here: ' + escapeHtml(partyHere.label) + ' (' + escapeHtml(worldCoord(mk.x, mk.y)) + ')</p>';
       if (partyEntryTitle) html += '<p class="tip-notes">As of "' + escapeHtml(partyEntryTitle) + '"' + (partyEntryDate ? ' (' + escapeHtml(fmtTime(partyEntryDate)) + ')' : '') + '</p>';
     }
     tip.innerHTML = html;

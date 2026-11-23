@@ -678,8 +678,17 @@
     if (!overlay || !currentAreaMapUrl) return;
     var grid = areaGridFor(currentAreaMapUrl);
     var step = areaGridStep();
-    var pct = (100 * step / grid).toFixed(4);
-    overlay.style.backgroundSize = pct + "% " + pct + "%";
+    var wrap = document.querySelector(".area-map-wrap");
+    var cellPx = 0;
+    if (wrap && wrap.clientWidth > 0) {
+      cellPx = wrap.clientWidth * step / grid;
+    }
+    if (cellPx > 0) {
+      overlay.style.backgroundSize = cellPx.toFixed(2) + "px " + cellPx.toFixed(2) + "px";
+    } else {
+      var pct = (100 * step / grid).toFixed(4);
+      overlay.style.backgroundSize = pct + "% " + pct + "%";
+    }
     var feet = $("area-grid-feet");
     if (feet) feet.textContent = (step * 5) + " ft / square";
   }

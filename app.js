@@ -2767,6 +2767,41 @@
     musicMuted = localStorage.getItem("hub-music-muted") === "1";
   } catch (e) { /* storage unavailable: defaults stand */ }
 
+  // Web Audio volume: iPhone ignores an audio element's `volume`
+  // property entirely, so the slider cannot change it that way. Routing
+  // each element through its own GainNode does control it, because the
+  // gain is applied inside the audio graph. The elements themselves stay
+  // at full volume and the GainNode does all the levelling (slider, mute,
+  // crossfade, per-track gain). The files are same-origin, so there is no
+  // CORS problem. If Web Audio is unavailable the helpers below fall back
+  // to the element volume, which works on desktop.
+  var musicAudioCtx = null;
+  var musicGainA = null;
+  var musicGainB = null;
+  function musicGainForEl(el) {
+    if (!el) return null;
+    if (el === musicAudioA) return musicGainA;
+    if (el === musicAudioB) return musicGainB;
+    return null;
+  }
+  function musicSetElVolume(el, v) {
+    if (!el) return;
+    var g = musicGainForEl(el);
+    var val = Math.max(0, Math.min(1, v));
+    if (g) {
+      try { g.gain.value = val; } catch (e) {}
+    } else {
+      try { el.volume = val; } catch (e) {}
+    }
+  }
+  function musicGetElVolume(el) {
+    if (!el) return 0;
+    var g = musicGainForEl(el);
+    if (g) {
+      try { return g.gain.value; } catch (e) { return 0; }
+    }
+    try { return el.volume; } catch (e) { return 0; }
+  }
   function musicMoodLabel(id) {
     var m = MUSIC_MOODS.find(function (x) { return x.id === id; });
     return m ? m.label : id;
@@ -2787,11 +2822,37 @@
       musicAudioB.addEventListener("ended", musicOnTrackEnded);
       musicAudioA.addEventListener("timeupdate", musicMaybeAdvance);
       musicAudioB.addEventListener("timeupdate", musicMaybeAdvance);
+      // Route each element through its own GainNode so the volume can be
+      // controlled on iPhone, which ignores the element volume. One
+      // MediaElementSource per element, created once here. If Web Audio
+      // is unavailable, the volume helpers fall back to the element
+      // volume and the elements play at their own level.
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) {
+          musicAudioCtx = new AC();
+          var srcA = musicAudioCtx.createMediaElementSource(musicAudioA);
+          var srcB = musicAudioCtx.createMediaElementSource(musicAudioB);
+          musicGainA = musicAudioCtx.createGain();
+          musicGainB = musicAudioCtx.createGain();
+          srcA.connect(musicGainA);
+          srcB.connect(musicGainB);
+          musicGainA.connect(musicAudioCtx.destination);
+          musicGainB.connect(musicAudioCtx.destination);
+        }
+      } catch (e) {
+        musicAudioCtx = null;
+        musicGainA = null;
+        musicGainB = null;
+      }
       // Volumes are set only when the elements are created. Setting them
       // here on every track change used to cut the playing track to 0
       // before its fade-out ran; the crossfade handles the handover now.
-      musicAudioA.volume = musicTargetVolume();
-      musicAudioB.volume = 0;
+      // When a GainNode is doing the levelling the element itself stays
+      // at full volume; when there is no GainNode the helper sets the
+      // element volume instead.
+      musicSetElVolume(musicAudioA, musicTargetVolume());
+      musicSetElVolume(musicAudioB, 0);
     }
     return musicActive === "A" ? musicAudioA : musicAudioB;
   }
@@ -2805,17 +2866,17 @@
   // the user mutes mid-fade (it just plays silently).
   function musicFade(el, to, ms) {
     if (!el) return;
-    var from = el.volume;
+    var from = musicGetElVolume(el);
     var steps = Math.max(1, Math.round(ms / 50));
     var i = 0;
     var isFadeOut = (to === 0);
     var timer = setInterval(function () {
       i++;
       var target = isFadeOut ? 0 : musicTargetVolume();
-      el.volume = Math.max(0, Math.min(1, from + (target - from) * (i / steps)));
+      musicSetElVolume(el, from + (target - from) * (i / steps));
       if (i >= steps) {
         clearInterval(timer);
-        el.volume = target;
+        musicSetElVolume(el, target);
         if (isFadeOut) el.pause();
       }
     }, 50);
@@ -2914,10 +2975,19 @@
   function musicPlayTrack(track, startAtSec, isFollow) {
     if (!track) return;
     musicEnsureAudio();
+    // The AudioContext must be resumed from a user gesture, or it stays
+    // suspended and nothing is heard. Play is that gesture; resuming an
+    // already-running context is a no-op.
+    try {
+      if (musicAudioCtx && musicAudioCtx.state === "suspended") {
+        var rp = musicAudioCtx.resume();
+        if (rp && rp.catch) rp.catch(function () {});
+      }
+    } catch (e) {}
     var next = musicOtherEl();
     var cur = musicActive === "A" ? musicAudioA : musicAudioB;
     next.src = track.file;
-    next.volume = 0;
+    musicSetElVolume(next, 0);
     musicCurrentTitle = track.title || track.file;
     musicCurrentGain = (typeof track.gain === "number" && track.gain > 0) ? track.gain : 1;
     musicCurrentFile = track.file;
@@ -3014,14 +3084,14 @@
     musicVolume = Math.max(0, Math.min(1, v));
     try { localStorage.setItem("hub-music-volume", String(musicVolume)); } catch (e) { /* ignore */ }
     var el = musicActive === "A" ? musicAudioA : musicAudioB;
-    if (el) el.volume = musicTargetVolume();
+    if (el) musicSetElVolume(el, musicTargetVolume());
     musicUpdateUI();
   }
   function musicSetMuted(m) {
     musicMuted = !!m;
     try { localStorage.setItem("hub-music-muted", musicMuted ? "1" : "0"); } catch (e) { /* ignore */ }
     var el = musicActive === "A" ? musicAudioA : musicAudioB;
-    if (el) el.volume = musicTargetVolume();
+    if (el) musicSetElVolume(el, musicTargetVolume());
     musicUpdateUI();
   }
   async function loadMusicState() {
@@ -4022,17 +4092,6 @@
     // A music-start push opens the hub with #music; land straight on the
     // Music tab instead of the Board. The push itself never starts audio.
     if (location.hash === "#music") switchTab("music");
-    // iPhone ignores a website's volume setting, so the in-app slider
-    // cannot change the volume there. Show a note instead of leaving
-    // the slider looking broken.
-    var isIOS = false;
-    try {
-      isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    } catch (e) {}
-    if (isIOS) {
-      var iosHint = $("music-ios-volume-hint");
-      if (iosHint) iosHint.classList.remove("hidden");
-    }
     musicUpdateUI();
   }
 

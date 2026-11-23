@@ -152,6 +152,18 @@ header {
   font-weight: 700;
 }
 
+/* Dark buttons keep their dark background on hover. The generic
+   button:hover turns buttons light gold, which is unreadable on buttons
+   whose text is light (gold or cream). These rules outrank it, so a
+   tapped Pause or Mood button never goes gold-on-gold. */
+.tab-btn:hover {
+  background: #241f18;
+}
+
+.tab-btn.ai-tab:hover {
+  background: #16211f;
+}
+
 .tab-panel {
   display: none;
 }
@@ -1524,6 +1536,7 @@ header {
 }
 
 .music-btn:hover {
+  background: #241f18;
   border-color: #c9a227;
 }
 
@@ -1566,6 +1579,11 @@ header {
 .mood-btn.active {
   background: #c9a227;
   color: #171410;
+  border-color: #c9a227;
+}
+
+.mood-btn:hover {
+  background: #241f18;
   border-color: #c9a227;
 }
 

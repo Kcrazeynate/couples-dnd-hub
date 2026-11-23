@@ -2859,15 +2859,23 @@
     } catch (e) { /* ignore */ }
   }
   // Resume after an interruption (another app playing audio, such as a
-  // voice note, pauses this page's audio). When the interruption ends
-  // the AudioContext comes back to "running" but the element stays
-  // paused, so restart it. Only runs when musicPlaying is true, so a
-  // deliberate pause (hub button or lock screen) is never resumed.
+  // voice note, pauses this page's audio). After an interruption the
+  // AudioContext stays suspended and the element stays paused, so neither
+  // comes back on its own: try to resume the context and restart the
+  // element. Both calls are safe to attempt while another app still
+  // holds the session: they fail silently and the watchdog retries.
+  // Only runs when musicPlaying is true, so a deliberate pause (hub
+  // button or lock screen) is never resumed.
   function musicResumeIfInterrupted() {
     if (!musicPlaying) return;
     var el = musicActive === "A" ? musicAudioA : musicAudioB;
     if (!el || !el.paused) return;
-    if (musicAudioCtx && musicAudioCtx.state !== "running") return;
+    if (musicAudioCtx && musicAudioCtx.state !== "running") {
+      try {
+        var rp = musicAudioCtx.resume();
+        if (rp && rp.catch) rp.catch(function () {});
+      } catch (e) {}
+    }
     var p = el.play();
     if (p && p.catch) p.catch(function () {});
   }
@@ -2891,7 +2899,7 @@
         if (AC) {
           musicAudioCtx = new AC();
           musicAudioCtx.addEventListener("statechange", function () {
-            if (musicAudioCtx.state === "running") musicResumeIfInterrupted();
+            musicResumeIfInterrupted();
           });
           var srcA = musicAudioCtx.createMediaElementSource(musicAudioA);
           var srcB = musicAudioCtx.createMediaElementSource(musicAudioB);

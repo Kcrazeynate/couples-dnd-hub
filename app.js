@@ -648,6 +648,7 @@
   var battleActive = false;
   var prevBattleActive = false;
   var prevHasAreaMap = false;
+  var prevAreaMapUrl = null;
   var mapViewOverride = null;
   var mapView = "world";
 
@@ -911,18 +912,22 @@
     }
   }
 
-  // Auto-switch: a battle with an area map shows the area map; when the
-  // battle ends, or the party leaves a mapped area, it goes back to the
-  // world map. A manual tap on World/Area map sticks until the next
-  // battle start or end.
+  // Auto-switch: whenever the party is somewhere with an area map, show
+  // the area map, not just in battle. A camp, a stop, any interaction
+  // with a place that has a map. When the party leaves a mapped area, or
+  // arrives somewhere new with a different map, it follows. A manual tap
+  // on World/Area map sticks until the next battle start or end, the
+  // area disappears, or the party arrives somewhere new.
   function updateMapView() {
     var hasAreaMap = !!currentAreaMapUrl;
     var inBattle = battleActive;
     if (inBattle !== prevBattleActive) mapViewOverride = null;
     if (!hasAreaMap && prevHasAreaMap) mapViewOverride = null;
+    if (currentAreaMapUrl !== prevAreaMapUrl) mapViewOverride = null;
     prevBattleActive = inBattle;
     prevHasAreaMap = hasAreaMap;
-    var auto = (inBattle && hasAreaMap) ? "area" : "world";
+    prevAreaMapUrl = currentAreaMapUrl;
+    var auto = hasAreaMap ? "area" : "world";
     setMapView(mapViewOverride || auto);
   }
 

@@ -1689,6 +1689,10 @@ header {
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #c9a227;
+  /* Taps pass through the portrait to the key item, so tapping a
+     portrait glides the map instead of opening the big picture.
+     Same pattern as the token faces on the map. */
+  pointer-events: none;
 }
 .area-key .key-initial {
   width: 56px;

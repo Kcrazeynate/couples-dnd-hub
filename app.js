@@ -2860,6 +2860,32 @@
       await db.from("music_state").update({ track: track.file, started_at: now, updated_at: now }).eq("id", 1);
     } catch (e) { /* offline: the other phone just picks its own track */ }
   }
+  // Which phone this is, for the music-start notification (Milo is
+  // Nathan's phone, Sylvie is Angela's). Read from the roller dropdown,
+  // which the hub already sets per device.
+  function musicDeviceName() {
+    var roller = null;
+    try {
+      var sel = $("dice-roller");
+      if (sel && sel.value) roller = sel.value;
+    } catch (e) {}
+    if (!roller) {
+      try { roller = window.localStorage.getItem("hub-dice-roller"); } catch (e) {}
+    }
+    return roller || null;
+  }
+  // Tell the shared state whether music is playing, so the other phone
+  // can be notified when music starts. A separate update from the track
+  // write, so it fails silently (and the track sync keeps working) until
+  // the playing and started_by columns exist in the database.
+  async function musicWritePlaying(playing) {
+    if (!musicReady) return;
+    try {
+      var patch = { playing: !!playing, updated_at: new Date().toISOString() };
+      if (playing) patch.started_by = musicDeviceName();
+      await db.from("music_state").update(patch).eq("id", 1);
+    } catch (e) { /* columns not added yet, or offline: ignore */ }
+  }
   // Join the track the other phone already started, at the right offset
   // so both phones hear the same song together. Returns true when it
   // started a follow. A phone that is paused never follows on its own;
@@ -2960,6 +2986,7 @@
     // If the other phone already started a track, join that one in sync
     // instead of picking a different song.
     musicPlaying = true;
+    musicWritePlaying(true);
     if (musicFollowShared()) {
       musicUpdateUI();
       return;
@@ -2974,6 +3001,7 @@
   }
   function musicPause() {
     musicPlaying = false;
+    musicWritePlaying(false);
     if (musicAudioA) musicAudioA.pause();
     if (musicAudioB) musicAudioB.pause();
     musicUpdateUI();
@@ -3994,6 +4022,17 @@
     // A music-start push opens the hub with #music; land straight on the
     // Music tab instead of the Board. The push itself never starts audio.
     if (location.hash === "#music") switchTab("music");
+    // iPhone ignores a website's volume setting, so the in-app slider
+    // cannot change the volume there. Show a note instead of leaving
+    // the slider looking broken.
+    var isIOS = false;
+    try {
+      isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    } catch (e) {}
+    if (isIOS) {
+      var iosHint = $("music-ios-volume-hint");
+      if (iosHint) iosHint.classList.remove("hidden");
+    }
     musicUpdateUI();
   }
 

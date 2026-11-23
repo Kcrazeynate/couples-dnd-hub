@@ -161,6 +161,11 @@
     document.querySelectorAll(".tab-panel").forEach(function (p) {
       p.classList.toggle("active", p.id === "tab-" + name);
     });
+    // Remember the tab within this session, so leaving the app and
+    // coming back puts you where you were. sessionStorage is cleared
+    // when the tab or app is fully closed, so a full close still
+    // starts at home (Board).
+    try { sessionStorage.setItem("hub-current-tab", name); } catch (e) {}
     var loader = TAB_LOADERS[name];
     if (loader) loader();
   }
@@ -4474,6 +4479,12 @@
     document.querySelectorAll("[data-music-goto]").forEach(function (btn) {
       btn.addEventListener("click", function () { switchTab("music"); });
     });
+    // Put the user back on the tab they were on when they left, if this
+    // is still the same session. A full close clears sessionStorage, so
+    // a fresh start still lands on the Board.
+    var savedTab = null;
+    try { savedTab = sessionStorage.getItem("hub-current-tab"); } catch (e) {}
+    if (savedTab && document.getElementById("tab-" + savedTab)) switchTab(savedTab);
     // A music-start push opens the hub with #music; land straight on the
     // Music tab instead of the Board. The push itself never starts audio.
     if (location.hash === "#music") switchTab("music");

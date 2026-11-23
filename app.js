@@ -2861,23 +2861,28 @@
   // Resume after an interruption (another app playing audio, such as a
   // voice note, pauses this page's audio). After an interruption the
   // AudioContext stays suspended and the element stays paused, so neither
-  // comes back on its own: try to resume the context and restart the
-  // element. Both calls are safe to attempt while another app still
+  // comes back on its own. Keep trying to resume the context and restart
+  // the element. Both calls are safe to attempt while another app still
   // holds the session: they fail silently and the watchdog retries.
+  // The context resume is attempted even when the element is already
+  // playing, because a playing element through a suspended context is
+  // silent, and the sound only returns once the context is running.
   // Only runs when musicPlaying is true, so a deliberate pause (hub
   // button or lock screen) is never resumed.
   function musicResumeIfInterrupted() {
     if (!musicPlaying) return;
     var el = musicActive === "A" ? musicAudioA : musicAudioB;
-    if (!el || !el.paused) return;
+    if (!el) return;
     if (musicAudioCtx && musicAudioCtx.state !== "running") {
       try {
         var rp = musicAudioCtx.resume();
         if (rp && rp.catch) rp.catch(function () {});
       } catch (e) {}
     }
-    var p = el.play();
-    if (p && p.catch) p.catch(function () {});
+    if (el.paused) {
+      var p = el.play();
+      if (p && p.catch) p.catch(function () {});
+    }
   }
   function musicEnsureAudio() {
     if (!musicAudioA) {

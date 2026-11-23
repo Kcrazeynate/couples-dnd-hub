@@ -3075,12 +3075,44 @@
     if (!musicPlaying) return;
     musicAdvance();
   }
-  function musicStart() {
+  // Read the shared row fresh from the server, so a phone that was paused
+  // or asleep rejoins the track the other phone is actually on, not the
+  // one it last heard about over Realtime (which may have dropped while
+  // the phone was paused). Updates the mood and the shared track, and
+  // reshuffles the queue if the mood changed.
+  async function musicRefreshShared() {
+    try {
+      var res = await db.from("music_state").select("mood, track, started_at").eq("id", 1).single();
+      if (res.error || !res.data) return;
+      var mood = res.data.mood;
+      if (!MUSIC_TRACKS.hasOwnProperty(mood)) return;
+      if (mood !== musicMood) {
+        musicMood = mood;
+        musicShuffleQueue(mood);
+      }
+      musicSharedTrack = res.data.track || null;
+      musicSharedStartedAt = res.data.started_at ? Date.parse(res.data.started_at) : null;
+    } catch (e) { /* offline: fall back to the cached shared track */ }
+  }
+  async function musicStart() {
     musicSetAudioSession();
+    // Resume the AudioContext inside this tap (the user gesture), before
+    // the fresh-read await below, so the resume is not lost to the
+    // gesture expiring while the network fetch runs.
+    musicEnsureAudio();
+    try {
+      if (musicAudioCtx && musicAudioCtx.state === "suspended") {
+        var rp = musicAudioCtx.resume();
+        if (rp && rp.catch) rp.catch(function () {});
+      }
+    } catch (e) {}
     // If the other phone already started a track, join that one in sync
-    // instead of picking a different song.
+    // instead of picking a different song. Read the shared row fresh
+    // first, so a resume after a pause joins where the other phone is
+    // now, not where it was when this phone last heard an update.
     musicPlaying = true;
     musicWritePlaying(true);
+    await musicRefreshShared();
     if (musicFollowShared()) {
       musicUpdateUI();
       return;

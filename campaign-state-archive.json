@@ -1,1 +1,97 @@
-[{"changes":{"items":["Milo gained: carved stone (cloth-wrapped)","Milo gained: scholar's pages (old, unread)"],"xp":"40 each to Milo, Sylvie, Liora, Finn, Bram (Verla investigation, noncombat challenge, CR 1-equivalent, 200 total split 5 ways). Milo and Sylvie went from 531 to 571."},"date":"2026-11-21","facts":["Sylvie joined the party in Riverton.","Verla Pelc's shop was shut; Sylvie persuaded her to open the door (Persuasion 21).","Verla bought three things from Urgon Wenth: a little carved stone, a silver locket, and a bundle of old pages.","The stone was cold when held and stayed cold; the lines started on Verla's hands two days after and crept up since.","Finn's Detect Magic: the stone bears a cold dark-blue necromancy aura, pulsing slow as a heartbeat; the locket and pages are mundane.","Liora's Religion, natural 20: the carving is a keeper of the dead from a faith older than the chapel; the old builders set such stones over their dead to keep them quiet; folded hands mean the dead rest here, do not wake them; the stone was one of many in a chamber beneath the ruins, and taking one wakes the restlessness in the rest; it drinks warmth, which is the blue lines.","Milo read the pages (Investigation 20): a round chamber beneath the ruins, stones in a ring around a central slab, keeping the dead quiet; the way in is the old road north past the broken watchtower to the ruins on the ridge, the chamber below through the door with the hooded figure; the writer carried one out, his hands were cold for days, he put it back, and the stones go quiet again when returned to their places.","The party wrapped the stone in cloth, took the pages, and headed north."],"scene":"Verla's shop"},{"changes":{"gold":"Milo -2 GP (warming tonic, 4 bottles at 5 silver each). Milo went from 382 to 380 GP.","items":["Milo gained: Ferol's healer's bundle (dried herbs)","Milo gained: half-full waterskin (Ferol's party's)"]},"date":"2026-11-21","facts":["Guard captain at the north gate: the old road north to the ruins is a day and a half on foot; the broken watchtower is half a day up; the road is rough past it; wolves are bold in the hills; Ferol, Dain, and their guide left two days ago and should have reached the ruins yesterday, no word since; the captain will send a man by Verla's shop morning and evening.","Wren's Herbs: warming tonic (ginger, firewort, heat-holding root), 4 bottles at 5 silver each; it will not cure Verla, but it will warm her from the inside and help her hold on, one bottle a day in the morning with hot water; Wren will carry the bottles to Verla herself.","Milo scouted ahead: fresh wolf tracks, five wolves, a few hours old, heading north; older boot prints, three sets, two days old, Ferol's party; the wolf tracks cross over the boot prints, the pack is behind Ferol's party and gaining; a dropped healer's bundle of dried herbs (Ferol's) half-buried in the mud.","Sylvie cast Heroism on Milo before the party moved on.","The party picked up Ferol's bundle and a half-full waterskin (Ferol's party's) half-buried in the mud at the road's edge.","The party made camp in a hollow off the road; Milo took first watch; five wolves circled the camp at the tree line, testing the firelight, then moved on north, still on Ferol's trail."],"scene":"The road north"},{"changes":{"items":["Milo gained: 2 wolf pelts (Wolf 3 and Wolf 4, rolled up)"],"xp":"50 each to Milo, Sylvie, Liora, Finn, Bram (wolf fight, 5 wolves CR 1/4, 250 total split 5 ways; a driven-off enemy counts as defeated). Milo and Sylvie went from 571 to 621."},"date":"2026-11-21","facts":["Five wolves lay in the trees not fifty feet off the road, resting in the shade; Milo spotted them (Halfling Luck reroll, Perception 14).","The party planned a sneak attack; Liora cast Bless on Milo, Bram, and Finn as the signal; the wolves were surprised and did not act on the first turn.","Finn's Fire Bolt burned Wolf 1 to 1 HP; Milo's arrow killed it; Sylvie's Faerie Fire outlined Wolf 3; Bram and Liora killed Wolf 3; Sylvie's Dissonant Whispers drove Wolf 2 off at 1 HP into the trees; Bram killed Wolf 4; Liora's Guiding Bolt left Wolf 5 at 3 HP; Milo's critical hit killed Wolf 5.","Four wolves dead, one fled into the trees at 1 HP. Fight over.","Milo skinned 2 good pelts (Wolf 3 and Wolf 4); Wolf 1's pelt was burned, Wolf 5's torn apart.","Clearing search: no new clue about Ferol's party; only the three sets of boot prints continuing north.","Milo fired 2 arrows and recovered 1 (half, rounded down)."],"scene":"Wolves on the forest road"}]
+[
+  {
+    "changes": {
+      "items": [
+        "Milo gained: carved stone (cloth-wrapped)",
+        "Milo gained: scholar's pages (old, unread)"
+      ],
+      "xp": "40 each to Milo, Sylvie, Liora, Finn, Bram (Verla investigation, noncombat challenge, CR 1-equivalent, 200 total split 5 ways). Milo and Sylvie went from 531 to 571."
+    },
+    "date": "2026-11-21",
+    "facts": [
+      "Sylvie joined the party in Riverton.",
+      "Verla Pelc's shop was shut; Sylvie persuaded her to open the door (Persuasion 21).",
+      "Verla bought three things from Urgon Wenth: a little carved stone, a silver locket, and a bundle of old pages.",
+      "The stone was cold when held and stayed cold; the lines started on Verla's hands two days after and crept up since.",
+      "Finn's Detect Magic: the stone bears a cold dark-blue necromancy aura, pulsing slow as a heartbeat; the locket and pages are mundane.",
+      "Liora's Religion, natural 20: the carving is a keeper of the dead from a faith older than the chapel; the old builders set such stones over their dead to keep them quiet; folded hands mean the dead rest here, do not wake them; the stone was one of many in a chamber beneath the ruins, and taking one wakes the restlessness in the rest; it drinks warmth, which is the blue lines.",
+      "Milo read the pages (Investigation 20): a round chamber beneath the ruins, stones in a ring around a central slab, keeping the dead quiet; the way in is the old road north past the broken watchtower to the ruins on the ridge, the chamber below through the door with the hooded figure; the writer carried one out, his hands were cold for days, he put it back, and the stones go quiet again when returned to their places.",
+      "The party wrapped the stone in cloth, took the pages, and headed north."
+    ],
+    "scene": "Verla's shop"
+  },
+  {
+    "changes": {
+      "gold": "Milo -2 GP (warming tonic, 4 bottles at 5 silver each). Milo went from 382 to 380 GP.",
+      "items": [
+        "Milo gained: Ferol's healer's bundle (dried herbs)",
+        "Milo gained: half-full waterskin (Ferol's party's)"
+      ]
+    },
+    "date": "2026-11-21",
+    "facts": [
+      "Guard captain at the north gate: the old road north to the ruins is a day and a half on foot; the broken watchtower is half a day up; the road is rough past it; wolves are bold in the hills; Ferol, Dain, and their guide left two days ago and should have reached the ruins yesterday, no word since; the captain will send a man by Verla's shop morning and evening.",
+      "Wren's Herbs: warming tonic (ginger, firewort, heat-holding root), 4 bottles at 5 silver each; it will not cure Verla, but it will warm her from the inside and help her hold on, one bottle a day in the morning with hot water; Wren will carry the bottles to Verla herself.",
+      "Milo scouted ahead: fresh wolf tracks, five wolves, a few hours old, heading north; older boot prints, three sets, two days old, Ferol's party; the wolf tracks cross over the boot prints, the pack is behind Ferol's party and gaining; a dropped healer's bundle of dried herbs (Ferol's) half-buried in the mud.",
+      "Sylvie cast Heroism on Milo before the party moved on.",
+      "The party picked up Ferol's bundle and a half-full waterskin (Ferol's party's) half-buried in the mud at the road's edge.",
+      "The party made camp in a hollow off the road; Milo took first watch; five wolves circled the camp at the tree line, testing the firelight, then moved on north, still on Ferol's trail."
+    ],
+    "scene": "The road north"
+  },
+  {
+    "changes": {
+      "items": [
+        "Milo gained: 2 wolf pelts (Wolf 3 and Wolf 4, rolled up)"
+      ],
+      "xp": "50 each to Milo, Sylvie, Liora, Finn, Bram (wolf fight, 5 wolves CR 1/4, 250 total split 5 ways; a driven-off enemy counts as defeated). Milo and Sylvie went from 571 to 621."
+    },
+    "date": "2026-11-21",
+    "facts": [
+      "Five wolves lay in the trees not fifty feet off the road, resting in the shade; Milo spotted them (Halfling Luck reroll, Perception 14).",
+      "The party planned a sneak attack; Liora cast Bless on Milo, Bram, and Finn as the signal; the wolves were surprised and did not act on the first turn.",
+      "Finn's Fire Bolt burned Wolf 1 to 1 HP; Milo's arrow killed it; Sylvie's Faerie Fire outlined Wolf 3; Bram and Liora killed Wolf 3; Sylvie's Dissonant Whispers drove Wolf 2 off at 1 HP into the trees; Bram killed Wolf 4; Liora's Guiding Bolt left Wolf 5 at 3 HP; Milo's critical hit killed Wolf 5.",
+      "Four wolves dead, one fled into the trees at 1 HP. Fight over.",
+      "Milo skinned 2 good pelts (Wolf 3 and Wolf 4); Wolf 1's pelt was burned, Wolf 5's torn apart.",
+      "Clearing search: no new clue about Ferol's party; only the three sets of boot prints continuing north.",
+      "Milo fired 2 arrows and recovered 1 (half, rounded down)."
+    ],
+    "scene": "Wolves on the forest road"
+  },
+  {
+    "changes": {
+      "gold": "Milo went from 380 to 379 GP (2 GP for Sylvie's cloak, plus 1 GP 1 SP pelt change, minus 3 CP for torches; net -1 GP).",
+      "items": [
+        "Milo traded away: 2 wolf pelts (Wolf 3 and Wolf 4)",
+        "Milo gained: skinning knife",
+        "Milo gained: 1 fur",
+        "Milo returned to the ring: carved stone (cloth-wrapped)",
+        "Sylvie gained: heavy wool cloak",
+        "Sylvie gained: shortbow",
+        "Sylvie gained: quiver with 10 arrows"
+      ]
+    },
+    "date": "2026-11-22",
+    "facts": [
+      "The party reached the broken watchtower and found Dain alive there; Ferol the healer and the guide had gone on to the ruins.",
+      "Milo traded the two wolf pelts to Dain for three days of rations for five, two filled waterskins, a spare rope, and 1 GP 1 SP change.",
+      "Milo bought three torches at 1 CP each and paid 2 GP for Dain's spare heavy wool cloak for Sylvie.",
+      "The party long-rested at the watchtower, full health, spell slots restored.",
+      "Dain guided the party to the ruins; Dain and Milo scouted ahead and found Ferol and the guide's boot prints toward the door with the hooded figure, and their cold camp just inside.",
+      "At Sylvie's urging the party turned west toward the ridge where two vultures circled; Dain spotted a dead hunter at the base of the ridge, face down, no wounds, thin blue lines up his arms, the same sickness that killed Urgon and ails Verla.",
+      "Finn searched the hunter's pack without touching the stone inside and found a second carved stone, cloth-wrapped, the same kind as Milo's.",
+      "The hunter's gear was shared out: Sylvie took the shortbow and quiver with 10 arrows, Milo took the skinning knife and a fur, Finn, Bram, and Liora each took a snare, Dain took the other fur, and 3 days of rations and a filled waterskin went to shared supplies.",
+      "The party entered the ruins carefully, Sylvie looking in first with her darkvision, then lit a single torch and went down the stone stairs into the chamber below.",
+      "Sylvie slipped down alone and saw the ring just as the pages described: tall carved stones with folded hands, two empty places side by side, the central slab bare, and one figure in old grave wrappings dragging itself slowly toward the ring.",
+      "The party went down together and Sylvie spoke to the restless dead, asking it to be still; it listened and sank back down, hands folded, watching but not rising.",
+      "Milo and Bram set the two stones back into the ring's empty places without touching them with bare hands; Bram's first try would not seat clean, Milo set his stone, then steadied Bram's hands and the second stone seated; the ring stood whole again and the scraping stopped.",
+      "Ferol was found hiding by a fallen stone; she never took a stone and the cold got into her anyway just being down here.",
+      "Asked how to end the curse, the dead figure said the ring is whole, the dead sleep again, the cold stops drinking when the stones sit in their places, and what was drunk does not come back.",
+      "The party searched the chamber and found nothing worth taking.",
+      "The party carried Ferol up out of the chamber to the camp in the courtyard; Sylvie gave her Cure Wounds healing, 8 points, and the blue lines stayed but her breathing steadied.",
+      "They built a big fire, wrapped her in cloaks, and rested the night at the camp, Dain keeping watch.",
+      "In the morning the party set out south down the old road toward Riverton, Dain leading, Ferol walking with them, a day and a half back to town."
+    ],
+    "scene": "The watchtower, the ruins, and the road back"
+  }
+]

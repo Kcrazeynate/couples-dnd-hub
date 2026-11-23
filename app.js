@@ -1055,12 +1055,26 @@
     renderPartyMarkers();
   }
 
+  // Highlight the place marker where the party is, instead of drawing a
+  // big token over it. Re-applied after every marker render, since
+  // renderMapMarkers rebuilds the layer from scratch.
+  function applyPartyHighlight() {
+    document.querySelectorAll(".map-marker.party-here").forEach(function (m) { m.classList.remove("party-here"); });
+    partyLocations.forEach(function (loc) {
+      var el = document.querySelector('.map-marker[data-marker-id="' + loc.marker_id + '"]');
+      if (el) el.classList.add("party-here");
+    });
+  }
+
   function renderPartyMarkers() {
     var layer = $("party-markers");
     if (!layer) return;
     layer.innerHTML = partyLocations.map(function (loc, i) {
       var mk = mapMarkers.find(function (m) { return m.id === loc.marker_id; });
       if (!mk) return "";
+      // The party is at a marked place: highlight that marker instead of
+      // covering it with a token.
+      if (document.querySelector('.map-marker[data-marker-id="' + loc.marker_id + '"]')) return "";
       var color = PARTY_COLORS[i % PARTY_COLORS.length];
       var left = ((mk.x + 0.5) / MAP_COLS * 100).toFixed(2);
       var top = ((mk.y + 0.5) / MAP_ROWS * 100).toFixed(2);
@@ -1073,6 +1087,7 @@
         togglePartyTooltip(parseInt(el.dataset.partyIdx, 10));
       });
     });
+    applyPartyHighlight();
   }
 
   function togglePartyTooltip(idx) {
@@ -3456,6 +3471,11 @@
     var html = '<p class="tip-title">' + escapeHtml(mk.label) + '</p>';
     if (entry && entry.image_url) html += '<img class="tip-img" src="' + escapeHtml(entry.image_url) + '" alt="">';
     if (entry && entry.notes) html += '<p class="tip-notes">' + escapeHtml(entry.notes) + '</p>';
+    var partyHere = partyLocations.find(function (loc) { return loc.marker_id === markerId; });
+    if (partyHere) {
+      html += '<p class="tip-notes">Party is here: ' + escapeHtml(partyHere.label) + '</p>';
+      if (partyEntryTitle) html += '<p class="tip-notes">As of "' + escapeHtml(partyEntryTitle) + '"' + (partyEntryDate ? ' (' + escapeHtml(fmtTime(partyEntryDate)) + ')' : '') + '</p>';
+    }
     tip.innerHTML = html;
     var wrap = $("map-wrap");
     var px = (mk.x + 0.5) / MAP_COLS * wrap.clientWidth;
@@ -3568,6 +3588,7 @@
         toggleMapTooltip(el.dataset.markerId);
       });
     });
+    applyPartyHighlight();
     var list = $("map-markers-list");
     if (!mapMarkers.length) {
       list.innerHTML = '<p class="empty">No places marked on this map yet.</p>';

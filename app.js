@@ -616,12 +616,12 @@
   // ---------- Area maps on log entries ----------
   var HUB_BASE = "https://kcrazeynate.github.io/couples-dnd-hub/assets/";
   var AREA_MAP_OPTIONS = [
-    { label: "Ruins north of Riverton", url: HUB_BASE + "area-ruins.jpg", grid: 14 },
-    { label: "Lantern Inn", url: HUB_BASE + "area-lantern-inn.jpg", grid: 14 },
-    { label: "Gilded Boar", url: HUB_BASE + "area-gilded-boar.jpg", grid: 14 },
-    { label: "Toll house", url: HUB_BASE + "area-tollhouse.jpg", grid: 14 },
-    { label: "Watchtower ruins", url: HUB_BASE + "area-watchtower.jpg", grid: 14 },
-    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg", grid: 14 }
+    { label: "Ruins north of Riverton", url: HUB_BASE + "area-ruins.jpg", grid: 150 },
+    { label: "Lantern Inn", url: HUB_BASE + "area-lantern-inn.jpg", grid: 150 },
+    { label: "Gilded Boar", url: HUB_BASE + "area-gilded-boar.jpg", grid: 150 },
+    { label: "Toll house", url: HUB_BASE + "area-tollhouse.jpg", grid: 150 },
+    { label: "Watchtower ruins", url: HUB_BASE + "area-watchtower.jpg", grid: 150 },
+    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg", grid: 150 }
   ];
   var logAreaMapReady = false;
 
@@ -886,6 +886,7 @@
     }
     content.innerHTML = '<div class="card"><p class="title">Current area: ' + escapeHtml(currentAreaLabel || "this scene") + '</p>' +
       '<div class="area-map-viewport"><div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '" alt="Area map">' +
+      '<div class="area-grid-overlay" style="background-size:' + (100 / areaGridFor(currentAreaMapUrl)).toFixed(4) + '% ' + (100 / areaGridFor(currentAreaMapUrl)).toFixed(4) + '%"></div>' +
       '<div id="area-tokens" class="area-tokens"></div>' +
       '<div id="area-drag-label" class="area-drag-label hidden"></div></div></div>' +
       '<p class="hint">1 square = 5 feet. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab. Pinch or use Zoom to get closer.</p></div>';

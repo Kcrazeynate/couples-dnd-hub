@@ -768,12 +768,20 @@ button.danger:hover {
 }
 
 /* Area map zoom: the map and its tokens live inside a scrollable viewport
-   and the wrap scales with the zoom, so tokens grow and shrink with it. */
+   and the wrap scales with the zoom, so tokens grow and shrink with it.
+   touch-action pan-x pan-y lets one finger scroll the viewport but keeps
+   two-finger pinch for the app, so pinch-to-zoom is not swallowed by the
+   browser. Without it, iOS takes over the pinch and the map cannot zoom.
+   The viewport breaks out of the card and the app padding so the map runs
+   full screen width, and it is taller, so the map displays as big as it
+   can on a phone. */
 .area-map-viewport {
   overflow: auto;
-  max-height: 75vh;
-  margin: 0.75rem 0;
-  border-radius: 12px;
+  max-height: 85vh;
+  margin: 0.75rem -2rem;
+  width: calc(100% + 4rem);
+  border-radius: 0;
+  touch-action: pan-x pan-y;
 }
 
 /* A token with a portrait shows the face instead of the initial. The side

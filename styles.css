@@ -1101,6 +1101,24 @@ header {
 .map-viewport {
   touch-action: none;
 }
+.map-marker.party-here .pin {
+  width: 12px;
+  height: 12px;
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.55), 0 0 10px 4px rgba(201, 162, 39, 0.5);
+}
+
+.map-marker.party-here .map-icon {
+  width: 21px;
+  height: 21px;
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.55), 0 0 10px 4px rgba(201, 162, 39, 0.5);
+  animation: party-ring 1.6s ease-in-out infinite;
+}
+
+@keyframes party-ring {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.55), 0 0 10px 4px rgba(201, 162, 39, 0.5); }
+  50% { box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.35), 0 0 16px 7px rgba(201, 162, 39, 0.65); }
+}
+
 .map-marker.highlight .pin {
   width: 12px;
   height: 12px;
@@ -1449,12 +1467,12 @@ header {
 }
 
 .party-token {
-  width: 26px;
-  height: 26px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: var(--party-color, #c9a227);
-  border: 3px solid #171410;
-  box-shadow: 0 0 0 2px var(--party-color, #c9a227);
+  border: 2px solid #171410;
+  box-shadow: 0 0 0 1.5px var(--party-color, #c9a227);
 }
 
 .party-label {

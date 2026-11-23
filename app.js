@@ -2834,6 +2834,43 @@
   function musicTargetVolume() {
     return Math.max(0, Math.min(1, musicEffectiveVolume() * musicCurrentGain));
   }
+  // Media Session (lock screen / Control Center): wire Play and Pause to
+  // the same functions as the hub buttons, so a pause from the lock
+  // screen is a real pause (musicPlaying false) and the auto-resume
+  // below does not fight it. Also shows the track title on the lock
+  // screen. Set once when the audio elements are created.
+  function musicSetupMediaSession() {
+    try {
+      if (!("mediaSession" in navigator)) return;
+      navigator.mediaSession.setActionHandler("play", function () { musicStart(); });
+      navigator.mediaSession.setActionHandler("pause", function () { musicPause(); });
+      navigator.mediaSession.setActionHandler("previoustrack", function () { musicAdvance(); });
+      navigator.mediaSession.setActionHandler("nexttrack", function () { musicAdvance(); });
+    } catch (e) { /* unsupported, ignore */ }
+  }
+  function musicUpdateMediaSession() {
+    try {
+      if (!("mediaSession" in navigator) || !("MediaMetadata" in window)) return;
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: musicCurrentTitle || musicMoodLabel(musicMood),
+        artist: "Couples D&D Hub",
+        album: musicMoodLabel(musicMood)
+      });
+    } catch (e) { /* ignore */ }
+  }
+  // Resume after an interruption (another app playing audio, such as a
+  // voice note, pauses this page's audio). When the interruption ends
+  // the AudioContext comes back to "running" but the element stays
+  // paused, so restart it. Only runs when musicPlaying is true, so a
+  // deliberate pause (hub button or lock screen) is never resumed.
+  function musicResumeIfInterrupted() {
+    if (!musicPlaying) return;
+    var el = musicActive === "A" ? musicAudioA : musicAudioB;
+    if (!el || !el.paused) return;
+    if (musicAudioCtx && musicAudioCtx.state !== "running") return;
+    var p = el.play();
+    if (p && p.catch) p.catch(function () {});
+  }
   function musicEnsureAudio() {
     if (!musicAudioA) {
       musicAudioA = new Audio();
@@ -2853,6 +2890,9 @@
         var AC = window.AudioContext || window.webkitAudioContext;
         if (AC) {
           musicAudioCtx = new AC();
+          musicAudioCtx.addEventListener("statechange", function () {
+            if (musicAudioCtx.state === "running") musicResumeIfInterrupted();
+          });
           var srcA = musicAudioCtx.createMediaElementSource(musicAudioA);
           var srcB = musicAudioCtx.createMediaElementSource(musicAudioB);
           musicGainA = musicAudioCtx.createGain();
@@ -2875,6 +2915,12 @@
       // element volume instead.
       musicSetElVolume(musicAudioA, musicTargetVolume());
       musicSetElVolume(musicAudioB, 0);
+      musicSetupMediaSession();
+      // Watchdog: if the music should be playing but the element is
+      // paused (interrupted by another app's audio), resume it once the
+      // context is running again. Runs every few seconds as a safety net
+      // for interruptions whose statechange does not fire.
+      setInterval(musicResumeIfInterrupted, 3000);
     }
     return musicActive === "A" ? musicAudioA : musicAudioB;
   }
@@ -3012,6 +3058,7 @@
     next.src = track.file;
     musicSetElVolume(next, 0);
     musicCurrentTitle = track.title || track.file;
+    musicUpdateMediaSession();
     musicCurrentGain = (typeof track.gain === "number" && track.gain > 0) ? track.gain : 1;
     musicCurrentFile = track.file;
     musicAdvancing = false;
@@ -3193,6 +3240,11 @@
     var label = musicMoodLabel(musicMood);
     var tracks = MUSIC_TRACKS[musicMood] || [];
     var status = tracks.length ? (musicPlaying ? ("Now playing: " + musicCurrentTitle) : ("Paused: " + (musicCurrentTitle || label))) : "No tracks yet for " + label + ". Nathan will add MP3s.";
+    try {
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.playbackState = musicPlaying ? "playing" : "paused";
+      }
+    } catch (e) { /* ignore */ }
     document.querySelectorAll("[data-music-mood-label]").forEach(function (el) { el.textContent = label; });
     document.querySelectorAll("[data-music-status]").forEach(function (el) { el.textContent = status; });
     document.querySelectorAll("[data-music-play-label]").forEach(function (el) { el.textContent = musicPlaying ? "Pause" : "Play"; });

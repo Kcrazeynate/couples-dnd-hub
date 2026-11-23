@@ -684,7 +684,7 @@
   // Cache-buster for area map images. Bump this whenever the image files
   // change content but keep the same filename, or browsers keep showing
   // the cached copy. v4 = the large portrait maps with the grid baked in.
-  var AREA_IMG_VERSION = 6;
+  var AREA_IMG_VERSION = 7;
 
   function areaGridFor(url) {
     var opt = AREA_MAP_OPTIONS.find(function (o) { return o.url === url; });
@@ -796,6 +796,30 @@
     });
   }
 
+  // Key at the bottom of the area map, Table Forge style: who is in
+  // this scene, with a portrait and name for each token on the map.
+  function renderAreaKey() {
+    var key = $("area-key");
+    if (!key) return;
+    var items = [];
+    areaMarkers.forEach(function (m) {
+      var portrait = markerPortrait(m.label);
+      var inner = portrait
+        ? '<img src="' + escapeHtml(portrait) + '" alt="' + escapeHtml(m.label) + '">'
+        : '<span class="key-initial">' + escapeHtml(String(m.label || "?").trim().charAt(0).toUpperCase()) + '</span>';
+      items.push('<div class="key-item">' + inner + '<span class="key-name">' + escapeHtml(m.label) + '</span></div>');
+    });
+    combatants.filter(function (c) { return c.hp > 0; }).forEach(function (c) {
+      var portrait = combatantPortrait(c);
+      var inner = portrait
+        ? '<img src="' + escapeHtml(portrait) + '" alt="' + escapeHtml(c.name) + '">'
+        : '<span class="key-initial">' + escapeHtml(String(c.name || "?").trim().charAt(0).toUpperCase()) + '</span>';
+      items.push('<div class="key-item">' + inner + '<span class="key-name">' + escapeHtml(c.name) + '</span></div>');
+    });
+    if (!items.length) { key.innerHTML = ""; return; }
+    key.innerHTML = '<p class="key-title">In this scene</p><div class="key-row">' + items.join("") + '</div>';
+  }
+
   function renderAreaTokens() {
     var layer = $("area-tokens");
     if (!layer || !currentAreaMapUrl) return;
@@ -836,6 +860,7 @@
       el.addEventListener("pointerdown", onTokenPointerDown);
     });
     sizeAreaTokens();
+    renderAreaKey();
   }
 
   var tokenDrag = null;
@@ -988,7 +1013,8 @@
       '<div class="area-map-viewport"><div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '?v=' + AREA_IMG_VERSION + '" alt="Area map">' +
       '<div id="area-tokens" class="area-tokens"></div>' +
       '<div id="area-drag-label" class="area-drag-label hidden"></div></div></div></div>' +
-      '<p class="hint">1 square = 5 feet. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab. Pinch or use Zoom to get closer.</p>';
+      '<p class="hint">1 square = 5 feet. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab. Pinch or use Zoom to get closer.</p>' +
+      '<div id="area-key" class="area-key"></div>';
     content.querySelector("img").addEventListener("click", function () {
       openLightbox(currentAreaMapUrl + "?v=" + AREA_IMG_VERSION);
     });

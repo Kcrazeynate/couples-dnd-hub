@@ -619,12 +619,12 @@
   // grid indices). The world square is the anchor: the area map is a
   // small patch of ground centered on its marker in that square.
   var AREA_MAP_OPTIONS = [
-    { label: "Ruins north of Riverton", url: HUB_BASE + "area-ruins.jpg", grid: 144, rows: 216, wx: 5, wy: 2 },
-    { label: "Lantern Inn", url: HUB_BASE + "area-lantern-inn.jpg", grid: 144, rows: 216, wx: 3, wy: 4 },
-    { label: "Gilded Boar", url: HUB_BASE + "area-gilded-boar.jpg", grid: 144, rows: 216, wx: 5, wy: 4 },
-    { label: "Toll house", url: HUB_BASE + "area-tollhouse.jpg", grid: 144, rows: 216, wx: 4, wy: 4 },
-    { label: "Watchtower ruins", url: HUB_BASE + "area-watchtower.jpg", grid: 144, rows: 216, wx: 5, wy: 3 },
-    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg", grid: 144, rows: 216, wx: 5, wy: 3 }
+    { label: "Ruins north of Riverton", url: HUB_BASE + "area-ruins.jpg", grid: 144, rows: 192, wx: 5, wy: 2 },
+    { label: "Lantern Inn", url: HUB_BASE + "area-lantern-inn.jpg", grid: 144, rows: 192, wx: 3, wy: 4 },
+    { label: "Gilded Boar", url: HUB_BASE + "area-gilded-boar.jpg", grid: 144, rows: 192, wx: 5, wy: 4 },
+    { label: "Toll house", url: HUB_BASE + "area-tollhouse.jpg", grid: 144, rows: 192, wx: 4, wy: 4 },
+    { label: "Watchtower ruins", url: HUB_BASE + "area-watchtower.jpg", grid: 144, rows: 192, wx: 5, wy: 3 },
+    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg", grid: 144, rows: 192, wx: 5, wy: 3 }
   ];
 
   // Scale between the two maps. A world square is 12 miles by default
@@ -684,7 +684,7 @@
   // Cache-buster for area map images. Bump this whenever the image files
   // change content but keep the same filename, or browsers keep showing
   // the cached copy. v4 = the large portrait maps with the grid baked in.
-  var AREA_IMG_VERSION = 4;
+  var AREA_IMG_VERSION = 5;
 
   function areaGridFor(url) {
     var opt = AREA_MAP_OPTIONS.find(function (o) { return o.url === url; });
@@ -960,7 +960,7 @@
     }
     var ws = worldSquareForArea(currentAreaMapUrl);
     var per = areaMapsPerWorldSquare();
-    var scaleLine = ws ? '<p class="hint">In ' + escapeHtml(ws) + '. One world square (' + worldMilesPerSquare() + ' miles) holds ' + Math.round(per.across) + ' area maps across and about ' + Math.round(per.down) + ' down, so this map is a small patch of that square.</p>' : '';
+    var scaleLine = ws ? '<p class="hint">In ' + escapeHtml(ws) + '. One world square (' + worldMilesPerSquare() + ' miles) holds exactly ' + Math.round(per.across) + ' area maps across and ' + Math.round(per.down) + ' down, so this map is one small patch of that square.</p>' : '';
     content.innerHTML = '<div class="card"><p class="title">Current area: ' + escapeHtml(currentAreaLabel || "this scene") + '</p>' +
       scaleLine +
       '<div class="area-map-viewport"><div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '?v=' + AREA_IMG_VERSION + '" alt="Area map">' +

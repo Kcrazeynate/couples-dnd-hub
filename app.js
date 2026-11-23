@@ -4209,7 +4209,7 @@
 
     document.addEventListener("click", function (e) {
       var t = e.target;
-      if (t && t.tagName === "IMG" && !t.closest("#image-lightbox")) {
+      if (t && t.tagName === "IMG" && !t.closest("#image-lightbox") && !t.closest(".key-item")) {
         e.stopPropagation();
         openLightbox(t.src);
       }

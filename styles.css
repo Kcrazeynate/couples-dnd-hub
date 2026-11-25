@@ -214,12 +214,75 @@ header {
   padding: 0.5rem 0;
 }
 
-.nav-menu-group + .nav-menu-group {
+/* The menu is a most-used top level plus collapsing submenus (Modes,
+   AI, More). The top six tabs are always visible; each submenu header
+   is a flat row like the tabs, and its rows are indented so they read
+   as belonging to the group. */
+.nav-menu-top + .nav-menu-sub,
+.nav-menu-sub + .nav-menu-sub {
   margin-top: 0.75rem;
 }
 
-.nav-menu .tab-group-label {
-  padding: 0.4rem 0.9rem 0.35rem;
+.nav-menu-sub-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: #f2e9d5;
+  border: none;
+  border-bottom: 1px solid rgba(242, 233, 213, 0.08);
+  border-radius: 0;
+  padding: 0.8rem 0.9rem;
+  font-size: 1rem;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.nav-menu-sub-toggle:hover {
+  background: rgba(242, 233, 213, 0.06);
+}
+
+.nav-menu-sub-toggle.ai-sub-toggle {
+  color: #cfe0c0;
+}
+
+.nav-menu-sub-toggle.ai-sub-toggle:hover {
+  background: rgba(207, 224, 192, 0.06);
+}
+
+/* Chevron: points right when the group is collapsed, down when open. */
+.nav-menu-sub-chevron {
+  flex: none;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid #b3a284;
+  border-bottom: 2px solid #b3a284;
+  transform: rotate(-45deg);
+  transition: transform 0.18s ease;
+  margin-right: 0.15rem;
+}
+
+.ai-sub-toggle .nav-menu-sub-chevron {
+  border-color: #a8c49a;
+}
+
+.nav-menu-sub.open .nav-menu-sub-chevron {
+  transform: rotate(45deg);
+}
+
+.nav-menu-sub-rows {
+  display: none;
+}
+
+.nav-menu-sub.open .nav-menu-sub-rows {
+  display: flex;
+}
+
+.nav-menu-sub .tab-btn,
+.nav-menu-sub .mode-option {
+  padding-left: 1.5rem;
 }
 
 /* The menu is a clean vertical stack, not a button grid: one full-width
@@ -366,25 +429,13 @@ body.mode-interact [data-mode="dm"] {
     right: max(10px, env(safe-area-inset-right));
     bottom: calc(64px + max(14px, env(safe-area-inset-bottom)) + 52px + 10px + 40px + 10px);
     /* On phones the menu takes up only half the screen: it is shorter
-       and scrolls inside itself, so the Mode section and all 13 tabs
+       and scrolls inside itself, so the top tabs and the submenus
        stay reachable without shrinking the rows or the text. It is
        also slim, not fat: roughly half its old width, so it ends where
        the rows end with no big empty space to the right of the text. */
     max-height: 50vh;
     width: min(190px, calc(100vw - 28px));
   }
-}
-
-.tab-group-label {
-  margin: 0 0 0.4rem;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #b3a284;
-}
-
-.tab-group-label.ai-label {
-  color: #a8c49a;
 }
 
 .tab-btn {

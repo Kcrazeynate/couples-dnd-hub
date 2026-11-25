@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Hub">
-<link rel="stylesheet" href="styles.css?v=47">
+<link rel="stylesheet" href="styles.css?v=48">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=3"></script>
 <script type="importmap">
@@ -45,32 +45,6 @@
     <p class="subtitle">Our shared campaign</p>
     <button type="button" id="lock-btn" class="lock-btn">Lock</button>
   </header>
-
-  <nav id="tabs" class="tabs">
-    <div class="tab-group">
-      <p class="tab-group-label">For players</p>
-      <div class="tab-group-btns">
-        <button type="button" data-tab="board" class="tab-btn active">Board</button>
-        <button type="button" data-tab="log" class="tab-btn">Campaign Log</button>
-        <button type="button" data-tab="characters" class="tab-btn">Characters</button>
-        <button type="button" data-tab="companions" class="tab-btn">Companions</button>
-        <button type="button" data-tab="howto" class="tab-btn">How to Play</button>
-        <button type="button" data-tab="quests" class="tab-btn">Quests</button>
-        <button type="button" data-tab="npcs" class="tab-btn">NPCs</button>
-        <button type="button" data-tab="dice" class="tab-btn">Dice</button>
-        <button type="button" data-tab="battle" class="tab-btn">Battle</button>
-        <button type="button" data-tab="maps" class="tab-btn">Maps</button>
-        <button type="button" data-tab="music" class="tab-btn">Music</button>
-      </div>
-    </div>
-    <div class="tab-group">
-      <p class="tab-group-label ai-label">For AIs</p>
-      <div class="tab-group-btns">
-        <button type="button" data-tab="state" class="tab-btn ai-tab">State</button>
-        <button type="button" data-tab="aiguide" class="tab-btn ai-tab">AI Guide</button>
-      </div>
-    </div>
-  </nav>
 
   <main>
     <section id="tab-board" class="tab-panel active">
@@ -499,6 +473,36 @@
     <input type="range" min="0" max="100" value="70" data-music-volume aria-label="Volume" class="music-bar-vol">
     <button type="button" class="music-btn" data-music-mute><span data-music-mute-label>Mute</span></button>
   </div>
+
+  <div id="menu-backdrop" class="menu-backdrop hidden"></div>
+  <nav id="nav-menu" class="nav-menu hidden" aria-label="Campaign menu">
+    <div class="nav-menu-group">
+      <p class="tab-group-label">For players</p>
+      <div class="nav-menu-btns">
+        <button type="button" data-tab="board" class="tab-btn active">Board</button>
+        <button type="button" data-tab="log" class="tab-btn">Campaign Log</button>
+        <button type="button" data-tab="characters" class="tab-btn">Characters</button>
+        <button type="button" data-tab="companions" class="tab-btn">Companions</button>
+        <button type="button" data-tab="howto" class="tab-btn">How to Play</button>
+        <button type="button" data-tab="quests" class="tab-btn">Quests</button>
+        <button type="button" data-tab="npcs" class="tab-btn">NPCs</button>
+        <button type="button" data-tab="dice" class="tab-btn">Dice</button>
+        <button type="button" data-tab="battle" class="tab-btn">Battle</button>
+        <button type="button" data-tab="maps" class="tab-btn">Maps</button>
+        <button type="button" data-tab="music" class="tab-btn">Music</button>
+      </div>
+    </div>
+    <div class="nav-menu-group">
+      <p class="tab-group-label ai-label">For AIs</p>
+      <div class="nav-menu-btns">
+        <button type="button" data-tab="state" class="tab-btn ai-tab">State</button>
+        <button type="button" data-tab="aiguide" class="tab-btn ai-tab">AI Guide</button>
+      </div>
+    </div>
+  </nav>
+  <button type="button" id="menu-btn" class="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
+    <span></span><span></span><span></span>
+  </button>
 </div>
 
 <div id="char-modal" class="modal hidden">
@@ -636,6 +640,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=13"></script>
-<script src="app.js?v=89"></script>
+<script src="app.js?v=90"></script>
 </body>
 </html>

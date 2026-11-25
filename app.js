@@ -4196,8 +4196,40 @@
     initDb();
     subscribeLive();
 
+    // ---------- floating hamburger menu ----------
+    // The tab grid is gone. One button floats bottom-right; tapping it
+    // opens a panel with the same tabs. Tapping a tab switches to it
+    // and closes the menu; tapping outside, or Escape, closes it too.
+    var menuBtn = $("menu-btn");
+    var navMenu = $("nav-menu");
+    var menuBackdrop = $("menu-backdrop");
+    function closeMenu() {
+      if (!navMenu) return;
+      navMenu.classList.add("hidden");
+      menuBackdrop.classList.add("hidden");
+      menuBtn.classList.remove("open");
+      menuBtn.setAttribute("aria-expanded", "false");
+      menuBtn.setAttribute("aria-label", "Open menu");
+    }
+    function toggleMenu() {
+      if (navMenu.classList.contains("hidden")) {
+        navMenu.classList.remove("hidden");
+        menuBackdrop.classList.remove("hidden");
+        menuBtn.classList.add("open");
+        menuBtn.setAttribute("aria-expanded", "true");
+        menuBtn.setAttribute("aria-label", "Close menu");
+      } else {
+        closeMenu();
+      }
+    }
+    menuBtn.addEventListener("click", toggleMenu);
+    menuBackdrop.addEventListener("click", closeMenu);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeMenu();
+    });
+
     document.querySelectorAll(".tab-btn").forEach(function (btn) {
-      btn.addEventListener("click", function () { switchTab(btn.dataset.tab); });
+      btn.addEventListener("click", function () { switchTab(btn.dataset.tab); closeMenu(); });
     });
 
     var backToTop = document.querySelector(".back-to-top");

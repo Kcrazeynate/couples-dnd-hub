@@ -1,4 +1,4 @@
-// D&D Campaign Hub app logic.
+// The Quest Table app logic.
 // Tabs, Supabase reads and writes, dice roller, battle tracker.
 
 (function () {
@@ -3157,7 +3157,7 @@
       if (!("mediaSession" in navigator) || !("MediaMetadata" in window)) return;
       navigator.mediaSession.metadata = new MediaMetadata({
         title: musicCurrentTitle || musicMoodLabel(musicMood),
-        artist: "Couples D&D Hub",
+        artist: "The Quest Table",
         album: musicMoodLabel(musicMood)
       });
     } catch (e) { /* ignore */ }

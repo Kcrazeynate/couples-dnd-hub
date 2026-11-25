@@ -18,7 +18,8 @@
     "Liora and Sylvie have both healed Emric; his swelling eased, his breathing steadied, and color came back to his face, but the thin blue lines remain faint on his fingers.",
     "Emric left a marker: his walking staff snapped in two, the top half stuck upright with a strip of green cloth tied to it. Wolf prints circled beside the trail, and a smear of blood was on a rock.",
     "Emric has been reunited with Dain and Ferol and arrived in Riverton with the party.",
-    "Milo bought the farmer's sturdy cart and strong draft horse outright for 65 gold (15 for the cart, 50 for the horse); Milo now has 314 gold 7 copper.",
+    "Milo bought the farmer's sturdy cart and strong draft horse outright for 65 gold (15 for the cart, 50 for the horse); Milo now has 414 gold 7 copper.",
+    "The town rewarded the party for the cure and for bringing Ferol and Emric home alive: 100 gold from town funds, free room and board at the Lantern Inn for three nights (meals included), and a tenth off at Tilda's General Goods and Wren's Herbs and Remedies from now on.",
     "The party has a sturdy cart and a strong draft horse.",
     "The party returned to Riverton by afternoon, entering through the north gate with Ferol and Emric alive in the cart; the guard captain saw them coming and waved them in.",
     "The four warming tonic bottles stayed in Riverton with Wren for Verla, one a day in the morning with hot water; Wren looks in on her herself.",
@@ -27,7 +28,7 @@
     "Ferol and Emric are back in Riverton, warm by a fire, the blue lines fading slow.",
     "Verla has heard the cure: warm them, rest them, keep them from the cold. Wren carries her tonics in the morning, and the town knows what to do."
   ],
-  "last_scene": "Return to Riverton",
+  "last_scene": "Town Reward",
   "location": "Riverton",
   "open_threads": [
     "Verla Pelc is sick with the blue lines in Riverton; the warming tonic holds but does not cure, and what was drunk does not come back."
@@ -64,7 +65,7 @@
       "xp": 621
     }
   ],
-  "situation": "The mission is done. The party is back in Riverton with Ferol and Emric, who are warm by a fire with the blue lines fading slow. Verla has heard the cure of warmth and rest, Wren carries her tonics in the morning, and the town knows what to do. The road north is quiet again, the stones sit in their ring, the dead sleep, and the cold has stopped drinking.",
-  "updated_at": "2026-11-25T05:12:54Z",
+  "situation": "The mission is done. The party is back in Riverton with Ferol and Emric, who are warm by a fire with the blue lines fading slow. Verla has heard the cure of warmth and rest, Wren carries her tonics in the morning, and the town knows what to do. The road north is quiet again, the stones sit in their ring, the dead sleep, and the cold has stopped drinking. The captain rewarded the party with 100 gold from town funds, free room and board at the Lantern Inn for three nights, and a tenth off at Tilda's and Wren's.",
+  "updated_at": "2026-11-25T05:17:57Z",
   "waiting_on": "The party is in Riverton; the mission is done. Ferol and Emric are recovering warm by a fire, and the town knows the cure."
 }

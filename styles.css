@@ -12,13 +12,16 @@ body {
   color: #f2e9d5;
   background-color: #211910;
   /* Lamplight over the table: a soft warm glow hangs at the top of the
-     page and fades as it goes down, over a faint wood grain, over the
-     dark wood base. The glow lightens the wood slightly, so the cream
-     text still reads at full contrast. */
+     page and fades as it goes down, over a real dark wood plank texture
+     (a light dark tint deepens the wood so the cream text still reads
+     at full contrast), over the dark wood base. The wood is a real
+     image, not a gradient, so it reads as wood on a phone. */
   background-image:
     radial-gradient(ellipse 90% 360px at 50% -60px, rgba(240, 201, 106, 0.22), rgba(240, 201, 106, 0) 70%),
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 8px),
+    linear-gradient(rgba(33, 25, 16, 0.25), rgba(33, 25, 16, 0.25)),
+    url("assets/texture-wood.webp"),
     linear-gradient(#251b11 0%, #211910 220px);
+  background-size: auto, auto, 800px auto, auto;
 }
 
 .hidden {
@@ -195,7 +198,10 @@ header {
   position: fixed;
   inset: 0;
   z-index: 35;
-  background: rgba(0, 0, 0, 0.45);
+  /* Barely there: a very light dark tint, so the hub behind the open
+     menu stays clearly visible (a dice roll, a board post) while the
+     backdrop still catches outside taps to close the menu. */
+  background: rgba(0, 0, 0, 0.12);
 }
 
 .nav-menu {
@@ -364,6 +370,10 @@ body.mode-interact [data-mode="dm"] {
   .nav-menu {
     right: max(10px, env(safe-area-inset-right));
     bottom: calc(64px + max(14px, env(safe-area-inset-bottom)) + 52px + 10px + 40px + 10px);
+    /* On phones the menu takes up only half the screen: it is shorter
+       and scrolls inside itself, so the Mode section and all 13 tabs
+       stay reachable without shrinking the rows or the text. */
+    max-height: 50vh;
   }
 }
 
@@ -1971,23 +1981,27 @@ header {
 }
 
 /* Tavern feel: the hub is friends sitting at a table in the tavern.
-   Stone panels carry a faint cross-hatch, like cut stone; cards and
-   forms sit on the table with a soft shadow and a warm top edge, the
-   way lamplight catches the top of an object. Pure CSS, no images, so
-   the page stays self-contained and fast. The mode visibility rules
-   above still own display, this section only changes the look. */
+   Real textures now, not CSS gradients: dark wood planks on the page,
+   stone blocks on the panels, ivy along the header. The mode
+   visibility rules above still own display, this section only changes
+   the look. */
 
-/* Faint stone texture on the panel surfaces. */
+/* Real stone on the panel surfaces: a stone block texture under a
+   translucent dark layer. The stone is light grey in the image, so the
+   dark layer (0.68) is what keeps the cream text readable; the block
+   and mortar pattern still shows through clearly as dark stone. */
 .card,
 .form,
 .gate-box,
 .modal-box,
 .dice-result,
 .dice3d-style,
-.map-measure-result {
+.map-measure-result,
+.nav-menu {
   background-image:
-    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 6px),
-    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.035) 0 1px, transparent 1px 6px);
+    linear-gradient(rgba(33, 25, 16, 0.68), rgba(33, 25, 16, 0.68)),
+    url("assets/texture-stone.webp");
+  background-size: auto, 280px auto;
 }
 
 /* Objects on the table: soft shadow, warm lamplit top edge. */
@@ -2014,6 +2028,20 @@ header {
 /* The lantern hangs over the title: a soft warm pool behind the header. */
 header {
   background: radial-gradient(ellipse 70% 90px at 50% 0, rgba(240, 201, 106, 0.10), transparent 70%);
+}
+
+/* Ivy trails along the beam under the title: a band of the real ivy
+   texture, so the green from the tavern shows on every tab. */
+header::after {
+  content: "";
+  display: block;
+  height: 44px;
+  margin-top: 0.75rem;
+  background-image: url("assets/texture-ivy.webp");
+  background-size: cover;
+  background-position: center;
+  border: 1px solid #57503f;
+  border-radius: 6px;
 }
 
 /* The Board is the table talk and the Log is the story being told, so

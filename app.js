@@ -1554,14 +1554,14 @@
       action = '<p class="meta">Dismissed. Gone for this campaign.</p>';
     } else if (recruited) {
       action = '<p class="meta">In the party · ' + escapeHtml(joinModeLabel(row.join_mode)) + '</p>' +
-        '<div class="actions"><button type="button" data-dismiss-npc="' + entry.key + '">Dismiss</button></div>';
+        '<div class="actions"><button type="button" data-mode="interact" data-dismiss-npc="' + entry.key + '">Dismiss</button></div>';
     } else if (locked) {
       action = '<p class="meta">Recruitment closed.</p>';
     } else if (counts.real + counts.npcs >= 6) {
       action = '<p class="meta">The party is full (6).</p>';
     } else {
-      action = '<div class="actions"><label>Join as <select data-join-mode="' + entry.key + '"><option value="story">Met in the story</option><option value="start">Started with the party</option></select></label>' +
-        '<button type="button" data-recruit-npc="' + entry.key + '">Recruit</button></div>';
+      action = '<div class="actions"><label>Join as <select data-mode="interact" data-join-mode="' + entry.key + '"><option value="story">Met in the story</option><option value="start">Started with the party</option></select></label>' +
+        '<button type="button" data-mode="interact" data-recruit-npc="' + entry.key + '">Recruit</button></div>';
     }
     return '<div class="card sheet npc">' +
       '<div class="npc-summary">' + picHtml +
@@ -1649,7 +1649,7 @@
     return '<div class="card">' +
       '<p class="title">' + escapeHtml(p.label) + '</p>' +
       '<p class="empty">Not built yet</p>' +
-      '<div class="actions"><button type="button" data-build="' + p.player + '">Build character</button></div>' +
+      '<div class="actions"><button type="button" data-mode="interact" data-build="' + p.player + '">Build character</button></div>' +
       '</div>';
   }
 
@@ -1756,7 +1756,7 @@
     var count = kind === "success" ? (c.death_save_successes || 0) : (c.death_save_failures || 0);
     var dots = "";
     for (var i = 1; i <= 3; i++) {
-      dots += '<button type="button" class="ds-dot' + (i <= count ? ' filled' : '') + '" data-death-save="' + kind + '" data-death-n="' + i + '" data-player="' + player + '" title="' + kind + ' ' + i + '">' + (i <= count ? "●" : "○") + '</button>';
+      dots += '<button type="button" class="ds-dot' + (i <= count ? ' filled' : '') + '" data-mode="interact" data-death-save="' + kind + '" data-death-n="' + i + '" data-player="' + player + '" title="' + kind + ' ' + i + '">' + (i <= count ? "●" : "○") + '</button>';
     }
     return dots;
   }
@@ -1909,11 +1909,11 @@
       '<div class="combat-stat"><span>Prof. Bonus</span><strong>' + fmtMod(pb) + '</strong></div>' +
       '</div>' +
       '<div class="hp-row"><span>HP</span><span class="hp">' + hpText + (tempHp > 0 ? ' <span class="temp-hp">+ ' + tempHp + ' temp</span>' : '') + '</span>' +
-      '<button type="button" class="hp-btn" data-hp-delta="-1" data-player="' + p.player + '">-</button>' +
-      '<button type="button" class="hp-btn" data-hp-delta="1" data-player="' + p.player + '">+</button></div>' +
+      '<button type="button" class="hp-btn" data-mode="interact" data-hp-delta="-1" data-player="' + p.player + '">-</button>' +
+      '<button type="button" class="hp-btn" data-mode="interact" data-hp-delta="1" data-player="' + p.player + '">+</button></div>' +
       '<div class="hp-row"><span>Hit Dice</span><span class="hp">' + hitDiceTotal(c) + 'd' + hitDieFor(c) + ' · ' + hitDiceLeft(c) + ' left</span>' +
-      '<button type="button" class="hp-btn" data-hit-dice-delta="-1" data-player="' + p.player + '">-</button>' +
-      '<button type="button" class="hp-btn" data-hit-dice-delta="1" data-player="' + p.player + '">+</button></div>' +
+      '<button type="button" class="hp-btn" data-mode="interact" data-hit-dice-delta="-1" data-player="' + p.player + '">-</button>' +
+      '<button type="button" class="hp-btn" data-mode="interact" data-hit-dice-delta="1" data-player="' + p.player + '">+</button></div>' +
       '<div class="death-saves"><span>Death Saves</span><span class="ds-group"><span class="ds-label">Success</span>' + deathSaveDots(c, "success", p.player) + '</span><span class="ds-group"><span class="ds-label">Failure</span>' + deathSaveDots(c, "failure", p.player) + '</span></div>' +
       (isNpc ? '<div class="sheet-scores">' + scoresHtml + '</div>' : '') +
       '<p><strong>Saving Throws</strong></p><div class="sheet-list">' + savesHtml + '</div>' +
@@ -1923,7 +1923,7 @@
       (isNpc ? '' : '<p>Gold: ' + (c.gold === null || c.gold === undefined ? "-" : c.gold) + '</p>') +
       '<p><strong>Inventory</strong></p>' + invHtml +
       (c.notes ? '<p><strong>Notes</strong></p><p>' + escapeHtml(c.notes) + '</p>' : '') +
-      '<div class="actions"><button type="button" data-edit="' + p.player + '">Edit</button></div>';
+      '<div class="actions"><button type="button" data-mode="interact" data-edit="' + p.player + '">Edit</button></div>';
     if (!isNpc) {
       var picHtml = c.image_url
         ? '<img class="npc-pic" src="' + escapeHtml(c.image_url) + '" alt="">'
@@ -1934,8 +1934,8 @@
         '<span class="meta">' + escapeHtml(c.race || "") + (c.race && c.class ? " " : "") + escapeHtml(c.class || "") + ' - Level ' + (c.level === null || c.level === undefined ? "-" : c.level) + '</span>' +
         '<span class="meta">HP ' + hpText + (tempHp > 0 ? ' + ' + tempHp + ' temp' : '') + ' · AC ' + (c.ac === null || c.ac === undefined ? "-" : c.ac) + '</span>' +
         '</div>' +
-        '<button type="button" class="hp-btn" data-hp-delta="-1" data-player="' + p.player + '">-</button>' +
-        '<button type="button" class="hp-btn" data-hp-delta="1" data-player="' + p.player + '">+</button>' +
+        '<button type="button" class="hp-btn" data-mode="interact" data-hp-delta="-1" data-player="' + p.player + '">-</button>' +
+        '<button type="button" class="hp-btn" data-mode="interact" data-hp-delta="1" data-player="' + p.player + '">+</button>' +
         '<button type="button" class="npc-toggle" data-npc-toggle="' + p.player + '">Full sheet</button>' +
         '</div>' +
         '<div class="sheet-scores">' + scoresHtml + '</div>' +
@@ -1952,8 +1952,8 @@
       '<span class="meta">' + escapeHtml(c.race || "") + (c.race && c.class ? " " : "") + escapeHtml(c.class || "") + ' - Level ' + (c.level === null || c.level === undefined ? "-" : c.level) + '</span>' +
       '<span class="meta">HP ' + hpText + (tempHp > 0 ? ' + ' + tempHp + ' temp' : '') + ' · AC ' + (c.ac === null || c.ac === undefined ? "-" : c.ac) + '</span>' +
       joinHtml + '</div>' +
-      '<button type="button" class="hp-btn" data-hp-delta="-1" data-player="' + p.player + '">-</button>' +
-      '<button type="button" class="hp-btn" data-hp-delta="1" data-player="' + p.player + '">+</button>' +
+      '<button type="button" class="hp-btn" data-mode="interact" data-hp-delta="-1" data-player="' + p.player + '">-</button>' +
+      '<button type="button" class="hp-btn" data-mode="interact" data-hp-delta="1" data-player="' + p.player + '">+</button>' +
       '<button type="button" class="npc-toggle" data-npc-toggle="' + p.player + '">Full sheet</button>' +
       '</div>' +
       '<div class="npc-details hidden" data-npc-details="' + p.player + '">' + inner + '</div>' +
@@ -2165,8 +2165,8 @@
         '<p>' + escapeHtml(q.description || "") + '</p>' +
         '<p class="meta">' + escapeHtml(fmtTime(q.created_at)) + '</p>' +
         '<div class="actions">' +
-        '<button type="button" data-quest-toggle="' + q.id + '" data-status="' + q.status + '">' + (done ? "Mark Active" : "Mark Done") + '</button>' +
-        '<button type="button" class="small-danger" data-quest-delete="' + q.id + '">Delete</button>' +
+        '<button type="button" data-mode="interact" data-quest-toggle="' + q.id + '" data-status="' + q.status + '">' + (done ? "Mark Active" : "Mark Done") + '</button>' +
+        '<button type="button" class="small-danger" data-mode="interact" data-quest-delete="' + q.id + '">Delete</button>' +
         '</div></div>';
     }).join("");
     bindQuestButtons();
@@ -2231,7 +2231,7 @@
         '<p class="title">' + escapeHtml(n.name) + ' <span class="badge">' + escapeHtml(n.kind) + '</span></p>' +
         '<p>' + escapeHtml(n.notes || "") + '</p>' +
         '<div class="actions">' +
-        '<button type="button" class="small-danger" data-npc-delete="' + n.id + '">Delete</button>' +
+        '<button type="button" class="small-danger" data-mode="dm" data-npc-delete="' + n.id + '">Delete</button>' +
         '</div></div>';
     }).join("");
     document.querySelectorAll("[data-npc-delete]").forEach(function (btn) {
@@ -2708,15 +2708,15 @@
         '<span class="init">Speed ' + combatantSpeed(c) + ' ft</span>' +
         (isCurrent ? ' <span class="turn-tag">Current turn</span>' : '') + '</p>' +
         '<div class="hp-row"><span>HP</span><span class="hp">' + c.hp + ' / ' + c.max_hp + '</span>' +
-        '<button type="button" class="hp-btn" data-combat-hp="-1" data-id="' + c.id + '">-</button>' +
-        '<button type="button" class="hp-btn" data-combat-hp="1" data-id="' + c.id + '">+</button>' +
-        '<input type="number" class="hp-amount" data-amount-id="' + c.id + '" placeholder="Amount" min="1" step="1">' +
-        '<button type="button" class="hp-btn" data-combat-damage="' + c.id + '">Damage</button>' +
-        '<button type="button" class="hp-btn" data-combat-heal="' + c.id + '">Heal</button></div>' +
+        '<button type="button" class="hp-btn" data-mode="interact" data-combat-hp="-1" data-id="' + c.id + '">-</button>' +
+        '<button type="button" class="hp-btn" data-mode="interact" data-combat-hp="1" data-id="' + c.id + '">+</button>' +
+        '<input type="number" class="hp-amount" data-mode="interact" data-amount-id="' + c.id + '" placeholder="Amount" min="1" step="1">' +
+        '<button type="button" class="hp-btn" data-mode="interact" data-combat-damage="' + c.id + '">Damage</button>' +
+        '<button type="button" class="hp-btn" data-mode="interact" data-combat-heal="' + c.id + '">Heal</button></div>' +
         (c.note ? '<p>' + escapeHtml(c.note) + '</p>' : '') +
         '<div class="actions">' +
-        ((typeof c.grid_x !== "number" || typeof c.grid_y !== "number") && currentAreaMapUrl ? '<button type="button" class="small" data-combat-place="' + c.id + '">Place on map</button>' : '') +
-        '<button type="button" class="small-danger" data-combat-delete="' + c.id + '">Remove</button>' +
+        ((typeof c.grid_x !== "number" || typeof c.grid_y !== "number") && currentAreaMapUrl ? '<button type="button" class="small" data-mode="interact" data-combat-place="' + c.id + '">Place on map</button>' : '') +
+        '<button type="button" class="small-danger" data-mode="interact" data-combat-delete="' + c.id + '">Remove</button>' +
         '</div></div>';
     }).join("");
     document.querySelectorAll("[data-combat-hp]").forEach(function (btn) {
@@ -3601,7 +3601,7 @@
           : '<p class="empty">No tracks yet. Nathan will add MP3s for this mood.</p>';
         return '<div class="card"><p class="title">' + escapeHtml(m.label) + '</p>' +
           '<p class="meta">' + escapeHtml(m.desc) + '</p>' +
-          '<button type="button" class="mood-btn" data-music-mood-btn="' + m.id + '">Play ' + escapeHtml(m.label) + '</button>' +
+          '<button type="button" class="mood-btn" data-mode="interact" data-music-mood-btn="' + m.id + '">Play ' + escapeHtml(m.label) + '</button>' +
           trackHtml + '</div>';
       }).join("");
       list.querySelectorAll("[data-music-mood-btn]").forEach(function (btn) {
@@ -3890,7 +3890,7 @@
         '<p class="title">' + iconHtml + escapeHtml(mk.label) + '</p>' +
         '<p class="meta">' + escapeHtml(mk.kind || "Place") + '</p>' +
         areaBtn +
-        '<div class="actions"><button type="button" class="small-danger" data-marker-delete="' + mk.id + '">Delete</button></div></div>';
+        '<div class="actions"><button type="button" class="small-danger" data-mode="dm" data-marker-delete="' + mk.id + '">Delete</button></div></div>';
     }).join("");
     list.querySelectorAll(".place-card").forEach(function (card) {
       card.addEventListener("click", function () {
@@ -3951,7 +3951,7 @@
         '<p class="title">' + escapeHtml(n.name) + '</p>' +
         '<p>' + escapeHtml(n.notes || "") + '</p>' +
         areaBtn +
-        '<div class="actions"><button type="button" class="small-danger" data-place-delete="' + n.id + '">Delete</button></div></div>';
+        '<div class="actions"><button type="button" class="small-danger" data-mode="dm" data-place-delete="' + n.id + '">Delete</button></div></div>';
     }).join("");
     list.querySelectorAll("[data-area-map]").forEach(function (btn) {
       btn.addEventListener("click", function (e) {
@@ -4231,6 +4231,102 @@
     document.querySelectorAll(".tab-btn").forEach(function (btn) {
       btn.addEventListener("click", function () { switchTab(btn.dataset.tab); closeMenu(); });
     });
+
+    // ---------- hub modes: View / Interact / Dungeon Master ----------
+    // View hides every input (anything tagged data-mode). Interact shows
+    // the player inputs. Dungeon Master adds the Map and NPC management
+    // and is locked behind the DM passphrase in config.js. The mode
+    // persists in localStorage; leaving DM mode locks it again, so
+    // re-entering DM mode asks for the passphrase again.
+    var hubMode = "view";
+    function dmUnlocked() {
+      try { return localStorage.getItem("hub-dm-unlocked") === "1"; } catch (e) { return false; }
+    }
+    function setDmUnlocked(on) {
+      try {
+        if (on) localStorage.setItem("hub-dm-unlocked", "1");
+        else localStorage.removeItem("hub-dm-unlocked");
+      } catch (e) {}
+    }
+    function applyHubMode(mode) {
+      hubMode = mode;
+      document.body.classList.remove("mode-view", "mode-interact", "mode-dm");
+      document.body.classList.add("mode-" + mode);
+      try { localStorage.setItem("hub-mode", mode); } catch (e) {}
+      // Leaving DM mode locks it again.
+      if (mode !== "dm") setDmUnlocked(false);
+      document.querySelectorAll("[data-mode-option]").forEach(function (b) {
+        b.classList.toggle("active", b.dataset.modeOption === mode);
+      });
+      var dmUnlock = $("dm-unlock");
+      if (dmUnlock) {
+        dmUnlock.classList.add("hidden");
+        var err = $("dm-error");
+        if (err) err.classList.add("hidden");
+      }
+      // A character sheet being edited must not stay open in View mode.
+      if (mode === "view") closeCharModal();
+    }
+    function showDmUnlock() {
+      var dmUnlock = $("dm-unlock");
+      if (!dmUnlock) return;
+      dmUnlock.classList.remove("hidden");
+      var input = $("dm-passphrase-input");
+      if (input) { input.value = ""; input.focus(); }
+      var err = $("dm-error");
+      if (err) err.classList.add("hidden");
+    }
+    function tryDmUnlock() {
+      var input = $("dm-passphrase-input");
+      if (!input) return;
+      if (!CONFIG.DM_PASSPHRASE) {
+        var err0 = $("dm-error");
+        if (err0) { err0.textContent = "DM passphrase is not set yet."; err0.classList.remove("hidden"); }
+        return;
+      }
+      if (input.value === CONFIG.DM_PASSPHRASE) {
+        setDmUnlocked(true);
+        input.value = "";
+        applyHubMode("dm");
+        closeMenu();
+      } else {
+        var err = $("dm-error");
+        if (err) { err.textContent = "Wrong passphrase."; err.classList.remove("hidden"); }
+        input.value = "";
+        input.focus();
+      }
+    }
+    function setHubMode(mode) {
+      if (mode === "dm") {
+        if (dmUnlocked()) {
+          applyHubMode("dm");
+          closeMenu();
+        } else {
+          showDmUnlock();
+        }
+        return;
+      }
+      applyHubMode(mode);
+      closeMenu();
+    }
+    document.querySelectorAll("[data-mode-option]").forEach(function (btn) {
+      btn.addEventListener("click", function () { setHubMode(btn.dataset.modeOption); });
+    });
+    var dmUnlockBtn = $("dm-unlock-btn");
+    if (dmUnlockBtn) dmUnlockBtn.addEventListener("click", tryDmUnlock);
+    var dmPassInput = $("dm-passphrase-input");
+    if (dmPassInput) dmPassInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") tryDmUnlock();
+    });
+    // Restore the saved mode (default View). A saved DM mode only comes
+    // back if this device is still unlocked.
+    (function restoreHubMode() {
+      var saved = null;
+      try { saved = localStorage.getItem("hub-mode"); } catch (e) {}
+      if (saved === "dm" && dmUnlocked()) applyHubMode("dm");
+      else if (saved === "interact") applyHubMode("interact");
+      else applyHubMode("view");
+    })();
 
     var backToTop = document.querySelector(".back-to-top");
     var scrollUpdatePending = false;

@@ -104,7 +104,42 @@ header {
    bottom-right (thumb-friendly on phones) and opens a panel holding
    the same tabs, grouped the same way. The button sits above the
    music bar, and the back-to-top button moved to the bottom-left so
-   the two never collide. */
+   the two never collide. A smaller floating dice button sits directly
+   above the menu button, so the dice roller is one tap away from any
+   tab; the menu panel anchors above the dice button, so the three
+   stack neatly and never cover each other. */
+
+.dice-btn {
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: calc(64px + max(18px, env(safe-area-inset-bottom)) + 56px + 12px);
+  z-index: 41;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #342f27;
+  border: 1px solid #d9a441;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.dice-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.dice-btn:hover {
+  background: #342f27;
+  border-color: #f0c96a;
+}
+
+.dice-btn:focus-visible {
+  outline: 3px solid #d9a441;
+  outline-offset: 3px;
+}
 
 .menu-btn {
   position: fixed;
@@ -166,7 +201,7 @@ header {
 .nav-menu {
   position: fixed;
   right: max(14px, env(safe-area-inset-right));
-  bottom: calc(64px + max(18px, env(safe-area-inset-bottom)) + 56px + 12px);
+  bottom: calc(64px + max(18px, env(safe-area-inset-bottom)) + 56px + 12px + 44px + 12px);
   z-index: 40;
   width: min(340px, calc(100vw - 28px));
   max-height: min(72vh, 560px);
@@ -307,6 +342,18 @@ body.mode-interact [data-mode="dm"] {
 }
 
 @media (max-width: 760px) {
+  .dice-btn {
+    right: max(14px, env(safe-area-inset-right));
+    bottom: calc(64px + max(14px, env(safe-area-inset-bottom)) + 52px + 10px);
+    width: 40px;
+    height: 40px;
+  }
+
+  .dice-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+
   .menu-btn {
     right: max(14px, env(safe-area-inset-right));
     bottom: calc(64px + max(14px, env(safe-area-inset-bottom)));
@@ -316,7 +363,7 @@ body.mode-interact [data-mode="dm"] {
 
   .nav-menu {
     right: max(10px, env(safe-area-inset-right));
-    bottom: calc(64px + max(14px, env(safe-area-inset-bottom)) + 52px + 10px);
+    bottom: calc(64px + max(14px, env(safe-area-inset-bottom)) + 52px + 10px + 40px + 10px);
   }
 }
 

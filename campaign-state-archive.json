@@ -228,5 +228,19 @@
       "Ferol and Emric are warm by a fire, the blue lines fading slow; they are no longer just being moved to warmth and care.",
       "Verla has heard the cure now, warm them, rest them, keep them from the cold; Wren carries her tonics in the morning, and the town knows what to do."
     ]
+  },
+  {
+    "scene": "Town Reward",
+    "date": "2026-11-25",
+    "facts": [
+      "Milo spoke to the guard captain again, plain and polite, saying the road north was long and costly, the cart and horse alone were 65 gold, and the town is safe now because of it.",
+      "The captain had not thought of the cost; he said the town owes them more than thanks.",
+      "From the town funds he counted out 100 gold for the party, for the cure and for bringing Ferol and Emric home alive.",
+      "Free room and board at the Lantern Inn for three nights, meals included.",
+      "Tilda at the General Goods and Wren at the Herbs will give the party a tenth off their goods from now on, for helping the town when it needed it."
+    ],
+    "changes": {
+      "gold": "Milo +100 GP from town funds (reward for the cure and bringing Ferol and Emric home alive). Milo went from 314 gold 7 copper to 414 gold 7 copper."
+    }
   }
 ]

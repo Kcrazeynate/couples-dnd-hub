@@ -1,4 +1,4 @@
-/* D&D Campaign Hub: dark tavern theme, warm gold on charcoal, readable on phone and desktop. */
+/* D&D Campaign Hub: warm tavern theme, dark wood, muted stone, amber sunlight and warm cream, readable on phone and desktop. */
 
 * {
   box-sizing: border-box;
@@ -9,8 +9,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 1.5;
-  color: #ece5d3;
-  background: #171410;
+  color: #f2e9d5;
+  background: linear-gradient(#251b11 0%, #211910 220px);
 }
 
 .hidden {
@@ -21,7 +21,7 @@ h1, h2, h3 {
   margin: 0 0 0.5em;
   line-height: 1.25;
   font-family: Georgia, "Palatino Linotype", "Book Antiqua", serif;
-  color: #e8c96a;
+  color: #f0c96a;
 }
 
 h1 {
@@ -43,7 +43,7 @@ p {
 }
 
 .hint {
-  color: #a89a7c;
+  color: #b3a284;
   font-size: 0.95rem;
 }
 
@@ -65,8 +65,8 @@ p {
 .gate-box {
   width: 100%;
   max-width: 380px;
-  background: #241f18;
-  border: 1px solid #6b5a2e;
+  background: #342f27;
+  border: 1px solid #7a6238;
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
@@ -83,12 +83,12 @@ p {
 header {
   padding: 1.5rem 0 0.75rem;
   text-align: center;
-  border-bottom: 1px solid #6b5a2e;
+  border-bottom: 1px solid #7a6238;
   margin-bottom: 0.25rem;
 }
 
 .subtitle {
-  color: #a89a7c;
+  color: #b3a284;
   margin: 0;
 }
 
@@ -106,8 +106,8 @@ header {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #241f18;
-  border: 1px solid #c9a227;
+  background: #342f27;
+  border: 1px solid #d9a441;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
   cursor: pointer;
   display: flex;
@@ -122,7 +122,7 @@ header {
   display: block;
   width: 24px;
   height: 2px;
-  background: #e8c96a;
+  background: #f0c96a;
   transition: transform 0.18s ease, opacity 0.18s ease;
 }
 
@@ -139,12 +139,12 @@ header {
 }
 
 .menu-btn:hover {
-  background: #241f18;
-  border-color: #e8c96a;
+  background: #342f27;
+  border-color: #f0c96a;
 }
 
 .menu-btn:focus-visible {
-  outline: 3px solid #c9a227;
+  outline: 3px solid #d9a441;
   outline-offset: 3px;
 }
 
@@ -163,8 +163,8 @@ header {
   width: min(340px, calc(100vw - 28px));
   max-height: min(72vh, 560px);
   overflow-y: auto;
-  background: #241f18;
-  border: 1px solid #6b5a2e;
+  background: #342f27;
+  border: 1px solid #7a6238;
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
   padding: 0.5rem 0;
@@ -193,7 +193,7 @@ header {
   text-align: left;
   background: transparent;
   border: none;
-  border-bottom: 1px solid rgba(236, 229, 211, 0.08);
+  border-bottom: 1px solid rgba(242, 233, 213), 0.08);
   border-radius: 0;
   padding: 0.8rem 0.9rem;
   font-size: 1rem;
@@ -205,29 +205,29 @@ header {
 }
 
 .nav-menu .tab-btn:hover {
-  background: rgba(236, 229, 211, 0.06);
+  background: rgba(242, 233, 213), 0.06);
 }
 
 .nav-menu .tab-btn.active {
-  background: rgba(201, 162, 39, 0.12);
-  box-shadow: inset 3px 0 0 #c9a227;
-  color: #e8c96a;
+  background: rgba(217, 164, 65, 0.12);
+  box-shadow: inset 3px 0 0 #d9a441;
+  color: #f0c96a;
   font-weight: 700;
 }
 
 .nav-menu .tab-btn.ai-tab {
   background: transparent;
-  color: #bfe8e8;
+  color: #cfe0c0;
 }
 
 .nav-menu .tab-btn.ai-tab:hover {
-  background: rgba(191, 232, 232, 0.06);
+  background: rgba(207, 224, 192, 0.06);
 }
 
 .nav-menu .tab-btn.ai-tab.active {
-  background: rgba(42, 122, 110, 0.18);
-  box-shadow: inset 3px 0 0 #2a7a6e;
-  color: #7fc4b8;
+  background: rgba(93, 138, 90, 0.18);
+  box-shadow: inset 3px 0 0 #67946a;
+  color: #a8c49a;
   font-weight: 700;
 }
 
@@ -250,17 +250,17 @@ header {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #a89a7c;
+  color: #b3a284;
 }
 
 .tab-group-label.ai-label {
-  color: #7fc4b8;
+  color: #a8c49a;
 }
 
 .tab-btn {
-  background: #241f18;
-  color: #ece5d3;
-  border: 1px solid #4a3f2c;
+  background: #342f27;
+  color: #f2e9d5;
+  border: 1px solid #57503f;
   border-radius: 8px;
   padding: 0.6rem 0.4rem;
   font-size: 0.95rem;
@@ -269,22 +269,22 @@ header {
 }
 
 .tab-btn.active {
-  background: #c9a227;
-  border-color: #c9a227;
-  color: #171410;
+  background: #d9a441;
+  border-color: #d9a441;
+  color: #211910;
   font-weight: 700;
 }
 
 .tab-btn.ai-tab {
-  background: #16211f;
-  border-color: #2a5a52;
-  color: #bfe8e8;
+  background: #1e241a;
+  border-color: #42563f;
+  color: #cfe0c0;
 }
 
 .tab-btn.ai-tab.active {
-  background: #2a7a6e;
-  border-color: #2a7a6e;
-  color: #0f1a18;
+  background: #67946a;
+  border-color: #67946a;
+  color: #141a12;
   font-weight: 700;
 }
 
@@ -293,11 +293,11 @@ header {
    whose text is light (gold or cream). These rules outrank it, so a
    tapped Pause or Mood button never goes gold-on-gold. */
 .tab-btn:hover {
-  background: #241f18;
+  background: #342f27;
 }
 
 .tab-btn.ai-tab:hover {
-  background: #16211f;
+  background: #1e241a;
 }
 
 .tab-panel {
@@ -311,8 +311,8 @@ header {
 /* Forms */
 
 .form {
-  background: #241f18;
-  border: 1px solid #4a3f2c;
+  background: #342f27;
+  border: 1px solid #57503f;
   border-radius: 12px;
   padding: 1rem;
   margin: 1rem 0;
@@ -322,7 +322,7 @@ header {
   display: block;
   font-weight: 600;
   font-size: 0.9rem;
-  color: #d8c690;
+  color: #e0c98f;
   margin: 0.75rem 0 0.25rem;
 }
 
@@ -335,10 +335,10 @@ input, select, textarea {
   padding: 0.6rem;
   font-size: 1rem;
   font-family: inherit;
-  border: 1px solid #4a3f2c;
+  border: 1px solid #57503f;
   border-radius: 8px;
-  background: #171410;
-  color: #ece5d3;
+  background: #211910;
+  color: #f2e9d5;
 }
 
 textarea {
@@ -346,8 +346,8 @@ textarea {
 }
 
 button {
-  background: #c9a227;
-  color: #171410;
+  background: #d9a441;
+  color: #211910;
   border: none;
   border-radius: 8px;
   padding: 0.6rem 1.1rem;
@@ -358,7 +358,7 @@ button {
 }
 
 button:hover {
-  background: #dbb63a;
+  background: #e8b957;
 }
 
 button.danger {
@@ -395,14 +395,14 @@ button.danger:hover {
 }
 
 .card {
-  background: #241f18;
-  border: 1px solid #4a3f2c;
+  background: #342f27;
+  border: 1px solid #57503f;
   border-radius: 12px;
   padding: 1rem;
 }
 
 .card .meta {
-  color: #a89a7c;
+  color: #b3a284;
   font-size: 0.85rem;
   margin: 0 0 0.25rem;
 }
@@ -410,7 +410,7 @@ button.danger:hover {
 .card .title {
   font-weight: 700;
   margin: 0 0 0.25rem;
-  color: #ece5d3;
+  color: #f2e9d5;
 }
 
 .card p {
@@ -424,7 +424,7 @@ button.danger:hover {
 }
 
 .empty {
-  color: #a89a7c;
+  color: #b3a284;
   font-style: italic;
   padding: 0.75rem 0;
 }
@@ -435,12 +435,12 @@ button.danger:hover {
   font-weight: 700;
   padding: 0.15rem 0.6rem;
   border-radius: 999px;
-  background: #3a3222;
-  color: #d8c690;
+  background: #453d2e;
+  color: #e0c98f;
 }
 
 .badge.done {
-  background: #2e4a2e;
+  background: #33502f;
   color: #a8d5a8;
 }
 
@@ -476,11 +476,11 @@ button.danger:hover {
   font-size: 1.15rem;
   font-weight: 700;
   font-family: Georgia, "Palatino Linotype", "Book Antiqua", serif;
-  color: #e8c96a;
+  color: #f0c96a;
 }
 
 .char-head .level {
-  color: #a89a7c;
+  color: #b3a284;
   font-size: 0.9rem;
 }
 
@@ -489,9 +489,9 @@ button.danger:hover {
   max-width: 45%;
   aspect-ratio: 2 / 3;
   object-fit: contain;
-  background: #241f18;
+  background: #342f27;
   border-radius: 12px;
-  border: 1px solid #4a3f2c;
+  border: 1px solid #57503f;
   display: block;
   margin-bottom: 0.75rem;
 }
@@ -500,9 +500,9 @@ button.danger:hover {
   width: 96px;
   height: 144px;
   object-fit: contain;
-  background: #241f18;
+  background: #342f27;
   border-radius: 8px;
-  border: 1px solid #4a3f2c;
+  border: 1px solid #57503f;
   float: left;
   margin: 0 0.75rem 0.5rem 0;
 }
@@ -544,8 +544,8 @@ button.danger:hover {
 }
 
 .score {
-  background: #171410;
-  border: 1px solid #4a3f2c;
+  background: #211910;
+  border: 1px solid #57503f;
   border-radius: 8px;
   text-align: center;
   padding: 0.35rem 0;
@@ -555,7 +555,7 @@ button.danger:hover {
 .score strong {
   display: block;
   font-size: 0.75rem;
-  color: #a89a7c;
+  color: #b3a284;
 }
 
 .inventory {
@@ -580,15 +580,15 @@ button.danger:hover {
   margin-top: 0;
   flex: 1 1 60px;
   padding: 0.6rem 0.4rem;
-  background: #241f18;
-  color: #ece5d3;
-  border: 1px solid #4a3f2c;
+  background: #342f27;
+  color: #f2e9d5;
+  border: 1px solid #57503f;
 }
 
 .dice-buttons button.selected {
-  background: #c9a227;
-  border-color: #c9a227;
-  color: #171410;
+  background: #d9a441;
+  border-color: #d9a441;
+  color: #211910;
 }
 
 .roll-btn {
@@ -600,8 +600,8 @@ button.danger:hover {
 }
 
 .dice-result {
-  background: #241f18;
-  border: 2px solid #c9a227;
+  background: #342f27;
+  border: 2px solid #d9a441;
   border-radius: 12px;
   padding: 1rem;
   margin: 1rem 0;
@@ -612,11 +612,11 @@ button.danger:hover {
   font-size: 2rem;
   font-weight: 700;
   display: block;
-  color: #e8c96a;
+  color: #f0c96a;
 }
 
 .dice-result .detail {
-  color: #a89a7c;
+  color: #b3a284;
 }
 
 .dice-faces {
@@ -633,7 +633,7 @@ button.danger:hover {
   justify-content: center;
   width: 58px;
   height: 58px;
-  background: #c9a227;
+  background: #d9a441;
   border-radius: 10px;
 }
 
@@ -643,8 +643,8 @@ button.danger:hover {
   justify-content: center;
   width: 50px;
   height: 50px;
-  background: #171410;
-  color: #e8c96a;
+  background: #211910;
+  color: #f0c96a;
   font-size: 1.35rem;
   font-weight: 700;
   border-radius: 8px;
@@ -685,10 +685,10 @@ button.danger:hover {
 .dice3d-tray {
   width: 100%;
   height: 300px;
-  border: 2px solid #c9a227;
+  border: 2px solid #d9a441;
   border-radius: 12px;
   overflow: hidden;
-  background: #171410;
+  background: #211910;
 }
 
 .dice3d-tray canvas {
@@ -704,16 +704,16 @@ button.danger:hover {
 
 .dice3d-style {
   margin: 1rem 0;
-  border: 1px solid #4a3f2c;
+  border: 1px solid #57503f;
   border-radius: 12px;
   padding: 0.75rem 1rem;
-  background: #241f18;
+  background: #342f27;
 }
 
 .dice3d-style summary {
   font-weight: 700;
   font-size: 1.05rem;
-  color: #e8c96a;
+  color: #f0c96a;
   cursor: pointer;
   list-style-position: inside;
 }
@@ -722,24 +722,24 @@ button.danger:hover {
   display: block;
   margin: 0.75rem 0 0.25rem;
   font-weight: 600;
-  color: #ece5d3;
+  color: #f2e9d5;
 }
 
 .style-select {
   width: 100%;
   padding: 0.6rem;
-  border: 1px solid #4a3f2c;
+  border: 1px solid #57503f;
   border-radius: 8px;
-  background: #171410;
-  color: #ece5d3;
+  background: #211910;
+  color: #f2e9d5;
   font-size: 1rem;
 }
 
 /* Battle */
 
 .combatant.current {
-  border: 2px solid #c9a227;
-  background: #2e2718;
+  border: 2px solid #d9a441;
+  background: #3a3125;
 }
 
 .combatant .init {
@@ -749,7 +749,7 @@ button.danger:hover {
 .turn-tag {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #e8c96a;
+  color: #f0c96a;
   text-transform: uppercase;
 }
 
@@ -759,27 +759,27 @@ button.danger:hover {
 }
 
 .live-off {
-  color: #a89a7c;
+  color: #b3a284;
 }
 
 .badge.tag-question {
-  background: #c9a227;
-  color: #171410;
+  background: #d9a441;
+  color: #211910;
 }
 
 .badge.tag-decision {
-  background: #2e4a2e;
+  background: #33502f;
   color: #a8d5a8;
 }
 
 .badge.tag-scene-start {
-  background: #c9a227;
-  color: #171410;
+  background: #d9a441;
+  color: #211910;
 }
 
 .badge.tag-scene-end {
-  background: #1f4d4d;
-  color: #bfe8e8;
+  background: #33502f;
+  color: #cfe0c0;
 }
 
 /* How to Play */
@@ -799,15 +799,15 @@ button.danger:hover {
 
 .map-tab {
   margin-top: 0;
-  background: #241f18;
-  color: #ece5d3;
-  border: 1px solid #4a3f2c;
+  background: #342f27;
+  color: #f2e9d5;
+  border: 1px solid #57503f;
 }
 
 .map-tab.active {
-  background: #c9a227;
-  border-color: #c9a227;
-  color: #171410;
+  background: #d9a441;
+  border-color: #d9a441;
+  color: #211910;
 }
 
 .map-modes {
@@ -816,15 +816,15 @@ button.danger:hover {
 
 .mode-btn {
   margin-top: 0;
-  background: #241f18;
-  color: #ece5d3;
-  border: 1px solid #4a3f2c;
+  background: #342f27;
+  color: #f2e9d5;
+  border: 1px solid #57503f;
 }
 
 .mode-btn.selected {
-  background: #c9a227;
-  border-color: #c9a227;
-  color: #171410;
+  background: #d9a441;
+  border-color: #d9a441;
+  color: #211910;
 }
 
 .mode-btn:disabled {
@@ -859,8 +859,8 @@ button.danger:hover {
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  border: 2px solid #171410;
-  color: #171410;
+  border: 2px solid #211910;
+  color: #211910;
   font-weight: bold;
   display: flex;
   align-items: center;
@@ -871,7 +871,7 @@ button.danger:hover {
 }
 
 .area-token.party {
-  background: #c9a227;
+  background: #d9a441;
 }
 
 .area-token.enemy {
@@ -880,7 +880,7 @@ button.danger:hover {
 }
 
 .area-token.current {
-  box-shadow: 0 0 0 3px #ece5d3;
+  box-shadow: 0 0 0 3px #f2e9d5;
 }
 
 .area-tokens.editing .area-token {
@@ -919,7 +919,7 @@ button.danger:hover {
 }
 
 .area-token.has-face.party {
-  border-color: #c9a227;
+  border-color: #d9a441;
 }
 
 .area-token.has-face.enemy {
@@ -940,9 +940,9 @@ button.danger:hover {
   position: absolute;
   left: 8px;
   bottom: 8px;
-  background: rgba(23, 20, 16, 0.92);
-  color: #ece5d3;
-  border: 1px solid #c9a227;
+  background: rgba(33, 25, 16, 0.92);
+  color: #f2e9d5;
+  border: 1px solid #d9a441;
   border-radius: 6px;
   padding: 4px 8px;
   font-size: 13px;
@@ -964,14 +964,14 @@ button.danger:hover {
 }
 
 .zoom-label {
-  color: #a89a7c;
+  color: #b3a284;
 }
 
 .zoom-btn {
   margin-top: 0;
-  background: #241f18;
-  color: #ece5d3;
-  border: 1px solid #4a3f2c;
+  background: #342f27;
+  color: #f2e9d5;
+  border: 1px solid #57503f;
   min-width: 2.5rem;
 }
 
@@ -979,12 +979,12 @@ button.danger:hover {
    stuck on iOS after a tap. Keep the zoom buttons dark in every state. */
 .zoom-btn:hover,
 .zoom-btn:active {
-  background: #241f18;
-  border-color: #c9a227;
+  background: #342f27;
+  border-color: #d9a441;
 }
 
 .zoom-level {
-  color: #e8c96a;
+  color: #f0c96a;
   font-weight: 700;
   min-width: 3rem;
   text-align: center;
@@ -993,10 +993,10 @@ button.danger:hover {
 .map-wrap {
   position: relative;
   aspect-ratio: 3 / 2;
-  background-color: #241f18;
+  background-color: #342f27;
   background-size: cover;
   background-position: center;
-  border: 1px solid #6b5a2e;
+  border: 1px solid #7a6238;
   border-radius: 12px;
   overflow: hidden;
   margin: 0;
@@ -1011,12 +1011,12 @@ button.danger:hover {
 }
 
 .map-cell {
-  border: 1px solid rgba(23, 20, 16, 0.25);
+  border: 1px solid rgba(33, 25, 16, 0.25);
   cursor: pointer;
 }
 
 .map-cell.fog {
-  background: #171410;
+  background: #211910;
 }
 
 .map-cell.revealed {
@@ -1042,21 +1042,21 @@ button.danger:hover {
 .map-marker .pin {
   width: 9px;
   height: 9px;
-  background: #c9a227;
-  border: 2px solid #171410;
+  background: #d9a441;
+  border: 2px solid #211910;
   border-radius: 50%;
 }
 
 .map-marker .map-icon {
   width: 18px;
   height: 18px;
-  background: rgba(23, 20, 16, 0.88);
-  border: 1.5px solid #c9a227;
+  background: rgba(33, 25, 16, 0.88);
+  border: 1.5px solid #d9a441;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #c9a227;
+  color: #d9a441;
 }
 
 .map-marker .map-icon svg {
@@ -1069,7 +1069,7 @@ button.danger:hover {
   display: inline-flex;
   vertical-align: middle;
   margin-right: 6px;
-  color: #c9a227;
+  color: #d9a441;
 }
 
 .place-icon svg {
@@ -1081,8 +1081,8 @@ button.danger:hover {
 .map-tooltip {
   position: absolute;
   transform: translate(-50%, calc(-100% - 14px));
-  background: rgba(23, 20, 16, 0.95);
-  border: 1px solid #6b5a2e;
+  background: rgba(33, 25, 16, 0.95);
+  border: 1px solid #7a6238;
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   max-width: 220px;
@@ -1098,21 +1098,21 @@ button.danger:hover {
 
 .map-tooltip .tip-title {
   font-weight: 700;
-  color: #e8c96a;
+  color: #f0c96a;
   margin: 0 0 0.25rem;
 }
 
 .map-tooltip .tip-notes {
   margin: 0;
   font-size: 0.85rem;
-  color: #ece5d3;
+  color: #f2e9d5;
 }
 
 .map-tooltip .tip-img {
   width: 100%;
   max-height: 120px;
   object-fit: contain;
-  background: #171410;
+  background: #211910;
   border-radius: 6px;
   margin-bottom: 0.4rem;
   display: block;
@@ -1128,20 +1128,20 @@ button.danger:hover {
 }
 
 .measure-line {
-  stroke: #c9a227;
+  stroke: #d9a441;
   stroke-width: 3;
   stroke-dasharray: 6 4;
 }
 
 .measure-dot {
-  fill: #c9a227;
-  stroke: #171410;
+  fill: #d9a441;
+  stroke: #211910;
   stroke-width: 2;
 }
 
 .map-measure-result {
-  background: #241f18;
-  border: 1px solid #4a3f2c;
+  background: #342f27;
+  border: 1px solid #57503f;
   border-radius: 8px;
   padding: 0.6rem 0.8rem;
   margin: 0.5rem 0;
@@ -1151,7 +1151,7 @@ button.danger:hover {
 .map-measure-result .map-scale {
   display: block;
   margin-top: 0.4rem;
-  color: #a89a7c;
+  color: #b3a284;
 }
 
 .map-measure-result input[type="number"] {
@@ -1176,8 +1176,8 @@ button.danger:hover {
 .modal-box {
   width: 100%;
   max-width: 560px;
-  background: #241f18;
-  border: 1px solid #6b5a2e;
+  background: #342f27;
+  border: 1px solid #7a6238;
   border-radius: 12px;
   padding: 1.25rem;
   margin: 1rem 0;
@@ -1193,7 +1193,7 @@ button.danger:hover {
 .remember {
   display: block;
   margin-top: 0.75rem;
-  color: #a89a7c;
+  color: #b3a284;
   font-size: 0.9rem;
   cursor: pointer;
 }
@@ -1208,16 +1208,16 @@ header {
   top: 1rem;
   right: 0.75rem;
   background: transparent;
-  color: #a89a7c;
-  border: 1px solid #4a3f2c;
+  color: #b3a284;
+  border: 1px solid #57503f;
   font-size: 0.85rem;
   padding: 0.3rem 0.7rem;
   margin-top: 0;
   width: auto;
 }
 .lock-btn:hover {
-  color: #c9a227;
-  border-color: #c9a227;
+  color: #d9a441;
+  border-color: #d9a441;
 }
 
 /* Map places list + edit toggle + gestures */
@@ -1226,7 +1226,7 @@ header {
   overflow: hidden;
 }
 .place-card:hover {
-  border-color: #c9a227;
+  border-color: #d9a441;
 }
 .place-thumb {
   width: 72px;
@@ -1238,9 +1238,9 @@ header {
   margin: 0 0.75rem 0.5rem 0;
 }
 .edit-toggle-btn {
-  background: #241f18;
-  color: #e8c96a;
-  border: 1px solid #c9a227;
+  background: #342f27;
+  color: #f0c96a;
+  border: 1px solid #d9a441;
   padding: 0.5rem 0.9rem;
   border-radius: 8px;
   font-weight: 700;
@@ -1248,8 +1248,8 @@ header {
   margin-top: 0;
 }
 .edit-toggle-btn.selected {
-  background: #c9a227;
-  color: #171410;
+  background: #d9a441;
+  color: #211910;
 }
 .map-viewport {
   touch-action: none;
@@ -1257,32 +1257,32 @@ header {
 .map-marker.party-here .pin {
   width: 12px;
   height: 12px;
-  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.55), 0 0 10px 4px rgba(201, 162, 39, 0.5);
+  box-shadow: 0 0 0 3px rgba(217, 164, 65, 0.55), 0 0 10px 4px rgba(217, 164, 65, 0.5);
 }
 
 .map-marker.party-here .map-icon {
   width: 21px;
   height: 21px;
-  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.55), 0 0 10px 4px rgba(201, 162, 39, 0.5);
+  box-shadow: 0 0 0 3px rgba(217, 164, 65, 0.55), 0 0 10px 4px rgba(217, 164, 65, 0.5);
   animation: party-ring 1.6s ease-in-out infinite;
 }
 
 @keyframes party-ring {
-  0%, 100% { box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.55), 0 0 10px 4px rgba(201, 162, 39, 0.5); }
-  50% { box-shadow: 0 0 0 5px rgba(201, 162, 39, 0.35), 0 0 16px 7px rgba(201, 162, 39, 0.65); }
+  0%, 100% { box-shadow: 0 0 0 3px rgba(217, 164, 65, 0.55), 0 0 10px 4px rgba(217, 164, 65, 0.5); }
+  50% { box-shadow: 0 0 0 5px rgba(217, 164, 65, 0.35), 0 0 16px 7px rgba(217, 164, 65, 0.65); }
 }
 
 .map-marker.highlight .pin {
   width: 12px;
   height: 12px;
-  box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.35), 0 0 14px 5px rgba(201, 162, 39, 0.65);
+  box-shadow: 0 0 0 4px rgba(217, 164, 65, 0.35), 0 0 14px 5px rgba(217, 164, 65, 0.65);
   animation: pin-pulse 1s ease-in-out infinite;
 }
 
 .map-marker.highlight .map-icon {
   width: 21px;
   height: 21px;
-  box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.35), 0 0 14px 5px rgba(201, 162, 39, 0.65);
+  box-shadow: 0 0 0 4px rgba(217, 164, 65, 0.35), 0 0 14px 5px rgba(217, 164, 65, 0.65);
   animation: pin-pulse 1s ease-in-out infinite;
 }
 @keyframes pin-pulse {
@@ -1309,16 +1309,16 @@ header {
   max-width: 92vw;
   max-height: 88vh;
   object-fit: contain;
-  border: 2px solid #c9a227;
+  border: 2px solid #d9a441;
   border-radius: 8px;
 }
 .lightbox-close {
   position: absolute;
   top: 12px;
   right: 12px;
-  background: #241f18;
-  color: #ece5d3;
-  border: 1px solid #c9a227;
+  background: #342f27;
+  color: #f2e9d5;
+  border: 1px solid #d9a441;
   border-radius: 6px;
   font-size: 20px;
   line-height: 1;
@@ -1364,8 +1364,8 @@ header {
 }
 
 .sheet-score {
-  background: #171410;
-  border: 1px solid #4a3f2c;
+  background: #211910;
+  border: 1px solid #57503f;
   border-radius: 8px;
   text-align: center;
   padding: 0.35rem 0;
@@ -1375,13 +1375,13 @@ header {
   display: block;
   font-size: 1.15rem;
   font-weight: 700;
-  color: #e8c96a;
+  color: #f0c96a;
 }
 
 .sheet-score .score-name {
   display: block;
   font-size: 0.75rem;
-  color: #a89a7c;
+  color: #b3a284;
 }
 
 .sheet-score .score-val {
@@ -1397,8 +1397,8 @@ header {
 }
 
 .combat-stat {
-  background: #171410;
-  border: 1px solid #4a3f2c;
+  background: #211910;
+  border: 1px solid #57503f;
   border-radius: 8px;
   text-align: center;
   padding: 0.35rem 0;
@@ -1407,7 +1407,7 @@ header {
 .combat-stat span {
   display: block;
   font-size: 0.7rem;
-  color: #a89a7c;
+  color: #b3a284;
 }
 
 .combat-stat strong {
@@ -1423,16 +1423,16 @@ header {
   align-items: baseline;
   gap: 0.4rem;
   padding: 0.15rem 0;
-  border-bottom: 1px solid #2e2718;
+  border-bottom: 1px solid #3a3125;
 }
 
 .sheet-line .dot {
-  color: #a89a7c;
+  color: #b3a284;
   font-size: 0.8rem;
 }
 
 .sheet-line.prof .dot {
-  color: #e8c96a;
+  color: #f0c96a;
 }
 
 .sheet-line .num {
@@ -1451,11 +1451,11 @@ header {
 .sheet-attacks td {
   text-align: left;
   padding: 0.25rem 0.4rem;
-  border-bottom: 1px solid #2e2718;
+  border-bottom: 1px solid #3a3125;
 }
 
 .sheet-attacks th {
-  color: #a89a7c;
+  color: #b3a284;
   font-size: 0.75rem;
 }
 
@@ -1509,7 +1509,7 @@ header {
 
 .ds-label {
   font-size: 0.75rem;
-  color: #a89a7c;
+  color: #b3a284;
 }
 
 .ds-dot {
@@ -1519,12 +1519,12 @@ header {
   margin: 0;
   font-size: 1rem;
   line-height: 1;
-  color: #4a3f2c;
+  color: #57503f;
   cursor: pointer;
 }
 
 .ds-dot.filled {
-  color: #e8c96a;
+  color: #f0c96a;
 }
 
 /* Floating back to top button, same pattern as the ED guide */
@@ -1539,11 +1539,11 @@ header {
   place-items: center;
   padding: 0;
   margin: 0;
-  border: 1px solid #3a2f22;
-  border-top: 3px solid #c9a227;
+  border: 1px solid #4a4033;
+  border-top: 3px solid #d9a441;
   border-radius: 0;
-  background: #171410;
-  color: #c9a227;
+  background: #211910;
+  color: #d9a441;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.34);
   cursor: pointer;
   opacity: 0;
@@ -1562,12 +1562,12 @@ header {
 }
 
 .back-to-top:hover {
-  background: #c9a227;
-  color: #171410;
+  background: #d9a441;
+  color: #211910;
 }
 
 .back-to-top:focus-visible {
-  outline: 3px solid #c9a227;
+  outline: 3px solid #d9a441;
   outline-offset: 3px;
 }
 
@@ -1592,13 +1592,13 @@ header {
 
 /* NPC companions */
 .npc-summary { display: flex; gap: 12px; align-items: center; }
-.npc-pic { width: 64px; height: 96px; object-fit: contain; background: #241f18; border: 1px solid #3a2f22; border-radius: 6px; flex: none; }
-.npc-pic-fallback { display: flex; align-items: center; justify-content: center; font-size: 32px; color: #c9a227; font-weight: 700; }
+.npc-pic { width: 64px; height: 96px; object-fit: contain; background: #342f27; border: 1px solid #4a4033; border-radius: 6px; flex: none; }
+.npc-pic-fallback { display: flex; align-items: center; justify-content: center; font-size: 32px; color: #d9a441; font-weight: 700; }
 .npc-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .npc-id .name { font-size: 1.1rem; font-weight: 700; }
-.npc-toggle { flex: none; background: none; border: 1px solid #3a2f22; color: #c9a227; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
-.npc-toggle:hover { background: #241f18; }
-.npc-details { margin-top: 12px; border-top: 1px solid #3a2f22; padding-top: 12px; }
+.npc-toggle { flex: none; background: none; border: 1px solid #4a4033; color: #d9a441; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+.npc-toggle:hover { background: #342f27; }
+.npc-details { margin-top: 12px; border-top: 1px solid #4a4033; padding-top: 12px; }
 .npc-details.hidden { display: none; }
 
 .party-markers {
@@ -1623,15 +1623,15 @@ header {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--party-color, #c9a227);
-  border: 2px solid #171410;
-  box-shadow: 0 0 0 1.5px var(--party-color, #c9a227);
+  background: var(--party-color, #d9a441);
+  border: 2px solid #211910;
+  box-shadow: 0 0 0 1.5px var(--party-color, #d9a441);
 }
 
 .party-label {
-  background: #171410;
-  color: #ece5d3;
-  border: 1px solid var(--party-color, #c9a227);
+  background: #211910;
+  color: #f2e9d5;
+  border: 1px solid var(--party-color, #d9a441);
   border-radius: 8px;
   padding: 1px 6px;
   font-size: 11px;
@@ -1655,17 +1655,17 @@ header {
 .area-map-btn {
   display: inline-block;
   margin-top: 8px;
-  background: #241f18;
-  border: 1px solid #c9a227;
-  color: #c9a227;
+  background: #342f27;
+  border: 1px solid #d9a441;
+  color: #d9a441;
   border-radius: 6px;
   padding: 6px 10px;
   cursor: pointer;
 }
 
 .area-map-btn:hover {
-  background: #c9a227;
-  color: #171410;
+  background: #d9a441;
+  color: #211910;
 }
 
 /* Ambient music player */
@@ -1679,15 +1679,15 @@ header {
   align-items: center;
   gap: 10px;
   padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
-  background: rgba(23, 20, 16, 0.97);
-  border-top: 1px solid #6b5a2e;
-  color: #ece5d3;
+  background: rgba(33, 25, 16, 0.97);
+  border-top: 1px solid #7a6238;
+  color: #f2e9d5;
 }
 
 .music-bar-mood {
   background: none;
   border: none;
-  color: #e8c96a;
+  color: #f0c96a;
   font-family: Georgia, "Palatino Linotype", "Book Antiqua", serif;
   font-size: 15px;
   padding: 4px 2px;
@@ -1696,9 +1696,9 @@ header {
 }
 
 .music-btn {
-  background: #241f18;
-  color: #e8c96a;
-  border: 1px solid #6b5a2e;
+  background: #342f27;
+  color: #f0c96a;
+  border: 1px solid #7a6238;
   border-radius: 6px;
   padding: 6px 12px;
   font-size: 14px;
@@ -1707,14 +1707,14 @@ header {
 }
 
 .music-btn:hover {
-  background: #241f18;
-  border-color: #c9a227;
+  background: #342f27;
+  border-color: #d9a441;
 }
 
 .music-bar-vol {
   flex: 1;
   min-width: 60px;
-  accent-color: #c9a227;
+  accent-color: #d9a441;
 }
 
 .music-now .music-controls {
@@ -1732,14 +1732,14 @@ header {
 }
 
 .music-vol-label input[type="range"] {
-  accent-color: #c9a227;
+  accent-color: #d9a441;
   width: 140px;
 }
 
 .mood-btn {
-  background: #241f18;
-  color: #e8c96a;
-  border: 1px solid #6b5a2e;
+  background: #342f27;
+  color: #f0c96a;
+  border: 1px solid #7a6238;
   border-radius: 6px;
   padding: 6px 14px;
   font-size: 14px;
@@ -1748,21 +1748,21 @@ header {
 }
 
 .mood-btn.active {
-  background: #c9a227;
-  color: #171410;
-  border-color: #c9a227;
+  background: #d9a441;
+  color: #211910;
+  border-color: #d9a441;
 }
 
 .mood-btn:hover {
-  background: #241f18;
-  border-color: #c9a227;
+  background: #342f27;
+  border-color: #d9a441;
 }
 
 .music-tracks {
   margin: 8px 0 0;
   padding-left: 18px;
   font-size: 14px;
-  color: #ece5d3;
+  color: #f2e9d5;
 }
 
 /* Keep page content and the back-to-top button clear of the music bar. */
@@ -1788,7 +1788,7 @@ header {
   font-size: 0.8rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #b3a284;
   margin: 0 0 0.5rem;
 }
 .area-key .key-row {
@@ -1807,14 +1807,14 @@ header {
 }
 .area-key .key-item:active img,
 .area-key .key-item:active .key-initial {
-  border-color: #ece5d3;
+  border-color: #f2e9d5;
 }
 
 /* Follow select on the area map: which token this phone centers on. */
 .follow-select {
-  background: #241f18;
-  color: #ece5d3;
-  border: 1px solid #4a3f2c;
+  background: #342f27;
+  color: #f2e9d5;
+  border: 1px solid #57503f;
   border-radius: 6px;
   padding: 2px 6px;
   font-size: 0.9rem;
@@ -1824,7 +1824,7 @@ header {
   height: 56px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #c9a227;
+  border: 2px solid #d9a441;
   /* Taps pass through the portrait to the key item, so tapping a
      portrait glides the map instead of opening the big picture.
      Same pattern as the token faces on the map. */
@@ -1834,8 +1834,8 @@ header {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #c9a227;
-  color: #171410;
+  background: #d9a441;
+  color: #211910;
   font-weight: bold;
   font-size: 1.4rem;
   display: flex;
@@ -1845,5 +1845,5 @@ header {
 .area-key .key-name {
   font-size: 0.75rem;
   line-height: 1.2;
-  color: var(--text);
+  color: #f2e9d5;
 }

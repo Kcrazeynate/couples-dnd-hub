@@ -162,5 +162,42 @@
     "facts": [
       "Milo spotted fresh wheel ruts turning off east toward a low rise; Sylvie spotted thin smoke beyond it. Dain knows the place: a small farmstead just off the road, the farmer keeps a cart and a sturdy horse. The wounded can rest by the track while the party goes up to ask."
     ]
+  },
+  {
+    "scene": "A Fair Price",
+    "date": "2026-11-25",
+    "facts": [
+      "Milo, Sylvie, and Dain reached the farmstead east of the old road: a low house with smoke from the chimney, a barn, a cart standing by the barn, and a sturdy horse in the paddock.",
+      "A farmer stepped out of the house as they came up the track, wiping his hands, wary of strangers.",
+      "Sylvie asked the farmer for the loan of the cart and the horse, offering a song, but the offer came out wrong and the farmer refused; he needs the cart and horse for his own work and stepped back toward the house, hand on the door.",
+      "Dain stepped in, saying he knows these folk from Riverton and the wounded are real and waiting on the road; the farmer paused, listening, but has not opened the door again.",
+      "Milo stepped forward and offered to pay for the cart and the horse outright, no loan, no favor owed, counting the coin in his hand where the farmer could see it.",
+      "The farmer named a fair price, 15 gold for the cart and 50 gold for the draft horse, 65 gold all told. Milo paid it; the farmer took the coin, nodded, and handed over the reins and the cart."
+    ],
+    "changes": {
+      "gold": "Milo spent 65 gold (15 for the cart, 50 for the draft horse). Milo went from 379 gold 7 copper to 314 gold 7 copper.",
+      "items": [
+        "Milo gained: Cart and draft horse"
+      ]
+    }
+  },
+  {
+    "scene": "Journey to Riverton",
+    "date": "2026-11-25",
+    "facts": [
+      "Milo took the reins, Sylvie and Dain walked beside the horse, and they brought the cart back west to the road.",
+      "Liora, Finn, and Bram were waiting with Ferol and Emric by the fire; they helped the wounded up into the cart, slow and gentle, wrapping cloaks around them, settling Ferol against the side boards and Emric with his hurt leg stretched out straight.",
+      "The party set out south again, fast: the horse pulling steady, the wheels turning on the old road, Dain leading, Milo driving, the rest walking alongside; the wounded rested in the cart, out of the cold wind, and the road wound down toward the watchtower and Riverton beyond it."
+    ]
+  },
+  {
+    "scene": "Night at the Watchtower",
+    "date": "2026-11-25",
+    "facts": [
+      "The party drove the cart fast down the old road as the light faded; the broken watchtower rose ahead in the dusk, and they pulled the cart in close to the tower walls, out of the wind.",
+      "They built a large fire in the shelter of the tower and settled Ferol and Emric close to the flames, cloaks wrapped around them, hands out toward the heat; the wounded warmed through the evening, color coming back a little more, breathing easier.",
+      "Watches were kept through the night, and nothing stirred.",
+      "Morning came, cold and clear. Long rest complete, everyone at full health, Sylvie and Liora with their spell slots restored. Ferol woke stronger, Emric woke with his leg still stiff but better than it was. The party loaded the wounded back into the cart and set out south toward Riverton at first light."
+    ]
   }
 ]

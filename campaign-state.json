@@ -1,1 +1,64 @@
-{"current_goal":"Return to Riverton with Ferol and Emric and report what was found.","key_facts":["Both carved stones are back in the ring and the ring is whole; the dead rest again.","The dead figure spoke: the ring is whole, the dead sleep again, the cold stops drinking when the stones sit in their places, and what was drunk does not come back.","Ferol never took a stone; the cold got into her anyway just from being in the chamber.","A dead hunter on the ridge died of the same sickness (thin blue lines, no wounds) and carried a second carved stone, the same kind as Milo's.","Milo carries the first stone no longer; both stones are in the ring, neither is carried now.","Sylvie has the hunter's shortbow and a quiver with 10 arrows.","The party has 18 rations and 3 full waterskins plus a half-full one.","Level 3 is at 900 XP; the party is at 621, so 279 to go.","The carved stone is a keeper of the dead; it drinks warmth, which is the blue lines.","Verla Pelc is sick with the blue lines; the warming tonic holds but does not cure.","Ferol is the healer, Dain is the guard; they are not brothers.","There is no falling-star prophecy, no heartstone shard, no Crystal of Dawn, and no waking shards in this campaign.","The missing guide is named Emric; the party found him alive in a hollow in the hills east of the old road.","Emric's leg is hurt and swollen; thin blue lines are starting up his fingers.","Emric left a marker: his walking staff snapped in two, the top half stuck upright with a strip of green cloth tied to it. Wolf prints circled beside the trail, and a smear of blood was on a rock.","Dain stayed on the road with Ferol, keeping her safe and warm, while Milo, Sylvie, Liora, Finn, and Bram followed the trail into the hills."],"last_scene":"Finding Emric","location":"Hollow in the hills east of the old road","open_threads":["Verla Pelc is sick with the blue lines in Riverton; the warming tonic holds but does not cure, and what was drunk does not come back.","Emric is alive but hurt, with thin blue lines starting up his fingers; the party must decide what to do with him.","Return to Riverton with Ferol and Emric and report what was found."],"party":[{"hp":"21/21","level":2,"name":"Milo","xp":621},{"hp":"17/17","level":2,"name":"Sylvie","xp":621},{"hp":"18/18","level":2,"name":"Liora","xp":621},{"hp":"14/14","level":2,"name":"Finn","xp":621},{"hp":"24/24","level":2,"name":"Bram","xp":621}],"situation":"The ring is whole, the dead rest, Ferol is with the party and recovering. Following the trail east, the party found the missing guide Emric alive in a hollow in the hills, his leg hurt and swollen, thin blue lines starting up his fingers. Dain stayed on the road with Ferol while the rest went into the hills.","updated_at":"2026-11-23T05:21:23Z","waiting_on":"The party's decision on what to do with Emric."}
+{
+ "current_goal": "Return to Riverton with Ferol and Emric and report what was found.",
+ "key_facts": [
+  "Both carved stones are back in the ring and the ring is whole; the dead rest again.",
+  "The dead figure spoke: the ring is whole, the dead sleep again, the cold stops drinking when the stones sit in their places, and what was drunk does not come back.",
+  "Ferol never took a stone; the cold got into her anyway just from being in the chamber.",
+  "A dead hunter on the ridge died of the same sickness (thin blue lines, no wounds) and carried a second carved stone, the same kind as Milo's.",
+  "Milo carries the first stone no longer; both stones are in the ring, neither is carried now.",
+  "Sylvie has the hunter's shortbow and a quiver with 10 arrows.",
+  "The party has 18 rations and 3 full waterskins plus a half-full one.",
+  "Level 3 is at 900 XP; the party is at 621, so 279 to go.",
+  "The carved stone is a keeper of the dead; it drinks warmth, which is the blue lines.",
+  "Verla Pelc is sick with the blue lines; the warming tonic holds but does not cure.",
+  "Ferol is the healer, Dain is the guard; they are not brothers.",
+  "There is no falling-star prophecy, no heartstone shard, no Crystal of Dawn, and no waking shards in this campaign.",
+  "The missing guide is named Emric; the party found him alive in a hollow in the hills east of the old road.",
+  "Emric's leg is hurt and swollen; thin blue lines are starting up his fingers.",
+  "Emric left a marker: his walking staff snapped in two, the top half stuck upright with a strip of green cloth tied to it. Wolf prints circled beside the trail, and a smear of blood was on a rock.",
+  "Dain stayed on the road with Ferol, keeping her safe and warm, while Milo, Sylvie, Liora, Finn, and Bram followed the trail into the hills.",
+  "Liora healed Emric's hurt leg; his breathing steadied and his hands warmed a touch, but the thin blue lines remain."
+ ],
+ "last_scene": "Healing Emric",
+ "location": "Hollow in the hills east of the old road",
+ "open_threads": [
+  "Verla Pelc is sick with the blue lines in Riverton; the warming tonic holds but does not cure, and what was drunk does not come back.",
+  "Emric is alive but hurt, with thin blue lines starting up his fingers; Liora healed his leg a little and Sylvie is about to heal him too; the party must decide what to do with him.",
+  "Return to Riverton with Ferol and Emric and report what was found."
+ ],
+ "party": [
+  {
+   "hp": "21/21",
+   "level": 2,
+   "name": "Milo",
+   "xp": 621
+  },
+  {
+   "hp": "17/17",
+   "level": 2,
+   "name": "Sylvie",
+   "xp": 621
+  },
+  {
+   "hp": "18/18",
+   "level": 2,
+   "name": "Liora",
+   "xp": 621
+  },
+  {
+   "hp": "14/14",
+   "level": 2,
+   "name": "Finn",
+   "xp": 621
+  },
+  {
+   "hp": "24/24",
+   "level": 2,
+   "name": "Bram",
+   "xp": 621
+  }
+ ],
+ "situation": "The ring is whole, the dead rest, Ferol is with the party and recovering. The party reached Emric in the hollow in the hills east of the old road; Liora healed his hurt leg, easing his breathing and warming him a touch, but the thin blue lines remain on his fingers. Sylvie is ready to heal him as well. Dain stayed on the road with Ferol while the rest went into the hills.",
+ "updated_at": "2026-11-25T03:52:08Z",
+ "waiting_on": "Angela's roll for Sylvie's Cure Wounds healing on Emric (1d8 plus 3), then the party's decision on what to do with Emric."
+}

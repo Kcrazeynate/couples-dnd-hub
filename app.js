@@ -4218,6 +4218,23 @@
         menuBtn.classList.add("open");
         menuBtn.setAttribute("aria-expanded", "true");
         menuBtn.setAttribute("aria-label", "Close menu");
+        // Collapsing submenus start closed; the one holding the
+        // current tab opens, so the active row is visible.
+        var subs = navMenu.querySelectorAll(".nav-menu-sub");
+        subs.forEach(function (sub) {
+          sub.classList.remove("open");
+          var t = sub.querySelector(".nav-menu-sub-toggle");
+          if (t) t.setAttribute("aria-expanded", "false");
+        });
+        var activeBtn = navMenu.querySelector(".tab-btn.active");
+        if (activeBtn) {
+          var activeSub = activeBtn.closest(".nav-menu-sub");
+          if (activeSub) {
+            activeSub.classList.add("open");
+            var activeToggle = activeSub.querySelector(".nav-menu-sub-toggle");
+            if (activeToggle) activeToggle.setAttribute("aria-expanded", "true");
+          }
+        }
       } else {
         closeMenu();
       }
@@ -4230,6 +4247,17 @@
 
     document.querySelectorAll(".tab-btn").forEach(function (btn) {
       btn.addEventListener("click", function () { switchTab(btn.dataset.tab); closeMenu(); });
+    });
+
+    // Collapsing submenu headers: tapping a group header expands or
+    // collapses just that group; the other groups are untouched.
+    document.querySelectorAll(".nav-menu-sub-toggle").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var sub = btn.closest(".nav-menu-sub");
+        if (!sub) return;
+        var open = sub.classList.toggle("open");
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+      });
     });
 
     // ---------- floating dice button ----------

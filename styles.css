@@ -167,17 +167,68 @@ header {
   border: 1px solid #6b5a2e;
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
-  padding: 0.75rem;
+  padding: 0.5rem 0;
 }
 
 .nav-menu-group + .nav-menu-group {
   margin-top: 0.75rem;
 }
 
+.nav-menu .tab-group-label {
+  padding: 0.4rem 0.9rem 0.35rem;
+}
+
+/* The menu is a clean vertical stack, not a button grid: one full-width
+   row per tab, flat, with a hairline divider between rows. The active
+   row is marked with a coloured bar on its left edge (gold for players,
+   teal for the AI group), so the current tab still reads at a glance. */
 .nav-menu-btns {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-menu .tab-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(236, 229, 211, 0.08);
+  border-radius: 0;
+  padding: 0.8rem 0.9rem;
+  font-size: 1rem;
+  white-space: normal;
+}
+
+.nav-menu .tab-btn:last-child {
+  border-bottom: none;
+}
+
+.nav-menu .tab-btn:hover {
+  background: rgba(236, 229, 211, 0.06);
+}
+
+.nav-menu .tab-btn.active {
+  background: rgba(201, 162, 39, 0.12);
+  box-shadow: inset 3px 0 0 #c9a227;
+  color: #e8c96a;
+  font-weight: 700;
+}
+
+.nav-menu .tab-btn.ai-tab {
+  background: transparent;
+  color: #bfe8e8;
+}
+
+.nav-menu .tab-btn.ai-tab:hover {
+  background: rgba(191, 232, 232, 0.06);
+}
+
+.nav-menu .tab-btn.ai-tab.active {
+  background: rgba(42, 122, 110, 0.18);
+  box-shadow: inset 3px 0 0 #2a7a6e;
+  color: #7fc4b8;
+  font-weight: 700;
 }
 
 @media (max-width: 760px) {

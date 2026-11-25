@@ -2027,14 +2027,17 @@ header {
 }
 
 /* The lantern hangs over the title: a soft warm pool behind the header,
-   and wood only as trim: a thin wooden beam along the bottom edge of
-   the header, like the beams in the tavern, instead of a wall of planks
-   behind everything. */
+   and heavy wood beams, not two-by-fours: one thick dark timber beam
+   runs along the bottom of the header, like the massive ceiling beams
+   in the tavern. It is 36px tall with room of its own below the
+   subtitle, showing the beam's grain and knots at full scale, so it
+   reads as a beam, not a thin board. */
 header {
+  padding-bottom: calc(0.75rem + 36px);
   background-image:
     radial-gradient(ellipse 70% 90px at 50% 0, rgba(240, 201, 106, 0.10), transparent 70%),
-    url("assets/texture-wood.webp");
-  background-size: auto, 100% 12px;
+    url("assets/texture-beam.webp");
+  background-size: auto, auto 120px;
   background-position: 0 0, 0 100%;
   background-repeat: no-repeat, repeat-x;
 }

@@ -231,6 +231,73 @@ header {
   font-weight: 700;
 }
 
+/* Hub modes: View, Interact, Dungeon Master. View hides every input
+   (anything tagged data-mode), Interact hides only the DM-only inputs.
+   The !important is needed because the edit-list rules (for example
+   #tab-npcs.editing .actions) outrank a plain body-class selector. */
+body.mode-view [data-mode="interact"],
+body.mode-view [data-mode="dm"] {
+  display: none !important;
+}
+
+body.mode-interact [data-mode="dm"] {
+  display: none !important;
+}
+
+/* Mode picker rows in the hamburger menu: same clean flat stack as the
+   tab rows, with the same gold active mark for the current mode. */
+.nav-menu .mode-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: #f2e9d5;
+  border: none;
+  border-bottom: 1px solid rgba(242, 233, 213, 0.08);
+  border-radius: 0;
+  padding: 0.8rem 0.9rem;
+  font-size: 1rem;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.nav-menu .mode-option:last-child {
+  border-bottom: none;
+}
+
+.nav-menu .mode-option:hover {
+  background: rgba(242, 233, 213, 0.06);
+}
+
+.nav-menu .mode-option.active {
+  background: rgba(217, 164, 65, 0.12);
+  box-shadow: inset 3px 0 0 #d9a441;
+  color: #f0c96a;
+  font-weight: 700;
+}
+
+/* DM passphrase field inside the mode menu. */
+.dm-unlock {
+  padding: 0.6rem 0.9rem 0.9rem;
+}
+
+.dm-unlock label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.85rem;
+  color: #b3a284;
+}
+
+.dm-unlock input {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0.5rem;
+}
+
+.dm-unlock .error {
+  margin: 0.5rem 0 0;
+}
+
 @media (max-width: 760px) {
   .menu-btn {
     right: max(14px, env(safe-area-inset-right));

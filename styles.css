@@ -272,7 +272,12 @@ header {
   transform: rotate(45deg);
 }
 
-.nav-menu-sub-rows {
+/* Collapsed by default. Specificity note: this must outrank
+   .nav-menu-btns (display: flex) below, which shares the same element,
+   or the rows would always show. .nav-menu .nav-menu-sub-rows (0,2,0)
+   beats .nav-menu-btns (0,1,0), and the .open rule (0,3,0) still beats
+   it when a group is expanded. */
+.nav-menu .nav-menu-sub-rows {
   display: none;
 }
 
@@ -280,8 +285,11 @@ header {
   display: flex;
 }
 
-.nav-menu-sub .tab-btn,
-.nav-menu-sub .mode-option {
+/* Indented submenu rows. Same specificity point: (0,3,0) must beat
+   .nav-menu .tab-btn (0,2,0), or its shorthand padding would win and
+   the indent would vanish. */
+.nav-menu .nav-menu-sub .tab-btn,
+.nav-menu .nav-menu-sub .mode-option {
   padding-left: 1.5rem;
 }
 

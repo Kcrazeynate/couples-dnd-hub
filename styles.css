@@ -11,17 +11,14 @@ body {
   line-height: 1.5;
   color: #f2e9d5;
   background-color: #211910;
-  /* Lamplight over the table: a soft warm glow hangs at the top of the
-     page and fades as it goes down, over a real dark wood plank texture
-     (a light dark tint deepens the wood so the cream text still reads
-     at full contrast), over the dark wood base. The wood is a real
-     image, not a gradient, so it reads as wood on a phone. */
+  /* Lamplight over a dark, quiet room: a soft warm glow hangs at the
+     top of the page and fades as it goes down, over a flat dark
+     interior, not a wall of wood. The wood is only trim now, a thin
+     beam along the bottom of the header. */
   background-image:
     radial-gradient(ellipse 90% 360px at 50% -60px, rgba(240, 201, 106, 0.22), rgba(240, 201, 106, 0) 70%),
-    linear-gradient(rgba(33, 25, 16, 0.25), rgba(33, 25, 16, 0.25)),
-    url("assets/texture-wood.webp"),
     linear-gradient(#251b11 0%, #211910 220px);
-  background-size: auto, auto, 800px auto, auto;
+  background-size: auto, auto;
 }
 
 .hidden {
@@ -372,8 +369,11 @@ body.mode-interact [data-mode="dm"] {
     bottom: calc(64px + max(14px, env(safe-area-inset-bottom)) + 52px + 10px + 40px + 10px);
     /* On phones the menu takes up only half the screen: it is shorter
        and scrolls inside itself, so the Mode section and all 13 tabs
-       stay reachable without shrinking the rows or the text. */
+       stay reachable without shrinking the rows or the text. It is
+       also slim, not fat: roughly half its old width, so it ends where
+       the rows end with no big empty space to the right of the text. */
     max-height: 50vh;
+    width: min(190px, calc(100vw - 28px));
   }
 }
 
@@ -1981,15 +1981,16 @@ header {
 }
 
 /* Tavern feel: the hub is friends sitting at a table in the tavern.
-   Real textures now, not CSS gradients: dark wood planks on the page,
-   stone blocks on the panels, ivy along the header. The mode
-   visibility rules above still own display, this section only changes
-   the look. */
+   The walls are smooth plaster, the wood is only beams and trim, and
+   the ivy trails from a corner or two, the way it does in the
+   reference image. The mode visibility rules above still own display,
+   this section only changes the look. */
 
-/* Real stone on the panel surfaces: a stone block texture under a
-   translucent dark layer. The stone is light grey in the image, so the
-   dark layer (0.68) is what keeps the cream text readable; the block
-   and mortar pattern still shows through clearly as dark stone. */
+/* Smooth plaster on the panel surfaces: the tavern's plaster walls,
+   not cobblestone. A plaster texture under a translucent dark layer.
+   The plaster is light in the image, so the dark layer (0.80) is what
+   keeps the cream text readable at 4.85:1; the surface stays smooth
+   and quiet behind text, no blocks, no mortar lines. */
 .card,
 .form,
 .gate-box,
@@ -1999,9 +2000,9 @@ header {
 .map-measure-result,
 .nav-menu {
   background-image:
-    linear-gradient(rgba(33, 25, 16, 0.68), rgba(33, 25, 16, 0.68)),
-    url("assets/texture-stone.webp");
-  background-size: auto, 280px auto;
+    linear-gradient(rgba(33, 25, 16, 0.80), rgba(33, 25, 16, 0.80)),
+    url("assets/texture-plaster.webp");
+  background-size: auto, 400px auto;
 }
 
 /* Objects on the table: soft shadow, warm lamplit top edge. */
@@ -2025,23 +2026,50 @@ header {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(240, 201, 106, 0.12);
 }
 
-/* The lantern hangs over the title: a soft warm pool behind the header. */
+/* The lantern hangs over the title: a soft warm pool behind the header,
+   and wood only as trim: a thin wooden beam along the bottom edge of
+   the header, like the beams in the tavern, instead of a wall of planks
+   behind everything. */
 header {
-  background: radial-gradient(ellipse 70% 90px at 50% 0, rgba(240, 201, 106, 0.10), transparent 70%);
+  background-image:
+    radial-gradient(ellipse 70% 90px at 50% 0, rgba(240, 201, 106, 0.10), transparent 70%),
+    url("assets/texture-wood.webp");
+  background-size: auto, 100% 12px;
+  background-position: 0 0, 0 100%;
+  background-repeat: no-repeat, repeat-x;
 }
 
-/* Ivy trails along the beam under the title: a band of the real ivy
-   texture, so the green from the tavern shows on every tab. */
+/* Ivy only where it trails from a corner, the way it comes off the
+   corners of the windows in the reference image: one small sprig at
+   the top-left corner of the header, one at the bottom-right corner
+   over the wooden beam. Each is feathered with a mask so the leaves
+   fade like trailing vines instead of showing a photo rectangle.
+   Never a band across anything: the ivy is an accent, not a feature. */
+header::before,
 header::after {
   content: "";
-  display: block;
-  height: 44px;
-  margin-top: 0.75rem;
+  position: absolute;
+  width: 90px;
+  height: 64px;
   background-image: url("assets/texture-ivy.webp");
   background-size: cover;
-  background-position: center;
-  border: 1px solid #57503f;
-  border-radius: 6px;
+  pointer-events: none;
+}
+
+header::before {
+  top: 0;
+  left: 0;
+  background-position: left top;
+  -webkit-mask-image: linear-gradient(135deg, #000 30%, transparent 78%);
+  mask-image: linear-gradient(135deg, #000 30%, transparent 78%);
+}
+
+header::after {
+  right: 0;
+  bottom: 0;
+  background-position: right bottom;
+  -webkit-mask-image: linear-gradient(315deg, #000 30%, transparent 78%);
+  mask-image: linear-gradient(315deg, #000 30%, transparent 78%);
 }
 
 /* The Board is the table talk and the Log is the story being told, so

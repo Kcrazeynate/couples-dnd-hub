@@ -4232,6 +4232,16 @@
       btn.addEventListener("click", function () { switchTab(btn.dataset.tab); closeMenu(); });
     });
 
+    // ---------- floating dice button ----------
+    // A smaller floating button directly above the hamburger button,
+    // so the dice roller is one tap away from any tab. It carries no
+    // data-mode tag, so it is visible in every mode, and tapping it
+    // closes the menu (if open) and jumps to the Dice tab.
+    var diceBtn = $("dice-btn");
+    if (diceBtn) {
+      diceBtn.addEventListener("click", function () { switchTab("dice"); closeMenu(); });
+    }
+
     // ---------- hub modes: View / Interact / Dungeon Master ----------
     // View hides every input (anything tagged data-mode). Interact shows
     // the player inputs. Dungeon Master adds the Map and NPC management

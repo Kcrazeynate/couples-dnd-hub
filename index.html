@@ -11,9 +11,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Hub">
-<link rel="stylesheet" href="styles.css?v=50">
+<link rel="stylesheet" href="styles.css?v=51">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=3"></script>
+<script src="config.js?v=4"></script>
 <script type="importmap">
 {
   "imports": {
@@ -23,7 +23,7 @@
 }
 </script>
 </head>
-<body>
+<body class="mode-view">
 
 <div id="gate" class="gate">
   <div class="gate-box">
@@ -51,7 +51,7 @@
       <h2>Message Board</h2>
       <p class="hint">Messages between Rick, Angela's Muse, Nathan, and Angela. Pick Question when you need an answer, Decision when a choice is on the table.</p>
       <p id="live-status" class="hint live-off">Live updates: connecting...</p>
-      <div class="card" id="push-card">
+      <div class="card" id="push-card" data-mode="interact">
         <p class="title">Notifications</p>
         <p>Get a notification on this phone when someone posts on the board.</p>
         <div class="row">
@@ -61,7 +61,7 @@
         <p class="hint" id="push-status"></p>
       </div>
       <div id="messages-list" class="list"></div>
-      <form id="message-form" class="form">
+      <form id="message-form" class="form" data-mode="interact">
         <label for="message-author">Posting as</label>
         <select id="message-author">
           <option value="Rick">Rick</option>
@@ -93,7 +93,7 @@
         <p class="title">What the log is for</p>
         <p>The log is the official record of the story. After each scene the DM writes an entry saying what happened, newest first. It is the source of truth: both AIs read it to know what is true, and the app reads it too. An entry can change a character sheet (XP, gold, HP, items, level), move the party marker on the world map, set the current area map, and mark a place as visited. The Message Board is where we talk and decide; the log is what actually happened.</p>
       </div>
-      <form id="log-form" class="form">
+      <form id="log-form" class="form" data-mode="interact">
         <label for="log-title">Title</label>
         <input type="text" id="log-title" placeholder="Session title">
         <label for="log-body">Entry</label>
@@ -141,7 +141,7 @@
       <h2>Characters</h2>
       <p class="hint">Player characters. Tap Edit to build or change a character. More players can join with the form below.</p>
       <div id="characters-list" class="list"></div>
-      <form id="add-player-form" class="form">
+      <form id="add-player-form" class="form" data-mode="interact">
         <label for="new-player-name">Add another player</label>
         <input type="text" id="new-player-name" placeholder="Player's first name">
         <button type="submit">Add player</button>
@@ -249,8 +249,8 @@
     <section id="tab-quests" class="tab-panel">
       <h2>Quests</h2>
       <p class="hint">Active hooks, leads, and finished quests.</p>
-      <button type="button" id="quests-edit-toggle" class="edit-toggle-btn">Edit list</button>
-      <form id="quest-form" class="form">
+      <button type="button" id="quests-edit-toggle" class="edit-toggle-btn" data-mode="interact">Edit list</button>
+      <form id="quest-form" class="form" data-mode="interact">
         <label for="quest-title">Title</label>
         <input type="text" id="quest-title" placeholder="Quest title">
         <label for="quest-description">Description</label>
@@ -263,8 +263,8 @@
     <section id="tab-npcs" class="tab-panel">
       <h2>NPCs</h2>
       <p class="hint">People met along the way.</p>
-      <button type="button" id="npcs-edit-toggle" class="edit-toggle-btn">Edit list</button>
-      <form id="npc-form" class="form">
+      <button type="button" id="npcs-edit-toggle" class="edit-toggle-btn" data-mode="dm">Edit list</button>
+      <form id="npc-form" class="form" data-mode="dm">
         <label for="npc-name">Name</label>
         <input type="text" id="npc-name" placeholder="Name">
         <label for="npc-kind">Type</label>
@@ -288,7 +288,7 @@
         <div id="dice3d-tray" class="dice3d-tray"></div>
         <p class="hint dice3d-hint">Real 3D dice. They tumble with physics and the result is whatever lands face up.</p>
       </div>
-      <form id="dice-form" class="form">
+      <form id="dice-form" class="form" data-mode="interact">
         <button type="submit" class="roll-btn">Roll</button>
         <div id="dice-result" class="dice-result hidden"></div>
         <label for="dice-roller">Rolling as</label>
@@ -322,7 +322,7 @@
         </select>
         <p class="hint">Advantage rolls two d20s and keeps the higher (disadvantage keeps the lower). Picking it sets the dice to 2d20. The number of dice is for rolls where every die counts, like 3d6 damage.</p>
       </form>
-      <details id="dice3d-style" class="dice3d-style hidden">
+      <details id="dice3d-style" class="dice3d-style hidden" data-mode="interact">
         <summary>Design</summary>
         <label for="felt-color-select">Felt color</label>
         <select id="felt-color-select" class="style-select"></select>
@@ -344,7 +344,7 @@
       <h2>Battle Tracker</h2>
       <p class="hint">Highest initiative goes first. Tap Next Turn to move down the list. Type a name from the enemy reference or a character sheet and the stats fill in; initiative rolls itself for NPCs and enemies, players roll their own.</p>
       <p id="battle-round" class="hint"></p>
-      <form id="combatant-form" class="form">
+      <form id="combatant-form" class="form" data-mode="interact">
         <label for="combatant-name">Name</label>
         <input type="text" id="combatant-name" placeholder="Combatant name">
         <div class="row">
@@ -383,7 +383,7 @@
         <input type="text" id="combatant-note" placeholder="Optional note">
         <button type="submit">Add combatant</button>
       </form>
-      <div class="row">
+      <div class="row" data-mode="interact">
         <button type="button" id="next-turn-btn">Next Turn</button>
         <button type="button" id="clear-battle-btn" class="danger">Clear Battle</button>
       </div>
@@ -394,7 +394,7 @@
       <h2>Maps</h2>
       <p class="hint">The world as you have explored it. Dark squares are still covered by fog. Tap a map to switch, for example when the story jumps to another place or plane.</p>
       <div id="map-tabs" class="map-tabs"></div>
-      <form id="add-map-form" class="form">
+      <form id="add-map-form" class="form" data-mode="dm">
         <label for="new-map-name">Add a map</label>
         <input type="text" id="new-map-name" placeholder="Map name, for example The Feywild">
         <label for="new-map-image">Map image URL (optional)</label>
@@ -410,10 +410,10 @@
       </div>
       <div id="map-view" class="hidden">
         <div class="row map-modes">
-          <button type="button" id="map-edit-toggle" class="edit-toggle-btn">Edit map</button>
-          <button type="button" id="map-mode-reveal" class="mode-btn edit-mode-btn hidden">Reveal</button>
-          <button type="button" id="map-mode-hide" class="mode-btn edit-mode-btn hidden">Hide</button>
-          <button type="button" id="map-mode-marker" class="mode-btn edit-mode-btn hidden">Add Place</button>
+          <button type="button" id="map-edit-toggle" class="edit-toggle-btn" data-mode="dm">Edit map</button>
+          <button type="button" id="map-mode-reveal" class="mode-btn edit-mode-btn hidden" data-mode="dm">Reveal</button>
+          <button type="button" id="map-mode-hide" class="mode-btn edit-mode-btn hidden" data-mode="dm">Hide</button>
+          <button type="button" id="map-mode-marker" class="mode-btn edit-mode-btn hidden" data-mode="dm">Add Place</button>
           <button type="button" id="map-mode-measure" class="mode-btn">Measure</button>
         </div>
         <p class="hint" id="map-mode-hint">Tap a place to see it. Tap Edit map to change the map.</p>
@@ -435,9 +435,9 @@
         </div>
         <div id="map-measure-result" class="map-measure-result">
           <span id="map-measure-text">Tap Measure, then tap two squares or places to see distance and travel time.</span>
-          <span class="map-scale">1 square = <input type="number" id="map-scale-input" value="12" min="1" step="1"> miles</span>
+          <span class="map-scale">1 square = <input type="number" id="map-scale-input" value="12" min="1" step="1" data-mode="interact"> miles</span>
         </div>
-        <button type="button" id="places-edit-toggle" class="edit-toggle-btn">Edit list</button>
+        <button type="button" id="places-edit-toggle" class="edit-toggle-btn" data-mode="dm">Edit list</button>
         <div id="current-area"></div>
         <h3>Places on this map</h3>
         <div id="map-markers-list" class="list"></div>
@@ -477,6 +477,20 @@
   <div id="menu-backdrop" class="menu-backdrop hidden"></div>
   <nav id="nav-menu" class="nav-menu hidden" aria-label="Campaign menu">
     <div class="nav-menu-group">
+      <p class="tab-group-label">Mode</p>
+      <div class="nav-menu-btns">
+        <button type="button" data-mode-option="view" class="mode-option">View</button>
+        <button type="button" data-mode-option="interact" class="mode-option">Interact</button>
+        <button type="button" data-mode-option="dm" class="mode-option">Dungeon Master</button>
+      </div>
+      <div id="dm-unlock" class="dm-unlock hidden">
+        <label for="dm-passphrase-input">DM passphrase</label>
+        <input type="password" id="dm-passphrase-input" placeholder="Enter the DM passphrase" autocomplete="off">
+        <button type="button" id="dm-unlock-btn">Unlock</button>
+        <p id="dm-error" class="error hidden">Wrong passphrase.</p>
+      </div>
+    </div>
+    <div class="nav-menu-group">
       <p class="tab-group-label">For players</p>
       <div class="nav-menu-btns">
         <button type="button" data-tab="board" class="tab-btn active">Board</button>
@@ -505,7 +519,7 @@
   </button>
 </div>
 
-<div id="char-modal" class="modal hidden">
+<div id="char-modal" class="modal hidden" data-mode="interact">
   <div class="modal-box">
     <h2 id="char-modal-title">Edit character</h2>
     <form id="char-form" class="form">
@@ -640,6 +654,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=13"></script>
-<script src="app.js?v=90"></script>
+<script src="app.js?v=91"></script>
 </body>
 </html>

@@ -11,10 +11,11 @@ body {
   line-height: 1.5;
   color: #f2e9d5;
   background-color: #211910;
-  /* Lamplight over a dark, quiet room: a soft warm glow hangs at the
-     top of the page and fades as it goes down, over a flat dark
-     interior, not a wall of wood. The wood is only trim now, a thin
-     beam along the bottom of the header. */
+  /* The page is the tavern wall, top to bottom as you scroll: the
+     header above is the ceiling of heavy beams; main below is the
+     upper plaster wall, then the stone wall of the first floor; the
+     cobblestone floor is the footer at the very bottom. A soft warm
+     lamplight glow hangs at the top and fades as it goes down. */
   background-image:
     radial-gradient(ellipse 90% 360px at 50% -60px, rgba(240, 201, 106, 0.22), rgba(240, 201, 106, 0) 70%),
     linear-gradient(#251b11 0%, #211910 220px);
@@ -1987,10 +1988,11 @@ header {
    this section only changes the look. */
 
 /* Smooth plaster on the panel surfaces: the tavern's plaster walls,
-   not cobblestone. A plaster texture under a translucent dark layer.
-   The plaster is light in the image, so the dark layer (0.80) is what
-   keeps the cream text readable at 4.85:1; the surface stays smooth
-   and quiet behind text, no blocks, no mortar lines. */
+   not cobblestone. The plaster here is the night version, the texture
+   itself darkened for lamplight, so only a light dark layer (0.35)
+   is needed and the plaster's variation still shows; cream text reads
+   at 6.2:1. The surface stays smooth and quiet behind text, no
+   blocks, no mortar lines. */
 .card,
 .form,
 .gate-box,
@@ -2000,8 +2002,8 @@ header {
 .map-measure-result,
 .nav-menu {
   background-image:
-    linear-gradient(rgba(33, 25, 16, 0.80), rgba(33, 25, 16, 0.80)),
-    url("assets/texture-plaster.webp");
+    linear-gradient(rgba(33, 25, 16, 0.35), rgba(33, 25, 16, 0.35)),
+    url("assets/texture-plaster-night.webp");
   background-size: auto, 400px auto;
 }
 
@@ -2026,20 +2028,96 @@ header {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(240, 201, 106, 0.12);
 }
 
-/* The lantern hangs over the title: a soft warm pool behind the header,
-   and heavy wood beams, not two-by-fours: one thick dark timber beam
-   runs along the bottom of the header, like the massive ceiling beams
-   in the tavern. It is 36px tall with room of its own below the
-   subtitle, showing the beam's grain and knots at full scale, so it
-   reads as a beam, not a thin board. */
+/* The ceiling: the header is the top of the tavern, heavy dark timber
+   beams filling the whole header behind the title, with a soft warm
+   lamplight pool over it. The beam is dark, with a dark overlay to
+   keep the gold title readable, and the ivy still trails from the
+   header's corners below. */
 header {
-  padding-bottom: calc(0.75rem + 36px);
+  padding-bottom: 0.75rem;
   background-image:
-    radial-gradient(ellipse 70% 90px at 50% 0, rgba(240, 201, 106, 0.10), transparent 70%),
+    radial-gradient(ellipse 70% 90px at 50% 0, rgba(240, 201, 106, 0.14), transparent 70%),
+    linear-gradient(rgba(33, 25, 16, 0.30), rgba(33, 25, 16, 0.42)),
     url("assets/texture-beam.webp");
-  background-size: auto, auto 120px;
-  background-position: 0 0, 0 100%;
-  background-repeat: no-repeat, repeat-x;
+  background-size: auto, auto, cover;
+  background-position: 0 0, 0 0, center;
+  background-repeat: no-repeat, no-repeat, no-repeat;
+}
+
+/* The wall, top to bottom as you scroll: the header above is the
+   ceiling of heavy beams; the upper wall is old plaster framed and
+   supported by wood beams; below that is the stone wall of the first
+   floor; the cobblestone floor is the footer at the very bottom.
+   The plaster band is the top of main (at most 1400px, or 45% of a
+   short tab), with a beam strip where it meets the stone. The stone
+   is main's own background and runs down to the floor. The night
+   plaster and night stone are the textures darkened for lamplight,
+   so they read as plaster and stone with only a light overlay
+   (0.30) and cream text still passes AA (6.2:1 on plaster, 6.4:1
+   on stone). Main is a stacking context (position + z-index 0) so
+   the plaster band and beam strip sit behind the tab panels but in
+   front of main's stone background. */
+main {
+  position: relative;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(33, 25, 16, 0.30), rgba(33, 25, 16, 0.30)),
+    url("assets/texture-stone-night.webp");
+  background-size: auto, 320px auto;
+}
+
+main::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: min(1400px, 45%);
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(33, 25, 16, 0.30), rgba(33, 25, 16, 0.30)),
+    url("assets/texture-plaster-night.webp");
+  background-size: auto, 400px auto;
+  background-repeat: no-repeat, repeat;
+}
+
+main::after {
+  content: "";
+  position: absolute;
+  top: min(1400px, 45%);
+  left: 0;
+  right: 0;
+  height: 36px;
+  z-index: -1;
+  background-image: url("assets/texture-beam.webp");
+  background-size: auto 120px;
+  background-position: 0 100%;
+  background-repeat: repeat-x;
+}
+
+/* The cobblestone floor: a band at the very bottom of the page, with
+   a beam skirting where the stone wall meets the floor. It spans the
+   full width of the app column and sits at the bottom edge of the
+   page. The cobblestones are already dark (lamplit), so only a soft
+   shadow at the top, where the wall meets the floor. */
+.tavern-floor {
+  height: 180px;
+  margin: 2rem -1rem -3rem;
+  background-image:
+    linear-gradient(rgba(33, 25, 16, 0.35), rgba(33, 25, 16, 0.10) 40%),
+    url("assets/texture-beam.webp"),
+    url("assets/texture-cobble.webp");
+  background-size: auto, auto 28px, 320px auto;
+  background-position: 0 0, 0 0, 0 28px;
+  background-repeat: no-repeat, repeat-x, repeat;
+  border-top: 1px solid #7a6238;
+}
+
+/* Headings and hints sit directly on the wall (plaster or stone), so
+   they carry a soft dark shadow that keeps them readable on the
+   texture without hiding it. */
+h1, h2, .hint, .subtitle {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.65), 0 0 14px rgba(0, 0, 0, 0.45);
 }
 
 /* Ivy only where it trails from a corner, the way it comes off the

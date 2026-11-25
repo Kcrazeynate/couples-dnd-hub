@@ -1,8 +1,8 @@
-// D&D Hub service worker: shows push notifications for new board messages.
+// The Quest Table service worker: shows push notifications for new board messages.
 self.addEventListener("push", function (event) {
   var data = {};
   try { data = event.data ? event.data.json() : {}; } catch (e) { data = {}; }
-  var title = data.title || "D&D Hub";
+  var title = data.title || "The Quest Table";
   var body = data.body || "Something new on the board.";
   var url = data.url || "./";
   event.waitUntil(

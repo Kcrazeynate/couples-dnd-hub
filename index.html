@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="D&D Hub">
-<link rel="stylesheet" href="styles.css?v=51">
+<link rel="stylesheet" href="styles.css?v=52">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=4"></script>
 <script type="importmap">
@@ -288,7 +288,8 @@
         <div id="dice3d-tray" class="dice3d-tray"></div>
         <p class="hint dice3d-hint">Real 3D dice. They tumble with physics and the result is whatever lands face up.</p>
       </div>
-      <form id="dice-form" class="form" data-mode="interact">
+      <!-- The dice roller is always visible, in every mode, so it carries no data-mode tag. -->
+      <form id="dice-form" class="form">
         <button type="submit" class="roll-btn">Roll</button>
         <div id="dice-result" class="dice-result hidden"></div>
         <label for="dice-roller">Rolling as</label>
@@ -322,7 +323,7 @@
         </select>
         <p class="hint">Advantage rolls two d20s and keeps the higher (disadvantage keeps the lower). Picking it sets the dice to 2d20. The number of dice is for rolls where every die counts, like 3d6 damage.</p>
       </form>
-      <details id="dice3d-style" class="dice3d-style hidden" data-mode="interact">
+      <details id="dice3d-style" class="dice3d-style hidden">
         <summary>Design</summary>
         <label for="felt-color-select">Felt color</label>
         <select id="felt-color-select" class="style-select"></select>

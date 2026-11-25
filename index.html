@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=58">
+<link rel="stylesheet" href="styles.css?v=59">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=4"></script>
 <script type="importmap">
@@ -477,41 +477,58 @@
 
   <div id="menu-backdrop" class="menu-backdrop hidden"></div>
   <nav id="nav-menu" class="nav-menu hidden" aria-label="Campaign menu">
-    <div class="nav-menu-group">
-      <p class="tab-group-label">Mode</p>
-      <div class="nav-menu-btns">
+    <!-- Most-used tabs, always visible, in the order the player
+         reaches for them: Board, Dice, Characters, Battle, Maps, Log. -->
+    <div class="nav-menu-btns nav-menu-top">
+      <button type="button" data-tab="board" class="tab-btn active">Board</button>
+      <button type="button" data-tab="dice" class="tab-btn">Dice</button>
+      <button type="button" data-tab="characters" class="tab-btn">Characters</button>
+      <button type="button" data-tab="battle" class="tab-btn">Battle</button>
+      <button type="button" data-tab="maps" class="tab-btn">Maps</button>
+      <button type="button" data-tab="log" class="tab-btn">Campaign Log</button>
+    </div>
+    <!-- Collapsing submenus: Modes, AI, More. Each group header is a
+         flat row like the tabs; tapping it expands or collapses just
+         that group. The DM passphrase field lives inside Modes, with
+         the mode rows, so it shows when Modes is open. -->
+    <div class="nav-menu-sub" data-submenu="modes">
+      <button type="button" class="nav-menu-sub-toggle" aria-expanded="false">
+        <span class="nav-menu-sub-label">Modes</span>
+        <span class="nav-menu-sub-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="nav-menu-btns nav-menu-sub-rows">
         <button type="button" data-mode-option="view" class="mode-option">View</button>
         <button type="button" data-mode-option="interact" class="mode-option">Interact</button>
         <button type="button" data-mode-option="dm" class="mode-option">Dungeon Master</button>
-      </div>
-      <div id="dm-unlock" class="dm-unlock hidden">
-        <label for="dm-passphrase-input">DM passphrase</label>
-        <input type="password" id="dm-passphrase-input" placeholder="Enter the DM passphrase" autocomplete="off">
-        <button type="button" id="dm-unlock-btn">Unlock</button>
-        <p id="dm-error" class="error hidden">Wrong passphrase.</p>
-      </div>
-    </div>
-    <div class="nav-menu-group">
-      <p class="tab-group-label">For players</p>
-      <div class="nav-menu-btns">
-        <button type="button" data-tab="board" class="tab-btn active">Board</button>
-        <button type="button" data-tab="log" class="tab-btn">Campaign Log</button>
-        <button type="button" data-tab="characters" class="tab-btn">Characters</button>
-        <button type="button" data-tab="companions" class="tab-btn">Companions</button>
-        <button type="button" data-tab="howto" class="tab-btn">How to Play</button>
-        <button type="button" data-tab="quests" class="tab-btn">Quests</button>
-        <button type="button" data-tab="npcs" class="tab-btn">NPCs</button>
-        <button type="button" data-tab="dice" class="tab-btn">Dice</button>
-        <button type="button" data-tab="battle" class="tab-btn">Battle</button>
-        <button type="button" data-tab="maps" class="tab-btn">Maps</button>
-        <button type="button" data-tab="music" class="tab-btn">Music</button>
+        <div id="dm-unlock" class="dm-unlock hidden">
+          <label for="dm-passphrase-input">DM passphrase</label>
+          <input type="password" id="dm-passphrase-input" placeholder="Enter the DM passphrase" autocomplete="off">
+          <button type="button" id="dm-unlock-btn">Unlock</button>
+          <p id="dm-error" class="error hidden">Wrong passphrase.</p>
+        </div>
       </div>
     </div>
-    <div class="nav-menu-group">
-      <p class="tab-group-label ai-label">For AIs</p>
-      <div class="nav-menu-btns">
-        <button type="button" data-tab="state" class="tab-btn ai-tab">State</button>
+    <div class="nav-menu-sub" data-submenu="ai">
+      <button type="button" class="nav-menu-sub-toggle ai-sub-toggle" aria-expanded="false">
+        <span class="nav-menu-sub-label">AI</span>
+        <span class="nav-menu-sub-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="nav-menu-btns nav-menu-sub-rows">
         <button type="button" data-tab="aiguide" class="tab-btn ai-tab">AI Guide</button>
+        <button type="button" data-tab="state" class="tab-btn ai-tab">State</button>
+      </div>
+    </div>
+    <div class="nav-menu-sub" data-submenu="more">
+      <button type="button" class="nav-menu-sub-toggle" aria-expanded="false">
+        <span class="nav-menu-sub-label">More</span>
+        <span class="nav-menu-sub-chevron" aria-hidden="true"></span>
+      </button>
+      <div class="nav-menu-btns nav-menu-sub-rows">
+        <button type="button" data-tab="quests" class="tab-btn">Quests</button>
+        <button type="button" data-tab="companions" class="tab-btn">Companions</button>
+        <button type="button" data-tab="npcs" class="tab-btn">NPCs</button>
+        <button type="button" data-tab="music" class="tab-btn">Music</button>
+        <button type="button" data-tab="howto" class="tab-btn">How to Play</button>
       </div>
     </div>
   </nav>
@@ -658,6 +675,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=13"></script>
-<script src="app.js?v=93"></script>
+<script src="app.js?v=94"></script>
 </body>
 </html>

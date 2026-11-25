@@ -10,7 +10,15 @@ body {
   font-size: 16px;
   line-height: 1.5;
   color: #f2e9d5;
-  background: linear-gradient(#251b11 0%, #211910 220px);
+  background-color: #211910;
+  /* Lamplight over the table: a soft warm glow hangs at the top of the
+     page and fades as it goes down, over a faint wood grain, over the
+     dark wood base. The glow lightens the wood slightly, so the cream
+     text still reads at full contrast. */
+  background-image:
+    radial-gradient(ellipse 90% 360px at 50% -60px, rgba(240, 201, 106, 0.22), rgba(240, 201, 106, 0) 70%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 8px),
+    linear-gradient(#251b11 0%, #211910 220px);
 }
 
 .hidden {
@@ -1913,4 +1921,68 @@ header {
   font-size: 0.75rem;
   line-height: 1.2;
   color: #f2e9d5;
+}
+
+/* Tavern feel: the hub is friends sitting at a table in the tavern.
+   Stone panels carry a faint cross-hatch, like cut stone; cards and
+   forms sit on the table with a soft shadow and a warm top edge, the
+   way lamplight catches the top of an object. Pure CSS, no images, so
+   the page stays self-contained and fast. The mode visibility rules
+   above still own display, this section only changes the look. */
+
+/* Faint stone texture on the panel surfaces. */
+.card,
+.form,
+.gate-box,
+.modal-box,
+.dice-result,
+.dice3d-style,
+.map-measure-result {
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.035) 0 1px, transparent 1px 6px);
+}
+
+/* Objects on the table: soft shadow, warm lamplit top edge. */
+.card,
+.form,
+.gate-box,
+.modal-box,
+.dice-result,
+.dice3d-style,
+.map-measure-result {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(240, 201, 106, 0.10);
+}
+
+/* The floating menu and button keep their stronger shadows, with the
+   same warm top edge. */
+.nav-menu {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(240, 201, 106, 0.10);
+}
+
+.menu-btn {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(240, 201, 106, 0.12);
+}
+
+/* The lantern hangs over the title: a soft warm pool behind the header. */
+header {
+  background: radial-gradient(ellipse 70% 90px at 50% 0, rgba(240, 201, 106, 0.10), transparent 70%);
+}
+
+/* The Board is the table talk and the Log is the story being told, so
+   their cards and forms sit a touch warmer and closer to the lamplight
+   than the rest of the hub: warmer stone, a brassier edge, and a faint
+   warm wash inside. Content and layout unchanged. */
+#tab-board .card,
+#tab-log .card,
+#tab-board .form,
+#tab-log .form {
+  background-color: #38301f;
+  border-color: #6e5c39;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(240, 201, 106, 0.12), inset 0 0 32px rgba(217, 164, 65, 0.05);
+}
+
+/* Lamplight pools in the dice tray, the way it would on a wooden table. */
+.dice3d-tray {
+  box-shadow: inset 0 0 40px rgba(217, 164, 65, 0.10), 0 8px 24px rgba(0, 0, 0, 0.35);
 }

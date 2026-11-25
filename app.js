@@ -4210,6 +4210,16 @@
       menuBtn.classList.remove("open");
       menuBtn.setAttribute("aria-expanded", "false");
       menuBtn.setAttribute("aria-label", "Open menu");
+      // Closing the main menu collapses every submenu, so the next
+      // open always starts with all groups collapsed. Every close
+      // path goes through here (backdrop, Escape, tab tap, mode
+      // switch, dice button), so no group stays expanded across
+      // a close and reopen.
+      navMenu.querySelectorAll(".nav-menu-sub").forEach(function (sub) {
+        sub.classList.remove("open");
+        var t = sub.querySelector(".nav-menu-sub-toggle");
+        if (t) t.setAttribute("aria-expanded", "false");
+      });
     }
     function toggleMenu() {
       if (navMenu.classList.contains("hidden")) {
@@ -4218,23 +4228,15 @@
         menuBtn.classList.add("open");
         menuBtn.setAttribute("aria-expanded", "true");
         menuBtn.setAttribute("aria-label", "Close menu");
-        // Collapsing submenus start closed; the one holding the
-        // current tab opens, so the active row is visible.
+        // Submenus always start collapsed when the menu opens.
+        // Nothing auto-expands, not even the group holding the active
+        // tab or mode; the user opens a group by tapping its header.
         var subs = navMenu.querySelectorAll(".nav-menu-sub");
         subs.forEach(function (sub) {
           sub.classList.remove("open");
           var t = sub.querySelector(".nav-menu-sub-toggle");
           if (t) t.setAttribute("aria-expanded", "false");
         });
-        var activeBtn = navMenu.querySelector(".tab-btn.active");
-        if (activeBtn) {
-          var activeSub = activeBtn.closest(".nav-menu-sub");
-          if (activeSub) {
-            activeSub.classList.add("open");
-            var activeToggle = activeSub.querySelector(".nav-menu-sub-toggle");
-            if (activeToggle) activeToggle.setAttribute("aria-expanded", "true");
-          }
-        }
       } else {
         closeMenu();
       }

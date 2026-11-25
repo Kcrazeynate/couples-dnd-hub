@@ -13,17 +13,17 @@
   "Verla Pelc is sick with the blue lines; the warming tonic holds but does not cure.",
   "Ferol is the healer, Dain is the guard; they are not brothers.",
   "There is no falling-star prophecy, no heartstone shard, no Crystal of Dawn, and no waking shards in this campaign.",
-  "The missing guide is named Emric; the party found him alive in a hollow in the hills east of the old road.",
-  "Emric's leg is hurt and swollen; thin blue lines are starting up his fingers.",
+  "The missing guide is named Emric; the party found him alive in a hollow in the hills east of the old road and brought him back to the road.",
+  "Emric's leg is hurt; he can move with help, but it still hurts and drags a little. Thin blue lines remain faint on his fingers.",
+  "Liora and Sylvie have both healed Emric; his swelling eased, his breathing steadied, and color came back to his face, but the thin blue lines remain faint on his fingers.",
   "Emric left a marker: his walking staff snapped in two, the top half stuck upright with a strip of green cloth tied to it. Wolf prints circled beside the trail, and a smear of blood was on a rock.",
-  "Dain stayed on the road with Ferol, keeping her safe and warm, while Milo, Sylvie, Liora, Finn, and Bram followed the trail into the hills.",
-  "Liora healed Emric's hurt leg; his breathing steadied and his hands warmed a touch, but the thin blue lines remain."
+  "Emric has been reunited with Dain and Ferol by the road; the party took a short rest by their fire, an hour in the cold afternoon."
  ],
- "last_scene": "Healing Emric",
- "location": "Hollow in the hills east of the old road",
+ "last_scene": "Reunited with Dain and Ferol",
+ "location": "The old road, south to Riverton",
  "open_threads": [
   "Verla Pelc is sick with the blue lines in Riverton; the warming tonic holds but does not cure, and what was drunk does not come back.",
-  "Emric is alive but hurt, with thin blue lines starting up his fingers; Liora healed his leg a little and Sylvie is about to heal him too; the party must decide what to do with him.",
+  "Emric is alive, healed by both Liora and Sylvie, and can move with help, but the thin blue lines remain; he is back with Dain and Ferol and the party is set to head south to Riverton with them.",
   "Return to Riverton with Ferol and Emric and report what was found."
  ],
  "party": [
@@ -58,7 +58,7 @@
    "xp": 621
   }
  ],
- "situation": "The ring is whole, the dead rest, Ferol is with the party and recovering. The party reached Emric in the hollow in the hills east of the old road; Liora healed his hurt leg, easing his breathing and warming him a touch, but the thin blue lines remain on his fingers. Sylvie is ready to heal him as well. Dain stayed on the road with Ferol while the rest went into the hills.",
- "updated_at": "2026-11-25T03:52:08Z",
- "waiting_on": "Angela's roll for Sylvie's Cure Wounds healing on Emric (1d8 plus 3), then the party's decision on what to do with Emric."
+ "situation": "The ring is whole, the dead rest, Ferol is with the party and recovering. Liora and Sylvie have both healed Emric in the hollow; the swelling eased, his breathing steadied, and color came back to his face, but the thin blue lines remain faint on his fingers. Emric can move with help. The party helped him back west to the road and reunited with Dain and Ferol by a sheltered fire, where they took a short rest of an hour in the cold afternoon. The road south to Riverton waits, quiet.",
+ "updated_at": "2026-11-25T03:57:21Z",
+ "waiting_on": "Nathan and Angela's next move: set out south to Riverton with Ferol and Emric."
 }

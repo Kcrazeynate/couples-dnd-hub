@@ -51,13 +51,6 @@ const FELT_DESIGNS = [
   { id: "starlight", name: "Starlight", girly: true },
   { id: "d20", name: "D20 Outline", girly: false },
   { id: "moon", name: "Crescent Moon", girly: false },
-  { id: "fairy", name: "Fairy", girly: true },
-  { id: "dagger", name: "Dagger & Skull", girly: false },
-  { id: "heraldic", name: "Heraldic Beasts", girly: false },
-  { id: "demon", name: "Demon", girly: false },
-  { id: "panda", name: "Panda Warrior", girly: false },
-  { id: "wizard", name: "Wizard", girly: false },
-  { id: "gnome", name: "Gnome", girly: true },
   { id: "custom", name: "My Design", girly: false }
 ];
 const DIE_DESIGNS = [
@@ -69,8 +62,8 @@ const DIE_DESIGNS = [
   { id: "resin", name: "Resin", girly: false }
 ];
 // The colour of a printed felt design: the d20 and moon line work,
-// and the line-art prints (fairy, dagger, and the rest). The art
-// images are white masks; this tints them at draw time.
+// and an uploaded "My Design". The art images are white masks; this
+// tints them at draw time.
 const DESIGN_COLORS = [
   { id: "gold", name: "Gold", css: "#f0dcaa", rgb: "240,220,170" },
   { id: "silver", name: "Silver", css: "#d8d8d8", rgb: "216,216,216" },
@@ -220,16 +213,6 @@ function designInk(alpha) {
 // How each line-art print sits on the felt: focusY is where the face
 // sits as a fraction of the image height (0 top, 1 bottom), so the
 // face lands at the felt centre instead of the image centre.
-var FELT_ART_FIT = {
-  fairy: { focusY: 0.28 },
-  dagger: { focusY: 0.30 },
-  heraldic: { focusY: 0.5 },
-  demon: { focusY: 0.32 },
-  panda: { focusY: 0.35 },
-  wizard: { focusY: 0.35 },
-  gnome: { focusY: 0.45 }
-};
-
 // ---------- style persistence (per device, like the roller pick) ----------
 function loadStyle() {
   var s = { feltColor: DEFAULT_STYLE.feltColor, feltDesign: DEFAULT_STYLE.feltDesign, dieColor: DEFAULT_STYLE.dieColor, dieDesign: DEFAULT_STYLE.dieDesign, tray: DEFAULT_STYLE.tray, designColor: DEFAULT_STYLE.designColor, designZoom: DEFAULT_STYLE.designZoom };
@@ -272,22 +255,12 @@ try {
 // The line-art felt designs are transparent PNGs with gold line work,
 // made from Nathan's reference images. Preload them at module load so
 // they are ready when the Dice tab opens; when one finishes loading,
-// redraw the felt if it is the current design.
-var FELT_ART_IDS = ["fairy", "dagger", "heraldic", "demon", "panda", "wizard", "gnome"];
+// The built-in line-art felt designs (fairy, dagger, heraldic, demon,
+// panda, wizard, gnome) were removed 2026-11-26: the custom upload
+// makes them obsolete. Only the uploaded "My Design" uses the art
+// branch now, so nothing is preloaded here.
+var FELT_ART_IDS = [];
 var feltArt = {}, feltArtReady = {};
-FELT_ART_IDS.forEach(function (id) {
-  try {
-    var img = new Image();
-    img.onload = function () {
-      feltArtReady[id] = true;
-      try {
-        if (trayFloor && style.feltDesign === id) applyFelt();
-      } catch (e) {}
-    };
-    img.src = "assets/felt-" + id + ".png";
-    feltArt[id] = img;
-  } catch (e) {}
-});
 
 // A design the player uploads themself: black line art on white.
 // It is turned into a white mask on this device and saved in
@@ -737,7 +710,7 @@ function makeFeltTexture() {
       var dw = iw * sc, dh = ih * sc;
       var dx = (W - dw) / 2;
       var dy = (H - dh) / 2;
-      var fit = isCustom ? { focusY: 0.5 } : (FELT_ART_FIT[style.feltDesign] || { focusY: 0.5 });
+      var fit = { focusY: 0.5 };
       dy += (0.5 - fit.focusY) * dh;
       // Only clamp when the design fits the felt; when zoomed in, let
       // it crop around the face instead of sliding away.

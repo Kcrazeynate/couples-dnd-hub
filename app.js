@@ -2831,9 +2831,19 @@
   // the dice3d module has loaded. If it never loads, the tray stays hidden
   // and the 2D roller below is used instead.
   var dice3DStarted = false;
+  var dice3DRetries = 0;
   function initDice3D() {
     if (dice3DStarted) return;
-    if (typeof window.HubDice3D === "undefined" || !window.HubDice3D || !window.HubDice3D.init) return;
+    if (typeof window.HubDice3D === "undefined" || !window.HubDice3D || !window.HubDice3D.init) {
+      // The dice3d module loads async and may not be here yet when the
+      // Dice tab first opens. Retry briefly until it arrives, so the
+      // 3D tray shows on load instead of only after the first roll.
+      if (dice3DRetries < 20) {
+        dice3DRetries++;
+        setTimeout(initDice3D, 250);
+      }
+      return;
+    }
     var tray = $("dice3d-tray");
     if (!tray) return;
     var ok = false;

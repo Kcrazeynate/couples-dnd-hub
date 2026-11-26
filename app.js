@@ -263,10 +263,11 @@
     list.innerHTML = res.data.map(function (m) {
       aiChatCache[m.id] = aiChatText(m.body);
       var isRick = m.author === "Rick";
+      var playLabel = (m.id === aiChatPlayingId) ? "Pause" : (m.id === aiChatPausedId) ? "Resume" : "Play";
       return '<div class="aichat-bubble' + (isRick ? ' aichat-rick' : ' aichat-player') + '">' +
         '<p class="meta">' + escapeHtml(m.author) + ' - ' + escapeHtml(fmtTime(m.created_at)) + '</p>' +
         '<p>' + escapeHtml(aiChatText(m.body)) + '</p>' +
-        (isRick ? '<button type="button" class="aichat-play" data-aichat-id="' + escapeHtml(String(m.id)) + '">Play</button>' : '') +
+        (isRick ? '<button type="button" class="aichat-play" data-aichat-id="' + escapeHtml(String(m.id)) + '">' + playLabel + '</button>' : '') +
         '</div>';
     }).join("");
     list.scrollTop = list.scrollHeight;
@@ -288,29 +289,69 @@
   }
 
   // Reads a Rick reply aloud with the browser speech synthesis.
+  // Tapping Play on a reply starts it and turns the button into
+  // Pause; tapping Pause pauses it, and tapping again resumes it.
   // Tapping Play on another reply stops the one already playing.
   // Uses the narration voice picked in the AI Chat tab, when one is set.
   // iOS Safari needs resume() and a short pause after cancel(), or it
   // silently drops the new utterance, so a speak that follows a cancel
   // waits a beat first.
+  var aiChatPlayingId = null;
+  var aiChatPausedId = null;
+
+  function aiChatSetPlayLabel(id, label) {
+    var btn = document.querySelector('[data-aichat-id="' + id + '"]');
+    if (btn) btn.textContent = label;
+  }
+
   function aiChatPlay(id) {
     if (!("speechSynthesis" in window)) {
       alert("This browser does not support reading aloud.");
       return;
     }
+    var synth = window.speechSynthesis;
+    if (aiChatPlayingId === id) {
+      synth.pause();
+      aiChatPausedId = id;
+      aiChatPlayingId = null;
+      aiChatSetPlayLabel(id, "Resume");
+      return;
+    }
+    if (aiChatPausedId === id) {
+      synth.resume();
+      aiChatPlayingId = id;
+      aiChatPausedId = null;
+      aiChatSetPlayLabel(id, "Pause");
+      return;
+    }
     var text = aiChatCache[id];
     if (!text) return;
-    var synth = window.speechSynthesis;
+    if (aiChatPlayingId) aiChatSetPlayLabel(aiChatPlayingId, "Play");
+    if (aiChatPausedId) aiChatSetPlayLabel(aiChatPausedId, "Play");
+    aiChatPlayingId = null;
+    aiChatPausedId = null;
     synth.resume();
     var utter = new SpeechSynthesisUtterance(text);
     var voice = aiChatChosenVoice();
     if (voice) utter.voice = voice;
+    utter.onend = function () {
+      aiChatPlayingId = null;
+      aiChatPausedId = null;
+      aiChatSetPlayLabel(id, "Play");
+    };
+    utter.onerror = function () {
+      aiChatPlayingId = null;
+      aiChatPausedId = null;
+      aiChatSetPlayLabel(id, "Play");
+    };
     if (synth.speaking || synth.pending) {
       synth.cancel();
       setTimeout(function () { synth.speak(utter); }, 120);
     } else {
       synth.speak(utter);
     }
+    aiChatPlayingId = id;
+    aiChatSetPlayLabel(id, "Pause");
   }
 
   // Narration voice picker for the AI Chat. Lists the voices on this

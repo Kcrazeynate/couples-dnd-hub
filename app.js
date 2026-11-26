@@ -3399,7 +3399,6 @@
   var musicReady = false;
   var musicPlaying = false;
   var musicVolume = 0.7;
-  var musicMuted = false;
   var musicQueue = [];
   var musicQueuePos = 0;
   var musicAudioA = null;
@@ -3421,14 +3420,32 @@
   try {
     var mv = parseFloat(localStorage.getItem("hub-music-volume"));
     if (!isNaN(mv) && mv >= 0 && mv <= 1) musicVolume = mv;
-    musicMuted = localStorage.getItem("hub-music-muted") === "1";
   } catch (e) { /* storage unavailable: defaults stand */ }
+
+  // Songs turned off in the Music tab, kept on this phone. The shuffle
+  // never picks them, and a shared track the other phone picked is
+  // skipped too, so a turned-off song never plays on this phone.
+  // There is no shared place to keep the list: music_state has no
+  // spare column and no DDL access exists, so each phone keeps its
+  // own list and the two phones can disagree.
+  var musicDisabled = [];
+  try {
+    var savedDisabled = JSON.parse(localStorage.getItem("hub-music-disabled") || "[]");
+    if (Array.isArray(savedDisabled)) musicDisabled = savedDisabled.filter(function (f) { return typeof f === "string"; });
+  } catch (e) { musicDisabled = []; }
+  function musicIsDisabled(file) { return musicDisabled.indexOf(file) !== -1; }
+  function musicSetDisabled(file, off) {
+    var i = musicDisabled.indexOf(file);
+    if (off && i === -1) musicDisabled.push(file);
+    if (!off && i !== -1) musicDisabled.splice(i, 1);
+    try { localStorage.setItem("hub-music-disabled", JSON.stringify(musicDisabled)); } catch (e) { /* ignore */ }
+  }
 
   // Web Audio volume: iPhone ignores an audio element's `volume`
   // property entirely, so the slider cannot change it that way. Routing
   // each element through its own GainNode does control it, because the
   // gain is applied inside the audio graph. The elements themselves stay
-  // at full volume and the GainNode does all the levelling (slider, mute,
+  // at full volume and the GainNode does all the levelling (slider,
   // crossfade, per-track gain). The files are same-origin, so there is no
   // CORS problem. If Web Audio is unavailable the helpers below fall back
   // to the element volume, which works on desktop.
@@ -3486,7 +3503,7 @@
     return 0.05 + 0.95 * v * v;
   }
   function musicEffectiveVolume() {
-    return musicMuted ? 0 : musicSliderGain();
+    return musicSliderGain();
   }
   function musicTargetVolume() {
     return Math.max(0, Math.min(1, musicEffectiveVolume() * musicCurrentGain));
@@ -3633,7 +3650,10 @@
   }
   function musicShuffleQueue(mood) {
     var tracks = MUSIC_TRACKS[mood] || [];
-    var idx = tracks.map(function (_, i) { return i; });
+    // Turned-off songs never enter the queue, so the shuffle never
+    // picks them. If every track in the mood is off, the queue is
+    // empty and the next pick returns null (nothing to play).
+    var idx = tracks.map(function (_, i) { return i; }).filter(function (i) { return !musicIsDisabled(tracks[i].file); });
     for (var i = idx.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
       var t = idx[i]; idx[i] = idx[j]; idx[j] = t;
@@ -3650,13 +3670,22 @@
   function musicNextTrack() {
     var tracks = MUSIC_TRACKS[musicMood] || [];
     if (!tracks.length) return null;
-    if (!musicQueue.length || musicQueuePos >= musicQueue.length) {
-      musicShuffleQueue(musicMood);
+    // Skip any turned-off track still sitting in an older queue, so a
+    // song turned off mid-mood never plays. Reshuffles filter them
+    // out up front; this is the safety net for a queue built before
+    // the song was turned off.
+    for (;;) {
+      if (!musicQueue.length || musicQueuePos >= musicQueue.length) {
+        musicShuffleQueue(musicMood);
+        if (!musicQueue.length) return null;
+      }
+      var track = tracks[musicQueue[musicQueuePos]];
+      musicQueuePos++;
+      if (!musicIsDisabled(track.file)) {
+        musicLastFile = track.file;
+        return track;
+      }
     }
-    var track = tracks[musicQueue[musicQueuePos]];
-    musicQueuePos++;
-    musicLastFile = track.file;
-    return track;
   }
   // Share the track this phone just started, so the other phone follows
   // it instead of shuffling its own. Fire and forget; the Realtime
@@ -3703,6 +3732,10 @@
   // it only follows when it is already playing or when Play is tapped.
   function musicFollowShared() {
     if (!musicSharedTrack || !musicSharedStartedAt) return false;
+    // The other phone picked a song this phone has turned off: do not
+    // follow it. The caller then picks from this phone's own queue,
+    // which skips turned-off songs, and shares that pick instead.
+    if (musicIsDisabled(musicSharedTrack)) return false;
     if (musicSharedTrack === musicCurrentFile) return false;
     var tracks = MUSIC_TRACKS[musicMood] || [];
     var track = null;
@@ -3882,13 +3915,6 @@
     if (el) musicSetElVolume(el, musicTargetVolume());
     musicUpdateUI();
   }
-  function musicSetMuted(m) {
-    musicMuted = !!m;
-    try { localStorage.setItem("hub-music-muted", musicMuted ? "1" : "0"); } catch (e) { /* ignore */ }
-    var el = musicActive === "A" ? musicAudioA : musicAudioB;
-    if (el) musicSetElVolume(el, musicTargetVolume());
-    musicUpdateUI();
-  }
   async function loadMusicState() {
     var res = await db.from("music_state").select("mood, track, started_at").eq("id", 1).single();
     if (res.error || !res.data) return; // table not there yet (SQL not run): local mood only
@@ -3934,15 +3960,13 @@
       }
     } catch (e) { /* ignore */ }
     document.querySelectorAll("[data-music-mood-label]").forEach(function (el) { el.textContent = label; });
+    document.querySelectorAll("[data-music-title]").forEach(function (el) { el.textContent = musicCurrentTitle || label; });
     document.querySelectorAll("[data-music-status]").forEach(function (el) { el.textContent = status; });
     document.querySelectorAll("[data-music-play-label]").forEach(function (el) { el.textContent = musicPlaying ? "Pause" : "Play"; });
-    document.querySelectorAll("[data-music-mute-label]").forEach(function (el) { el.textContent = musicMuted ? "Unmute" : "Mute"; });
     document.querySelectorAll("[data-music-volume]").forEach(function (el) { el.value = Math.round(musicVolume * 100); });
     document.querySelectorAll("[data-music-mood-btn]").forEach(function (btn) {
       btn.classList.toggle("active", btn.dataset.musicMoodBtn === musicMood);
     });
-    var bar = $("music-bar");
-    if (bar) bar.classList.toggle("hidden", !configured);
   }
   function renderMusicTab() {
     var list = $("music-mood-list");
@@ -3950,7 +3974,11 @@
       list.innerHTML = MUSIC_MOODS.map(function (m) {
         var tracks = MUSIC_TRACKS[m.id] || [];
         var trackHtml = tracks.length
-          ? '<ul class="music-tracks">' + tracks.map(function (t) { return '<li>' + escapeHtml(t.title || t.file) + '</li>'; }).join("") + '</ul>'
+          ? '<ul class="music-tracks">' + tracks.map(function (t) {
+              var off = musicIsDisabled(t.file);
+              return '<li class="' + (off ? 'music-track-off' : '') + '"><span>' + escapeHtml(t.title || t.file) + '</span>' +
+                '<button type="button" class="music-track-toggle" data-mode="interact" data-music-track-toggle="' + escapeHtml(t.file) + '" aria-pressed="' + (off ? 'false' : 'true') + '">' + (off ? 'Off' : 'On') + '</button></li>';
+            }).join("") + '</ul>'
           : '<p class="empty">No tracks yet. Nathan will add MP3s for this mood.</p>';
         return '<div class="card"><p class="title">' + escapeHtml(m.label) + '</p>' +
           '<p class="meta">' + escapeHtml(m.desc) + '</p>' +
@@ -3959,6 +3987,15 @@
       }).join("");
       list.querySelectorAll("[data-music-mood-btn]").forEach(function (btn) {
         btn.addEventListener("click", function () { setMusicMood(btn.dataset.musicMoodBtn); });
+      });
+      list.querySelectorAll("[data-music-track-toggle]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var file = btn.dataset.musicTrackToggle;
+          var off = !musicIsDisabled(file);
+          musicSetDisabled(file, off);
+          if (off && musicPlaying && musicCurrentFile === file) musicAdvance();
+          renderMusicTab();
+        });
       });
     }
     musicUpdateUI();
@@ -4576,6 +4613,7 @@
     }
     function toggleMenu() {
       if (navMenu.classList.contains("hidden")) {
+        closeMusicPanel();
         navMenu.classList.remove("hidden");
         menuBackdrop.classList.remove("hidden");
         menuBtn.classList.add("open");
@@ -4595,9 +4633,9 @@
       }
     }
     menuBtn.addEventListener("click", toggleMenu);
-    menuBackdrop.addEventListener("click", closeMenu);
+    menuBackdrop.addEventListener("click", function () { closeMenu(); closeMusicPanel(); });
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") closeMenu();
+      if (e.key === "Escape") { closeMenu(); closeMusicPanel(); }
     });
 
     document.querySelectorAll(".tab-btn").forEach(function (btn) {
@@ -4622,7 +4660,7 @@
     // closes the menu (if open) and jumps to the Dice tab.
     var diceBtn = $("dice-btn");
     if (diceBtn) {
-      diceBtn.addEventListener("click", function () { switchTab("dice"); closeMenu(); });
+      diceBtn.addEventListener("click", function () { switchTab("dice"); closeMenu(); closeMusicPanel(); });
     }
 
     // A smaller floating button to the left of the hamburger button,
@@ -4631,7 +4669,47 @@
     // closes the menu (if open) and jumps to the AI Chat tab.
     var aiChatBtn = $("aichat-btn");
     if (aiChatBtn) {
-      aiChatBtn.addEventListener("click", function () { switchTab("aichat"); closeMenu(); });
+      aiChatBtn.addEventListener("click", function () { switchTab("aichat"); closeMenu(); closeMusicPanel(); });
+    }
+
+    // ---------- floating music button ----------
+    // A smaller floating button directly above the chat button, so the
+    // music controls are one tap away from any tab. It carries no
+    // data-mode tag, so it is visible in every mode. Tapping it pops
+    // out a small panel with the song now playing, the volume slider,
+    // and a play/pause button; tapping it again, tapping outside, or
+    // Escape closes it. Opening the panel closes the menu, and
+    // opening the menu closes the panel. There is no mute button:
+    // pause silences this phone and rejoins in sync on resume, so it
+    // does the same job.
+    var musicBtn = $("music-btn");
+    var musicPanel = $("music-panel");
+    function closeMusicPanel() {
+      if (!musicPanel) return;
+      musicPanel.classList.add("hidden");
+      if (menuBackdrop) menuBackdrop.classList.add("hidden");
+      if (musicBtn) {
+        musicBtn.setAttribute("aria-expanded", "false");
+        musicBtn.setAttribute("aria-label", "Music controls");
+      }
+    }
+    function toggleMusicPanel() {
+      if (!musicPanel) return;
+      if (musicPanel.classList.contains("hidden")) {
+        closeMenu();
+        musicPanel.classList.remove("hidden");
+        if (menuBackdrop) menuBackdrop.classList.remove("hidden");
+        if (musicBtn) {
+          musicBtn.setAttribute("aria-expanded", "true");
+          musicBtn.setAttribute("aria-label", "Close music controls");
+        }
+        musicUpdateUI();
+      } else {
+        closeMusicPanel();
+      }
+    }
+    if (musicBtn) {
+      musicBtn.addEventListener("click", toggleMusicPanel);
     }
 
     // ---------- hub modes: View / Interact / Dungeon Master ----------
@@ -5022,17 +5100,11 @@
     document.querySelectorAll("[data-music-toggle]").forEach(function (btn) {
       btn.addEventListener("click", function () { musicToggle(); });
     });
-    document.querySelectorAll("[data-music-mute]").forEach(function (btn) {
-      btn.addEventListener("click", function () { musicSetMuted(!musicMuted); });
-    });
     document.querySelectorAll("[data-music-volume]").forEach(function (el) {
       el.addEventListener("input", function () { musicSetVolume(parseInt(el.value, 10) / 100); });
       // The change event fires when the slider is released; a backup for
       // browsers that swallow input events mid-drag.
       el.addEventListener("change", function () { musicSetVolume(parseInt(el.value, 10) / 100); });
-    });
-    document.querySelectorAll("[data-music-goto]").forEach(function (btn) {
-      btn.addEventListener("click", function () { switchTab("music"); });
     });
     // Put the user back on the tab they were on when they left, if this
     // is still the same session. A full close clears sessionStorage, so

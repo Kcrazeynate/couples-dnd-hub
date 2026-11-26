@@ -948,8 +948,7 @@
     { label: "Gilded Boar", url: HUB_BASE + "area-gilded-boar.jpg", grid: 144, rows: 192, wx: 5, wy: 4 },
     { label: "Toll house", url: HUB_BASE + "area-tollhouse.jpg", grid: 144, rows: 192, wx: 4, wy: 4 },
     { label: "Watchtower ruins", url: HUB_BASE + "area-watchtower.jpg", grid: 144, rows: 192, wx: 5, wy: 3 },
-    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg", grid: 44, rows: 44, wx: 5, wy: 3 },
-    { label: "Test Clearing", url: HUB_BASE + "area-test-clearing.jpg", grid: 44, rows: 44, wx: 9, wy: 5 }
+    { label: "Forest road", url: HUB_BASE + "area-forest-road.jpg", grid: 44, rows: 44, wx: 5, wy: 3 }
   ];
 
   function worldMilesPerSquare() {

@@ -363,6 +363,10 @@
         <select id="felt-design-select" class="style-select"></select>
         <label for="design-color-select">Design color</label>
         <select id="design-color-select" class="style-select"></select>
+        <label for="design-upload">Your own design</label>
+        <input type="file" id="design-upload" accept="image/*">
+        <p class="hint">Black line art on a white background. It is turned into a design in your chosen design colour, and saved on this device only.</p>
+        <button type="button" id="design-remove" class="hidden">Remove my design</button>
         <label for="die-color-select">Die color</label>
         <select id="die-color-select" class="style-select"></select>
         <label for="die-design-select">Die design</label>
@@ -719,7 +723,7 @@
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<script type="module" src="dice3d.js?v=16"></script>
+<script type="module" src="dice3d.js?v=17"></script>
 <script src="app.js?v=120"></script>
 </body>
 </html>

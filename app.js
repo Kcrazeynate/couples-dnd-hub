@@ -3001,11 +3001,16 @@
   // hear the same song together. A phone that is paused never follows on
   // its own; it joins the shared track when Play is tapped.
   // Add entries here when more files arrive.
+  // Treblo batch 2026-11-25: The Gathering Light -15.6 LUFS, While You Settle In -14.4 LUFS, The Gathering of Heroes -14.3 LUFS, Riverton -14.5 LUFS, As They Settle In -14.1 LUFS, Dripping Through the Catacombs -14.2 LUFS, Oubliette Echoes -14.7 LUFS, Relentless -13.9 LUFS, Riverton Hearth -14.9 LUFS, The Damp Halls of Durnholm -14.4 LUFS, The Dungeon -14.2 LUFS, The Gatekeeper's Halls -15.3 LUFS, The Hearth of Riverton -17.0 LUFS, By the Fire in Riverton -17.9 LUFS, Riverton Celebration -13.8 LUFS, Riverton Revelry -13.8 LUFS, The Hearth at Riverton -13.4 LUFS, Town of Riverton -13.9 LUFS, Town of Riverton (Violin) -14.8 LUFS, A Moment's Rest on the Road -15.9 LUFS, By the Campfire -14.2 LUFS, Descent into the Forgotten Crypt -14.2 LUFS.
   var MUSIC_TRACKS = {
     opening: [
       { file: "assets/music/opening-voyages-of-the-valiant.mp3", title: "Voyages of the Valiant", gain: 0.55 },
       { file: "assets/music/opening-louis.mp3", title: "Louis", gain: 0.89 },
-      { file: "assets/music/opening-out-of-the-nest.mp3", title: "Out of the Nest", gain: 0.78 }
+      { file: "assets/music/opening-out-of-the-nest.mp3", title: "Out of the Nest", gain: 0.78 },
+
+      { file: "assets/music/opening-the-gathering-light.mp3", title: "The Gathering Light", gain: 0.72 },
+      { file: "assets/music/opening-while-you-settle-in.mp3", title: "While You Settle In", gain: 0.63 },
+      { file: "assets/music/opening-the-gathering-of-heroes.mp3", title: "The Gathering of Heroes", gain: 0.62 },
     ],
     travel: [
       { file: "assets/music/travel-the-north-wind.mp3", title: "The North Wind", gain: 0.62 },
@@ -3020,13 +3025,25 @@
       { file: "assets/music/combat-black-shadow.mp3", title: "Black Shadow", gain: 0.66 },
       { file: "assets/music/combat-march-of-the-heroes.mp3", title: "March of the Heroes", gain: 0.65 },
       { file: "assets/music/combat-protecting-neverwinter.mp3", title: "Protecting Neverwinter", gain: 0.45 },
-      { file: "assets/music/combat-trollocs.mp3", title: "Trollocs", gain: 0.37 }
+      { file: "assets/music/combat-trollocs.mp3", title: "Trollocs", gain: 0.37 },
+
+      { file: "assets/music/combat-riverton.mp3", title: "Riverton", gain: 0.63 },
     ],
     dungeon: [
       { file: "assets/music/dungeon-blood-magic.mp3", title: "Blood Magic", gain: 1.0 },
       { file: "assets/music/dungeon-the-house-of-pleasures.mp3", title: "The House of Pleasures", gain: 0.78 },
       { file: "assets/music/dungeon-underworld.mp3", title: "Underworld", gain: 0.85 },
-      { file: "assets/music/dungeon-spiralling-down.mp3", title: "Spiralling Down", gain: 1.48 }
+      { file: "assets/music/dungeon-spiralling-down.mp3", title: "Spiralling Down", gain: 1.48 },
+
+      { file: "assets/music/dungeon-as-they-settle-in.mp3", title: "As They Settle In", gain: 0.6 },
+      { file: "assets/music/dungeon-dripping-through-the-catacombs.mp3", title: "Dripping Through the Catacombs", gain: 0.61 },
+      { file: "assets/music/dungeon-oubliette-echoes.mp3", title: "Oubliette Echoes", gain: 0.64 },
+      { file: "assets/music/dungeon-relentless.mp3", title: "Relentless", gain: 0.59 },
+      { file: "assets/music/dungeon-riverton-hearth.mp3", title: "Riverton Hearth", gain: 0.66 },
+      { file: "assets/music/dungeon-the-damp-halls-of-durnholm.mp3", title: "The Damp Halls of Durnholm", gain: 0.63 },
+      { file: "assets/music/dungeon-the-dungeon.mp3", title: "The Dungeon", gain: 0.61 },
+      { file: "assets/music/dungeon-the-gatekeepers-halls.mp3", title: "The Gatekeeper's Halls", gain: 0.69 },
+      { file: "assets/music/dungeon-the-hearth-of-riverton.mp3", title: "The Hearth of Riverton", gain: 0.84 },
     ],
     town: [
       { file: "assets/music/town-medieval-kitchen.mp3", title: "Medieval Kitchen", gain: 0.65 },
@@ -3034,11 +3051,22 @@
       { file: "assets/music/town-eldemmors-market.mp3", title: "Eldemmor's Market", gain: 0.8 },
       { file: "assets/music/town-lockwood.mp3", title: "Lockwood", gain: 1.58 },
       { file: "assets/music/town-oarsmarket.mp3", title: "Oarsmarket", gain: 0.95 },
-      { file: "assets/music/town-the-ogier.mp3", title: "The Ogier", gain: 0.61 }
+      { file: "assets/music/town-the-ogier.mp3", title: "The Ogier", gain: 0.61 },
+
+      { file: "assets/music/town-by-the-fire-in-riverton.mp3", title: "By the Fire in Riverton", gain: 0.93 },
+      { file: "assets/music/town-riverton-celebration.mp3", title: "Riverton Celebration", gain: 0.58 },
+      { file: "assets/music/town-riverton-revelry.mp3", title: "Riverton Revelry", gain: 0.59 },
+      { file: "assets/music/town-the-hearth-at-riverton.mp3", title: "The Hearth at Riverton", gain: 0.56 },
+      { file: "assets/music/town-town-of-riverton.mp3", title: "Town of Riverton", gain: 0.59 },
+      { file: "assets/music/town-town-of-riverton-alt.mp3", title: "Town of Riverton (Violin)", gain: 0.65 },
     ],
     rest: [
       { file: "assets/music/rest-magical-forest.mp3", title: "Magical Forest", gain: 0.66 },
-      { file: "assets/music/rest-old-creek-grove.mp3", title: "Old Creek Grove", gain: 1.0 }
+      { file: "assets/music/rest-old-creek-grove.mp3", title: "Old Creek Grove", gain: 1.0 },
+
+      { file: "assets/music/rest-a-moments-rest-on-the-road.mp3", title: "A Moment's Rest on the Road", gain: 0.74 },
+      { file: "assets/music/rest-by-the-campfire.mp3", title: "By the Campfire", gain: 0.61 },
+      { file: "assets/music/rest-descent-into-the-forgotten-crypt.mp3", title: "Descent into the Forgotten Crypt", gain: 0.61 },
     ]
   };
   var MUSIC_FADE_MS = 4000;

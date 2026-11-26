@@ -1205,6 +1205,13 @@ function init(container) {
   var fill = new THREE.PointLight(0xc9a227, 12, 20);
   fill.position.set(-4, 3, 3);
   scene.add(fill);
+  // Camera-side light: the key light's glint only lines up with the
+  // camera while a die is tumbling, so settled dice went dull. This
+  // one sits near the camera and keeps a highlight on the top faces
+  // (and the glitter flakes) even after the dice stop.
+  var camLight = new THREE.DirectionalLight(0xfff2d0, 0.9);
+  camLight.position.set(0, 9, 7);
+  scene.add(camLight);
   // Felt floor.
   var floorGeo = new THREE.PlaneGeometry(TRAY_W, TRAY_D);
   var floorMat = new THREE.MeshStandardMaterial({ map: makeFeltTexture(), roughness: style.feltDesign === "leather" ? 0.35 : 0.95, metalness: 0 });

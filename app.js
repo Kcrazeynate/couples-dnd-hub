@@ -3147,7 +3147,9 @@
       { file: "assets/music/travel-scholars-of-mysterious-arts.mp3", title: "Scholars of Mysterious Arts", gain: 0.91 },
       { file: "assets/music/travel-the-herd.mp3", title: "The Herd", gain: 2.76 },
       { file: "assets/music/travel-the-valleys-of-death.mp3", title: "The Valleys of Death", gain: 1.64 },
-      { file: "assets/music/travel-emerald-spear.mp3", title: "Emerald Spear", gain: 0.83 }
+      { file: "assets/music/travel-emerald-spear.mp3", title: "Emerald Spear", gain: 0.83 },
+
+      { file: "assets/music/travel-the-road-goes-ever-on.mp3", title: "The Road Goes Ever On", gain: 0.61 },
     ],
     combat: [
       { file: "assets/music/combat-to-crush-your-enemies.mp3", title: "To Crush Your Enemies", gain: 0.98 },

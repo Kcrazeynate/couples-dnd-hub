@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=72">
+<link rel="stylesheet" href="styles.css?v=73">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=4"></script>
 <script type="importmap">
@@ -368,6 +368,13 @@
         <input type="file" id="design-upload" accept="image/*">
         <p class="hint">Black line art on a white background. It is turned into a design in your chosen design colour, and saved on this device only.</p>
         <button type="button" id="design-remove" class="hidden">Remove my design</button>
+        <label>Design size</label>
+        <div class="row">
+          <button type="button" id="design-zoom-out">−</button>
+          <span id="design-zoom-label" class="zoom-label">100%</span>
+          <button type="button" id="design-zoom-in">+</button>
+          <button type="button" id="design-zoom-reset">Reset</button>
+        </div>
         <label for="die-color-select">Die color</label>
         <select id="die-color-select" class="style-select"></select>
         <label for="die-design-select">Die design</label>
@@ -724,7 +731,7 @@
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<script type="module" src="dice3d.js?v=17"></script>
-<script src="app.js?v=120"></script>
+<script type="module" src="dice3d.js?v=18"></script>
+<script src="app.js?v=121"></script>
 </body>
 </html>

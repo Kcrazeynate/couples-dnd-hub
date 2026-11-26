@@ -3150,6 +3150,7 @@
       { file: "assets/music/travel-emerald-spear.mp3", title: "Emerald Spear", gain: 0.83 },
 
       { file: "assets/music/travel-the-road-goes-ever-on.mp3", title: "The Road Goes Ever On", gain: 0.61 },
+      { file: "assets/music/travel-the-road-goes-ever-on-north-by-foot.mp3", title: "The Road Goes Ever On (North by Foot)", gain: 0.61 },
     ],
     combat: [
       { file: "assets/music/combat-to-crush-your-enemies.mp3", title: "To Crush Your Enemies", gain: 0.98 },

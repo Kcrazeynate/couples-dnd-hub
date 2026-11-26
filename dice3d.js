@@ -855,7 +855,7 @@ function makeDieMaterial() {
     // clear glass.
     return new THREE.MeshPhysicalMaterial({
       color: die.hex, metalness: 0, roughness: 0.08,
-      transparent: true, opacity: 0.8, depthWrite: false,
+      transparent: true, opacity: 0.9, depthWrite: false,
       clearcoat: 1.0, clearcoatRoughness: 0.08,
       envMapIntensity: 1.2, specularIntensity: 1.0
     });

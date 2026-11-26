@@ -98,6 +98,20 @@ header {
   margin: 0;
 }
 
+header h1 {
+  font-size: 2.2rem;
+  letter-spacing: 0.05em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.65), 0 0 20px rgba(217, 164, 65, 0.28);
+  margin-bottom: 0.15rem;
+}
+
+header .subtitle {
+  font-size: 1.1rem;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  color: #d9b96a;
+}
+
 /* Floating buttons. The tab grid is gone; one button floats
    bottom-right (thumb-friendly on phones) and opens a panel holding
    the same tabs, grouped the same way. The back-to-top button moved
@@ -736,6 +750,11 @@ button.danger:hover {
   margin-bottom: 0;
 }
 
+.push-card {
+  background: transparent;
+  border: 1px dashed #7a6238;
+}
+
 .empty {
   color: #b3a284;
   font-style: italic;
@@ -969,7 +988,7 @@ button.danger:hover {
 .dice-buttons button {
   margin-top: 0;
   flex: 1 1 60px;
-  padding: 0.6rem 0.4rem;
+  padding: 0.45rem 0.4rem;
   background: #342f27;
   color: #f2e9d5;
   border: 1px solid #57503f;
@@ -985,8 +1004,12 @@ button.danger:hover {
   width: 100%;
   font-size: 1.25rem;
   font-weight: 700;
-  padding: 0.9rem;
+  padding: 0.7rem;
   margin-bottom: 0.25rem;
+}
+
+#dice-form label {
+  margin: 0.5rem 0 0.2rem;
 }
 
 .dice-result {
@@ -1074,7 +1097,7 @@ button.danger:hover {
 
 .dice3d-tray {
   width: 100%;
-  height: 300px;
+  height: 420px;
   border: 2px solid #d9a441;
   border-radius: 12px;
   overflow: hidden;

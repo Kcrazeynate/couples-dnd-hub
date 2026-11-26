@@ -289,6 +289,7 @@
 
   // Reads a Rick reply aloud with the browser speech synthesis.
   // Tapping Play on another reply stops the one already playing.
+  // Uses the narration voice picked in the AI Chat tab, when one is set.
   function aiChatPlay(id) {
     if (!("speechSynthesis" in window)) {
       alert("This browser does not support reading aloud.");
@@ -298,7 +299,50 @@
     if (!text) return;
     window.speechSynthesis.cancel();
     var utter = new SpeechSynthesisUtterance(text);
+    var voice = aiChatChosenVoice();
+    if (voice) utter.voice = voice;
     window.speechSynthesis.speak(utter);
+  }
+
+  // Narration voice picker for the AI Chat. Lists the voices on this
+  // device, remembers the pick per device, and uses it when a Rick
+  // reply is played aloud. Voices load asynchronously, so the list is
+  // filled again when the browser reports them.
+  var AI_CHAT_VOICE_KEY = "hub-aichat-voice";
+
+  function aiChatSavedVoiceURI() {
+    try { return window.localStorage.getItem(AI_CHAT_VOICE_KEY) || ""; } catch (e) { return ""; }
+  }
+
+  function aiChatPopulateVoices() {
+    var sel = $("aichat-voice");
+    if (!sel || !("speechSynthesis" in window)) return;
+    var voices = window.speechSynthesis.getVoices();
+    var saved = aiChatSavedVoiceURI();
+    sel.innerHTML = "";
+    var def = document.createElement("option");
+    def.value = "";
+    def.textContent = "Default voice";
+    sel.appendChild(def);
+    voices.forEach(function (v) {
+      var opt = document.createElement("option");
+      opt.value = v.voiceURI;
+      opt.textContent = v.name + (v.lang ? " (" + v.lang + ")" : "");
+      sel.appendChild(opt);
+    });
+    sel.value = saved;
+    if (sel.value !== saved) sel.value = "";
+  }
+
+  function aiChatChosenVoice() {
+    if (!("speechSynthesis" in window)) return null;
+    var uri = aiChatSavedVoiceURI();
+    if (!uri) return null;
+    var voices = window.speechSynthesis.getVoices();
+    for (var i = 0; i < voices.length; i++) {
+      if (voices[i].voiceURI === uri) return voices[i];
+    }
+    return null;
   }
 
   // Dictation with the browser speech recognition (Chrome and Safari).
@@ -4582,6 +4626,16 @@
     $("aichat-form").addEventListener("submit", postAiChat);
     $("aichat-refresh").addEventListener("click", loadAiChat);
     $("aichat-dictate").addEventListener("click", aiChatDictate);
+    var aiChatVoiceSel = $("aichat-voice");
+    if (aiChatVoiceSel) {
+      aiChatVoiceSel.addEventListener("change", function () {
+        try { window.localStorage.setItem(AI_CHAT_VOICE_KEY, aiChatVoiceSel.value); } catch (e) {}
+      });
+    }
+    if ("speechSynthesis" in window) {
+      aiChatPopulateVoices();
+      window.speechSynthesis.addEventListener("voiceschanged", aiChatPopulateVoices);
+    }
     $("aichat-list").addEventListener("click", function (e) {
       var btn = e.target.closest ? e.target.closest("[data-aichat-id]") : null;
       if (btn) aiChatPlay(btn.getAttribute("data-aichat-id"));

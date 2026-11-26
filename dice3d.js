@@ -65,7 +65,8 @@ const DIE_DESIGNS = [
   { id: "marble", name: "Marble", girly: false },
   { id: "metal", name: "Metal", girly: false },
   { id: "glitter", name: "Glitter", girly: true },
-  { id: "pearl", name: "Pearl", girly: true }
+  { id: "pearl", name: "Pearl", girly: true },
+  { id: "resin", name: "Resin", girly: false }
 ];
 // The colour of a printed felt design: the d20 and moon line work,
 // and the line-art prints (fairy, dagger, and the rest). The art
@@ -844,6 +845,19 @@ function makeDieMaterial() {
       return new THREE.MeshPhysicalMaterial(glitterMat);
     }
     return new THREE.MeshPhysicalMaterial({ color: die.hex, metalness: 0.05, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.22 });
+  }
+  if (style.dieDesign === "resin") {
+    // See-through resin, like the photo: translucent colored resin,
+    // glossy, you can see the tray through it. Transmission does the
+    // see-through; thickness and attenuation give the color depth so
+    // it reads as solid colored resin, not a thin shell.
+    return new THREE.MeshPhysicalMaterial({
+      color: die.hex, metalness: 0, roughness: 0.08,
+      transmission: 0.9, thickness: 1.5, ior: 1.5,
+      attenuationColor: new THREE.Color(die.hex), attenuationDistance: 2.0,
+      clearcoat: 1.0, clearcoatRoughness: 0.08,
+      envMapIntensity: 1.2, specularIntensity: 1.0
+    });
   }
   // Classic: clean polished resin, solid color, no pattern.
   return new THREE.MeshPhysicalMaterial({ color: die.hex, metalness: 0.05, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.22 });

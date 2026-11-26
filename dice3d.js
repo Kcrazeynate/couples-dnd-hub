@@ -851,10 +851,11 @@ function makeDieMaterial() {
     // glossy, you can see the tray through it. Uses plain opacity,
     // not transmission: transmission crashed the roller with five
     // dice on phones (the extra render pass is too heavy). Opacity
-    // keeps the see-through look without the crash.
+    // 0.8 keeps the color strong like the photo dice; 0.55 read as
+    // clear glass.
     return new THREE.MeshPhysicalMaterial({
       color: die.hex, metalness: 0, roughness: 0.08,
-      transparent: true, opacity: 0.55, depthWrite: false,
+      transparent: true, opacity: 0.8, depthWrite: false,
       clearcoat: 1.0, clearcoatRoughness: 0.08,
       envMapIntensity: 1.2, specularIntensity: 1.0
     });

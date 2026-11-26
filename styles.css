@@ -1028,18 +1028,23 @@ button.danger:hover {
 
 .dice-buttons {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
   flex-wrap: wrap;
-  margin: 0.25rem 0 0.5rem;
+  margin: 0.2rem 0 0.4rem;
 }
 
 .dice-buttons button {
   margin-top: 0;
   flex: 1 1 60px;
-  padding: 0.45rem 0.4rem;
+  padding: 0.35rem 0.3rem;
+  font-size: 0.95rem;
   background: #342f27;
   color: #f2e9d5;
   border: 1px solid #57503f;
+}
+
+#dice-count-buttons {
+  margin-bottom: 0.25rem;
 }
 
 .dice-buttons button.selected {
@@ -1050,14 +1055,35 @@ button.danger:hover {
 
 .roll-btn {
   width: 100%;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  padding: 0.7rem;
+  padding: 0.55rem;
   margin-bottom: 0.25rem;
 }
 
 #dice-form label {
-  margin: 0.5rem 0 0.2rem;
+  margin: 0.4rem 0 0.15rem;
+  font-size: 0.85rem;
+}
+
+#dice-form input,
+#dice-form select {
+  padding: 0.45rem 0.55rem;
+  font-size: 0.95rem;
+}
+
+#dice-form .hint {
+  font-size: 0.85rem;
+  margin: 0.15rem 0 0.4rem;
+}
+
+.dice-mod-row {
+  gap: 0.6rem;
+}
+
+.dice-mod-row > div {
+  flex: 1;
+  min-width: 0;
 }
 
 .dice-result {

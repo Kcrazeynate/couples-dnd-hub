@@ -3373,6 +3373,7 @@
       { file: "assets/music/dungeon-the-gatekeepers-halls.mp3", title: "The Gatekeeper's Halls", gain: 0.69 },
       { file: "assets/music/dungeon-the-hearth-of-riverton.mp3", title: "The Hearth of Riverton", gain: 0.84 },
       { file: "assets/music/dungeon-the-siege-of-night-desolate-battlefield.mp3", title: "The Siege of Night - Desolate Battlefield", gain: 0.63 },
+      { file: "assets/music/dungeon-the-siege-of-night-the-witch.mp3", title: "The Siege of Night - The Witch", gain: 0.61 },
     ],
     town: [
       { file: "assets/music/town-medieval-kitchen.mp3", title: "Medieval Kitchen", gain: 0.65 },

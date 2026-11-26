@@ -775,7 +775,29 @@ function makeFeltTexture() {
 function makeDieMaterial() {
   var die = findById(DIE_COLORS, style.dieColor, DIE_COLORS[0]);
   if (style.dieDesign === "metal") {
-    return new THREE.MeshStandardMaterial({ color: die.hex, metalness: 0.9, roughness: 0.32 });
+    // Brushed metal: fine horizontal streaks over the base color, plus
+    // a soft vertical sheen.
+    var brushedTex = canvasTexture(1024, function (ctx, s) {
+      ctx.fillStyle = die.css;
+      ctx.fillRect(0, 0, s, s);
+      for (var i = 0; i < 900; i++) {
+        var y = randRange(0, s);
+        var light = Math.random() < 0.5;
+        ctx.strokeStyle = light ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.10)";
+        ctx.lineWidth = randRange(0.5, 2);
+        ctx.beginPath();
+        ctx.moveTo(randRange(-40, s * 0.4), y);
+        ctx.lineTo(randRange(s * 0.6, s + 40), y + randRange(-4, 4));
+        ctx.stroke();
+      }
+      var grad = ctx.createLinearGradient(0, 0, 0, s);
+      grad.addColorStop(0, "rgba(255,255,255,0.12)");
+      grad.addColorStop(0.5, "rgba(255,255,255,0)");
+      grad.addColorStop(1, "rgba(0,0,0,0.12)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, s, s);
+    });
+    return new THREE.MeshStandardMaterial({ map: brushedTex, metalness: 0.9, roughness: 0.3 });
   }
   if (style.dieDesign === "pearl") {
     return new THREE.MeshPhysicalMaterial({
@@ -784,49 +806,89 @@ function makeDieMaterial() {
     });
   }
   if (style.dieDesign === "marble") {
-    var marbleTex = canvasTexture(512, function (ctx, s) {
+    var marbleTex = canvasTexture(1024, function (ctx, s) {
       ctx.fillStyle = die.css;
       ctx.fillRect(0, 0, s, s);
-      // Swirled second color, Baron of Dice style.
       var second = die.id === "cream" ? "rgba(150, 40, 50, 0.55)" :
         die.id === "bloodred" ? "rgba(230, 220, 200, 0.5)" :
         die.id === "gold" ? "rgba(120, 30, 30, 0.5)" :
         die.id === "rosepink" ? "rgba(150, 60, 110, 0.5)" :
         die.dark ? "rgba(230, 220, 200, 0.5)" : "rgba(60, 40, 120, 0.5)";
-      for (var i = 0; i < 26; i++) {
+      // Broad swirling bands, layered for depth.
+      for (var i = 0; i < 60; i++) {
         ctx.strokeStyle = second;
-        ctx.lineWidth = randRange(3, 12);
+        ctx.globalAlpha = randRange(0.25, 0.7);
+        ctx.lineWidth = randRange(3, 14);
         ctx.beginPath();
         var x = randRange(0, s), y = randRange(0, s);
         ctx.moveTo(x, y);
-        ctx.bezierCurveTo(x + randRange(-90, 90), y + randRange(-90, 90), x + randRange(-90, 90), y + randRange(-90, 90), x + randRange(-90, 90), y + randRange(-90, 90));
+        ctx.bezierCurveTo(x + randRange(-160, 160), y + randRange(-160, 160), x + randRange(-160, 160), y + randRange(-160, 160), x + randRange(-160, 160), y + randRange(-160, 160));
         ctx.stroke();
       }
+      // Fine pale veining.
+      ctx.globalAlpha = 0.5;
+      ctx.strokeStyle = "rgba(255,255,255,0.55)";
+      for (var v = 0; v < 24; v++) {
+        ctx.lineWidth = randRange(0.8, 2);
+        ctx.beginPath();
+        var vx = randRange(0, s), vy = randRange(0, s);
+        ctx.moveTo(vx, vy);
+        ctx.bezierCurveTo(vx + randRange(-120, 120), vy + randRange(-120, 120), vx + randRange(-120, 120), vy + randRange(-120, 120), vx + randRange(-120, 120), vy + randRange(-120, 120));
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
       ctx.fillStyle = "rgba(255,255,255,0.06)";
-      for (var j = 0; j < 300; j++) { ctx.fillRect(randRange(0, s), randRange(0, s), 2, 2); }
+      for (var j = 0; j < 500; j++) { ctx.fillRect(randRange(0, s), randRange(0, s), 2, 2); }
     });
-    return new THREE.MeshStandardMaterial({ map: marbleTex, metalness: 0.08, roughness: 0.3 });
+    return new THREE.MeshPhysicalMaterial({ map: marbleTex, metalness: 0.08, roughness: 0.28, clearcoat: 0.8, clearcoatRoughness: 0.18 });
   }
   if (style.dieDesign === "glitter") {
-    var glitterTex = canvasTexture(512, function (ctx, s) {
+    var glitterTex = canvasTexture(1024, function (ctx, s) {
       ctx.fillStyle = die.css;
       ctx.fillRect(0, 0, s, s);
       var cols = ["rgba(255,255,255,0.9)", "rgba(255,215,130,0.9)", "rgba(255,150,200,0.9)", "rgba(180,220,255,0.9)"];
-      for (var i = 0; i < 420; i++) {
+      for (var i = 0; i < 900; i++) {
         ctx.fillStyle = cols[Math.floor(randRange(0, cols.length))];
-        var gx = randRange(0, s), gy = randRange(0, s), gr = randRange(0.8, 2.6);
+        var gx = randRange(0, s), gy = randRange(0, s), gr = randRange(0.8, 3.2);
         ctx.beginPath(); ctx.arc(gx, gy, gr, 0, Math.PI * 2); ctx.fill();
       }
+      // A few larger four-point star sparkles.
+      for (var k = 0; k < 28; k++) {
+        var sx = randRange(0, s), sy = randRange(0, s), sr = randRange(5, 11);
+        ctx.fillStyle = cols[Math.floor(randRange(0, cols.length))];
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - sr);
+        ctx.quadraticCurveTo(sx, sy, sx + sr, sy);
+        ctx.quadraticCurveTo(sx, sy, sx, sy + sr);
+        ctx.quadraticCurveTo(sx, sy, sx - sr, sy);
+        ctx.quadraticCurveTo(sx, sy, sx, sy - sr);
+        ctx.fill();
+      }
     });
-    return new THREE.MeshStandardMaterial({ map: glitterTex, metalness: 0.25, roughness: 0.3 });
+    return new THREE.MeshPhysicalMaterial({ map: glitterTex, metalness: 0.25, roughness: 0.28, clearcoat: 0.8, clearcoatRoughness: 0.18 });
   }
-  return new THREE.MeshStandardMaterial({ color: die.hex, metalness: 0.05, roughness: 0.35 });
+  // Classic: a subtle speckle over the base color, polished like resin.
+  var classicTex = canvasTexture(1024, function (ctx, s) {
+    ctx.fillStyle = die.css;
+    ctx.fillRect(0, 0, s, s);
+    for (var i = 0; i < 1400; i++) {
+      var light = Math.random() < 0.5;
+      ctx.fillStyle = light ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)";
+      ctx.fillRect(randRange(0, s), randRange(0, s), randRange(1, 2.5), randRange(1, 2.5));
+    }
+    var grad = ctx.createRadialGradient(s / 2, s / 2, s * 0.1, s / 2, s / 2, s * 0.7);
+    grad.addColorStop(0, "rgba(255,255,255,0.08)");
+    grad.addColorStop(1, "rgba(0,0,0,0.08)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, s, s);
+  });
+  return new THREE.MeshPhysicalMaterial({ map: classicTex, metalness: 0.05, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.22 });
 }
 
 // Face texture: a number, or pips for a d6. Transparent background.
 function makeFaceTexture(value, sides) {
   var ink = faceInkColor();
-  return canvasTexture(512, function (ctx, s) {
+  return canvasTexture(1024, function (ctx, s) {
     ctx.clearRect(0, 0, s, s);
     ctx.fillStyle = ink;
     ctx.strokeStyle = ink;

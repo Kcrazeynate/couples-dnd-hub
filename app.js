@@ -4232,6 +4232,14 @@
         loadMaps();
       });
     });
+    // With only one map there is nothing to switch between, so hide the
+    // map tabs and the switch hint. They come back when a second map
+    // exists. The World map / Area map toggle below is a different
+    // control: it switches the view of the current map, not the map.
+    var multiMap = mapsList.length > 1;
+    tabs.classList.toggle("hidden", !multiMap);
+    var switchHint = $("map-switch-hint");
+    if (switchHint) switchHint.classList.toggle("hidden", !multiMap);
     $("map-view").classList.remove("hidden");
     loadMapView();
   }

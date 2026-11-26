@@ -1271,6 +1271,30 @@ function resize() {
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  fitCameraToTray();
+}
+
+// Keep the whole tray in view: on narrow (portrait) screens the tray is
+// wider than the camera shows, so dice at the edges get cut off. Pull the
+// camera back along its view direction until the tray fits, so no die can
+// ever sit outside the frame. Never closer than the default framing.
+function fitCameraToTray() {
+  if (!camera || !containerEl) return;
+  var w = containerEl.clientWidth || 320;
+  var h = containerEl.clientHeight || 300;
+  var aspect = w / h;
+  var vHalf = THREE.MathUtils.degToRad(camera.fov / 2);
+  var hHalf = Math.atan(Math.tan(vHalf) * aspect);
+  // Distance so the tray width fits horizontally, with room for a die at the edge.
+  var distH = (TRAY_W / 2 + 0.6) / Math.tan(hHalf);
+  // Distance so the tray depth fits vertically.
+  var distV = (TRAY_D / 2 + 0.6) / Math.tan(vHalf);
+  var need = Math.max(distH, distV, 10.53);
+  // Direction from the look-at point to the default camera position.
+  var dir = new THREE.Vector3(0, 8.2, 6.6).normalize();
+  camera.position.set(0, 0, 0.2).addScaledVector(dir, need);
+  camera.lookAt(0, 0, 0.2);
+  camera.updateProjectionMatrix();
 }
 
 var lastTime = 0;

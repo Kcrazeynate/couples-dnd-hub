@@ -4083,6 +4083,27 @@
       musicAdvance();
     }
   }
+  // If the song title in the music panel is too long to fit, scroll
+  // it across so the whole name is visible. The shift is how far the
+  // text has to travel, and the duration keeps the scroll speed
+  // readable. Runs after layout, so a just-opened panel reports
+  // real widths. When the panel is hidden the widths are zero and
+  // nothing scrolls; opening the panel runs musicUpdateUI again.
+  function musicTitleMarquee() {
+    var title = document.querySelector(".music-panel-title");
+    var text = title ? title.querySelector("[data-music-title]") : null;
+    if (!title || !text) return;
+    requestAnimationFrame(function () {
+      title.classList.remove("scrolling");
+      var overflow = text.offsetWidth - title.clientWidth;
+      if (overflow > 4) {
+        title.style.setProperty("--marquee-shift", (-overflow) + "px");
+        title.style.setProperty("--marquee-duration", ((overflow / 60) + 3).toFixed(2) + "s");
+        void title.offsetWidth;
+        title.classList.add("scrolling");
+      }
+    });
+  }
   function musicUpdateUI() {
     var label = musicMoodLabel(musicMood);
     var tracks = MUSIC_TRACKS[musicMood] || [];
@@ -4100,6 +4121,7 @@
     document.querySelectorAll("[data-music-mood-btn]").forEach(function (btn) {
       btn.classList.toggle("active", btn.dataset.musicMoodBtn === musicMood);
     });
+    musicTitleMarquee();
   }
   function renderMusicTab() {
     var list = $("music-mood-list");
@@ -4845,6 +4867,12 @@
     if (musicBtn) {
       musicBtn.addEventListener("click", toggleMusicPanel);
     }
+    // Re-check the title scroll when the window size changes, so a
+    // title that fits after a rotation stops scrolling and one that
+    // no longer fits starts.
+    window.addEventListener("resize", function () {
+      if (musicPanel && !musicPanel.classList.contains("hidden")) musicTitleMarquee();
+    });
 
     // ---------- hub modes: View / Interact / Dungeon Master ----------
     // View hides every input (anything tagged data-mode). Interact shows

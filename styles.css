@@ -718,6 +718,24 @@ button.danger:hover {
   margin-bottom: 0;
 }
 
+.log-intro {
+  margin: 0 0 1rem;
+}
+
+.log-intro .title {
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+  color: #f2e9d5;
+}
+
+.log-intro p {
+  margin: 0 0 0.5rem;
+}
+
+.log-intro p:last-child {
+  margin-bottom: 0;
+}
+
 .empty {
   color: #b3a284;
   font-style: italic;

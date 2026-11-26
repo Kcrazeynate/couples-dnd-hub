@@ -105,7 +105,10 @@ header {
    the two never collide. A smaller floating dice button sits directly
    above the menu button, so the dice roller is one tap away from any
    tab; the menu panel anchors above the dice button, so the three
-   stack neatly and never cover each other. */
+   stack neatly and never cover each other. A smaller floating chat
+   button sits to the left of the menu button at the same height, so
+   the AI Chat is one tap away too; it sits underneath the panel area
+   when the menu is open, the same way the menu button does. */
 
 .dice-btn {
   position: fixed;
@@ -135,6 +138,41 @@ header {
 }
 
 .dice-btn:focus-visible {
+  outline: 3px solid #d9a441;
+  outline-offset: 3px;
+}
+
+/* Floating AI Chat button: same size and style as the dice button,
+   sitting to the left of the menu button at the same height, with a
+   small gap between them. Visible in all modes. */
+.aichat-btn {
+  position: fixed;
+  right: calc(max(18px, env(safe-area-inset-right)) + 56px + 12px);
+  bottom: calc(64px + max(18px, env(safe-area-inset-bottom)));
+  z-index: 41;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #342f27;
+  border: 1px solid #d9a441;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.aichat-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.aichat-btn:hover {
+  background: #342f27;
+  border-color: #f0c96a;
+}
+
+.aichat-btn:focus-visible {
   outline: 3px solid #d9a441;
   outline-offset: 3px;
 }
@@ -426,6 +464,18 @@ body.mode-interact [data-mode="dm"] {
     height: 22px;
   }
 
+  .aichat-btn {
+    right: calc(max(14px, env(safe-area-inset-right)) + 52px + 10px);
+    bottom: calc(64px + max(14px, env(safe-area-inset-bottom)));
+    width: 40px;
+    height: 40px;
+  }
+
+  .aichat-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+
   .menu-btn {
     right: max(14px, env(safe-area-inset-right));
     bottom: calc(64px + max(14px, env(safe-area-inset-bottom)));
@@ -616,6 +666,68 @@ button.danger:hover {
   color: #b3a284;
   font-style: italic;
   padding: 0.75rem 0;
+}
+
+/* AI Chat bubbles. Player messages are warm stone, Rick's replies a
+   slightly warmer tone with a gold left border, so the two sides of
+   the conversation read apart at a glance. No image textures. */
+.aichat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.aichat-bubble {
+  background: #342f27;
+  border: 1px solid #57503f;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  max-width: 88%;
+}
+
+.aichat-bubble.aichat-player {
+  align-self: flex-end;
+}
+
+.aichat-bubble.aichat-rick {
+  align-self: flex-start;
+  background: #38301f;
+  border-color: #6e5c39;
+  border-left: 3px solid #d9a441;
+}
+
+.aichat-bubble .meta {
+  color: #b3a284;
+  font-size: 0.85rem;
+  margin: 0 0 0.25rem;
+}
+
+.aichat-bubble p {
+  margin: 0 0 0.5rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.aichat-bubble p:last-child {
+  margin-bottom: 0;
+}
+
+.aichat-play {
+  background: transparent;
+  color: #f0c96a;
+  border: 1px solid #7a6238;
+  border-radius: 8px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.aichat-play:hover {
+  background: #342f27;
+  border-color: #d9a441;
 }
 
 .badge {

@@ -57,7 +57,8 @@ const FELT_DESIGNS = [
   { id: "demon", name: "Demon", girly: false },
   { id: "panda", name: "Panda Warrior", girly: false },
   { id: "wizard", name: "Wizard", girly: false },
-  { id: "gnome", name: "Gnome", girly: true }
+  { id: "gnome", name: "Gnome", girly: true },
+  { id: "custom", name: "My Design", girly: false }
 ];
 const DIE_DESIGNS = [
   { id: "classic", name: "Classic", girly: false },
@@ -280,6 +281,86 @@ FELT_ART_IDS.forEach(function (id) {
     feltArt[id] = img;
   } catch (e) {}
 });
+
+// A design the player uploads themself: black line art on white.
+// It is turned into a white mask on this device and saved in
+// localStorage, so it stays on this device only.
+var CUSTOM_DESIGN_KEY = "hub-dice3d-custom-design";
+var customArt = null, customArtReady = false;
+
+function loadCustomDesign() {
+  try {
+    var raw = window.localStorage.getItem(CUSTOM_DESIGN_KEY);
+    if (!raw) return;
+    var img = new Image();
+    img.onload = function () {
+      customArt = img;
+      customArtReady = true;
+      try { if (trayFloor && style.feltDesign === "custom") applyFelt(); } catch (e) {}
+    };
+    img.src = raw;
+  } catch (e) {}
+}
+
+function processCustomDesign(img, done) {
+  // Downscale to max 900 long side, then turn black-on-white into a
+  // white mask: darkness becomes opacity, paper becomes transparent.
+  var iw = img.naturalWidth, ih = img.naturalHeight;
+  var sc = Math.min(1, 900 / Math.max(iw, ih));
+  var w = Math.max(1, Math.round(iw * sc)), h = Math.max(1, Math.round(ih * sc));
+  var c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  var ctx = c.getContext("2d");
+  ctx.drawImage(img, 0, 0, w, h);
+  var data = ctx.getImageData(0, 0, w, h);
+  var d = data.data;
+  function lumAt(x, y) {
+    var i = (y * w + x) * 4;
+    return 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+  }
+  var corners = [lumAt(2, 2), lumAt(w - 3, 2), lumAt(2, h - 3), lumAt(w - 3, h - 3)].sort(function (a, b) { return a - b; });
+  var bg = corners[1];
+  var cutoff = Math.max(120, bg - 8);
+  for (var i = 0; i < d.length; i += 4) {
+    var lum = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+    lum = Math.max(0, Math.min(255, (lum - 128) * 1.3 + 128));
+    var a = 0;
+    if (lum < cutoff) a = Math.round(255 * (1 - lum / cutoff));
+    if (a < 25) a = 0;
+    d[i] = 255; d[i+1] = 255; d[i+2] = 255; d[i+3] = a;
+  }
+  for (var y = 0; y < h; y++) {
+    for (var x = 0; x < w; x++) {
+      if (x < 4 || y < 4 || x >= w - 4 || y >= h - 4) d[(y * w + x) * 4 + 3] = 0;
+    }
+  }
+  ctx.putImageData(data, 0, 0);
+  done(c.toDataURL("image/png"));
+}
+
+function saveCustomDesign(dataUrl) {
+  try {
+    window.localStorage.setItem(CUSTOM_DESIGN_KEY, dataUrl);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function removeCustomDesign() {
+  try { window.localStorage.removeItem(CUSTOM_DESIGN_KEY); } catch (e) {}
+  customArt = null; customArtReady = false;
+}
+
+function updateCustomDesignUI() {
+  var rm = document.getElementById("design-remove");
+  if (!rm) return;
+  var has = false;
+  try { has = !!window.localStorage.getItem(CUSTOM_DESIGN_KEY); } catch (e) {}
+  rm.classList.toggle("hidden", !has);
+}
+
+loadCustomDesign();
 
 // ---------- crypto random ----------
 function randRange(min, max) {
@@ -627,12 +708,14 @@ function makeFeltTexture() {
       ctx.quadraticCurveTo(fx, fy, fx, fy + fr); ctx.quadraticCurveTo(fx, fy, fx - fr, fy);
       ctx.quadraticCurveTo(fx, fy, fx, fy - fr); ctx.fill();
     }
-  } else if (FELT_ART_IDS.indexOf(style.feltDesign) !== -1) {
-    // One of the line-art designs: the image is a white mask, tinted
-    // to the chosen design colour, fitted to the felt and shifted so
-    // the face lands at the felt centre.
-    var art = feltArt[style.feltDesign];
-    if (feltArtReady[style.feltDesign] && art) {
+  } else if (FELT_ART_IDS.indexOf(style.feltDesign) !== -1 || style.feltDesign === "custom") {
+    // One of the line-art designs, or the player's own upload: the
+    // image is a white mask, tinted to the chosen design colour,
+    // fitted to the felt and shifted so the face lands at the centre.
+    var isCustom = style.feltDesign === "custom";
+    var art = isCustom ? customArt : feltArt[style.feltDesign];
+    var artReady = isCustom ? customArtReady : feltArtReady[style.feltDesign];
+    if (artReady && art) {
       var dc = findById(DESIGN_COLORS, style.designColor, DESIGN_COLORS[0]);
       var tint = document.createElement("canvas");
       tint.width = art.naturalWidth; tint.height = art.naturalHeight;
@@ -647,7 +730,7 @@ function makeFeltTexture() {
       var dw = iw * sc, dh = ih * sc;
       var dx = (W - dw) / 2;
       var dy = (H - dh) / 2;
-      var fit = FELT_ART_FIT[style.feltDesign] || { focusY: 0.5 };
+      var fit = isCustom ? { focusY: 0.5 } : (FELT_ART_FIT[style.feltDesign] || { focusY: 0.5 });
       dy += (0.5 - fit.focusY) * dh;
       dy = Math.max(0, Math.min(H - dh, dy));
       ctx.drawImage(tint, dx, dy, dw, dh);
@@ -1337,6 +1420,56 @@ function buildPickers() {
   buildOne("die-color-select", DIE_COLORS, "dieColor");
   buildOne("die-design-select", DIE_DESIGNS, "dieDesign");
   buildOne("tray-select", TRAY_MATERIALS, "tray");
+  // Picking "My Design" with nothing uploaded opens the file picker.
+  var fd = document.getElementById("felt-design-select");
+  if (fd) {
+    fd.addEventListener("change", function () {
+      if (fd.value === "custom" && !customArtReady) {
+        var up2 = document.getElementById("design-upload");
+        if (up2) up2.click();
+      }
+    });
+  }
+  // Custom design upload: a black-on-white image becomes a design.
+  var up = document.getElementById("design-upload");
+  if (up) {
+    up.addEventListener("change", function () {
+      var file = up.files && up.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+          processCustomDesign(img, function (dataUrl) {
+            if (!saveCustomDesign(dataUrl)) {
+              alert("That image is too large to save on this device. Try a smaller one.");
+              return;
+            }
+            var m = new Image();
+            m.onload = function () {
+              customArt = m;
+              customArtReady = true;
+              setStyle({ feltDesign: "custom" });
+              updateCustomDesignUI();
+            };
+            m.src = dataUrl;
+          });
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+      up.value = "";
+    });
+  }
+  var rm = document.getElementById("design-remove");
+  if (rm) {
+    rm.addEventListener("click", function () {
+      removeCustomDesign();
+      setStyle({ feltDesign: "plain" });
+      updateCustomDesignUI();
+    });
+  }
+  updateCustomDesignUI();
   syncPickers();
 }
 

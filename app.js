@@ -3747,6 +3747,138 @@
     musicPlayTrack(track, offset, true);
     return true;
   }
+  // Skip vote: no one person can skip a song for the group on their
+  // own, but if more than half of the real players vote to skip, the
+  // track advances. The voting pool is the real players only (Nathan
+  // and Angela, as Milo and Sylvie); the DM-run companions do not
+  // vote. Votes live in a second music_state row (id 2) so both
+  // phones see the same count: track names the song the votes apply
+  // to, and started_by holds the voter names as a JSON list. A vote
+  // for a song that already ended is ignored, so votes reset whenever
+  // the track changes. Tapping again removes your vote.
+  var MUSIC_SKIP_VOTERS = ["Milo", "Sylvie"];
+  var MUSIC_SKIP_ROW_ID = 2;
+  var musicSkipVotes = [];
+  var musicSkipTrack = null;
+  var musicSkipVoter = null;
+
+  // Which real player is using this phone. The push label names the
+  // phone's owner (like detectDeviceRoller); the roller is the
+  // fallback. Companions and the DM are not real players, so a vote
+  // under one of those names does not count toward the skip.
+  async function musicVoterName() {
+    if (musicSkipVoter) return musicSkipVoter;
+    var voter = null;
+    try {
+      if (typeof pushRegistration !== "undefined" && pushRegistration) {
+        var sub = await pushRegistration.pushManager.getSubscription();
+        if (sub) {
+          var res = await db.from("push_subscriptions").select("label").eq("endpoint", sub.endpoint).limit(1);
+          if (res.data && res.data.length) {
+            var label = String(res.data[0].label || "").toLowerCase();
+            if (label.indexOf("nathan") !== -1) voter = "Milo";
+            else if (label.indexOf("angela") !== -1) voter = "Sylvie";
+          }
+        }
+      }
+    } catch (e) {}
+    if (!voter) {
+      var roller = musicDeviceName();
+      if (roller) voter = roller;
+    }
+    musicSkipVoter = voter || "Someone";
+    return musicSkipVoter;
+  }
+
+  function musicSkipCount() {
+    var seen = {};
+    var n = 0;
+    musicSkipVotes.forEach(function (v) {
+      if (MUSIC_SKIP_VOTERS.indexOf(v) !== -1 && !seen[v]) { seen[v] = true; n++; }
+    });
+    return n;
+  }
+
+  function musicUpdateSkipButton() {
+    var btn = document.querySelector("[data-music-skip]");
+    if (!btn) return;
+    var n = musicSkipCount();
+    var voted = musicSkipVoter && musicSkipVotes.indexOf(musicSkipVoter) !== -1;
+    btn.textContent = (voted ? "Voted" : "Vote to skip") + " (" + n + "/" + MUSIC_SKIP_VOTERS.length + ")";
+    btn.classList.toggle("voted", !!voted);
+  }
+
+  async function musicLoadSkipVotes() {
+    await musicVoterName();
+    try {
+      var res = await db.from("music_state").select("track, started_by").eq("id", MUSIC_SKIP_ROW_ID).single();
+      if (res.error || !res.data) { musicSkipVotes = []; musicSkipTrack = null; }
+      else {
+        var track = res.data.track || null;
+        var voters = [];
+        try {
+          var parsed = JSON.parse(res.data.started_by || "[]");
+          if (Array.isArray(parsed)) voters = parsed.filter(function (v) { return typeof v === "string"; });
+        } catch (e) {}
+        // Votes only apply to the song they were cast for. A stored
+        // vote for a song that already ended is stale and ignored.
+        var current = musicCurrentFile || musicSharedTrack;
+        if (track && current && track !== current) { musicSkipVotes = []; musicSkipTrack = null; }
+        else { musicSkipVotes = voters; musicSkipTrack = track; }
+      }
+    } catch (e) { musicSkipVotes = []; musicSkipTrack = null; }
+    musicUpdateSkipButton();
+    musicCheckSkip();
+  }
+
+  async function musicWriteSkipVotes(voters, track) {
+    try {
+      var now = new Date().toISOString();
+      await db.from("music_state").upsert(
+        { id: MUSIC_SKIP_ROW_ID, mood: "skip-votes", track: track, started_by: JSON.stringify(voters), playing: false, updated_at: now },
+        { onConflict: "id" }
+      );
+    } catch (e) { /* offline: the vote is lost until the next refresh */ }
+  }
+
+  async function musicToggleSkipVote() {
+    var voter = await musicVoterName();
+    var track = musicCurrentFile || musicSharedTrack;
+    if (!track) return;
+    // Re-read first, so a vote the other phone just cast is not lost.
+    await musicLoadSkipVotes();
+    // The re-read may have flushed a pending skip, so the track may
+    // have moved on. Re-read it before casting the vote.
+    track = musicCurrentFile || musicSharedTrack;
+    if (!track) return;
+    if (musicSkipTrack !== track) { musicSkipVotes = []; musicSkipTrack = track; }
+    var i = musicSkipVotes.indexOf(voter);
+    if (i !== -1) musicSkipVotes.splice(i, 1);
+    else musicSkipVotes.push(voter);
+    musicUpdateSkipButton();
+    await musicWriteSkipVotes(musicSkipVotes, track);
+    await musicLoadSkipVotes();
+  }
+
+  async function musicCheckSkip() {
+    if (!musicReady) return;
+    var track = musicCurrentFile || musicSharedTrack;
+    if (!track) return;
+    if (musicSkipTrack !== track) return;
+    if (musicSkipCount() < MUSIC_SKIP_VOTERS.length) return;
+    // Majority voted: clear the votes first, then advance. Clearing
+    // first stops the other phone from skipping again on the same
+    // votes. The advance picks the next track from the shuffle, which
+    // skips turned-off songs. Only a phone that is actually playing
+    // advances the track; a paused phone just clears the votes and
+    // lets the playing phone move on.
+    musicSkipVotes = [];
+    musicSkipTrack = null;
+    musicUpdateSkipButton();
+    await musicWriteSkipVotes([], track);
+    if (musicPlaying) musicAdvance();
+  }
+
   // Move to the next track: follow the shared one if the other phone
   // already moved on, otherwise pick the next track ourselves (which
   // shares it). Used by the natural advance paths and mood changes.
@@ -3936,6 +4068,7 @@
       }
     }
     musicUpdateUI();
+    musicLoadSkipVotes();
   }
   async function setMusicMood(mood) {
     if (!MUSIC_TRACKS.hasOwnProperty(mood)) return;
@@ -4704,6 +4837,7 @@
           musicBtn.setAttribute("aria-label", "Close music controls");
         }
         musicUpdateUI();
+        musicLoadSkipVotes();
       } else {
         closeMusicPanel();
       }
@@ -5099,6 +5233,9 @@
     loadMusicState();
     document.querySelectorAll("[data-music-toggle]").forEach(function (btn) {
       btn.addEventListener("click", function () { musicToggle(); });
+    });
+    document.querySelectorAll("[data-music-skip]").forEach(function (btn) {
+      btn.addEventListener("click", function () { musicToggleSkipVote(); });
     });
     document.querySelectorAll("[data-music-volume]").forEach(function (el) {
       el.addEventListener("input", function () { musicSetVolume(parseInt(el.value, 10) / 100); });

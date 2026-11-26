@@ -66,6 +66,19 @@ const DIE_DESIGNS = [
   { id: "glitter", name: "Glitter", girly: true },
   { id: "pearl", name: "Pearl", girly: true }
 ];
+// The colour of a printed felt design: the d20 and moon line work,
+// and the line-art prints (fairy, dagger, and the rest). The art
+// images are white masks; this tints them at draw time.
+const DESIGN_COLORS = [
+  { id: "gold", name: "Gold", css: "#f0dcaa", rgb: "240,220,170" },
+  { id: "silver", name: "Silver", css: "#d8d8d8", rgb: "216,216,216" },
+  { id: "cream", name: "Cream", css: "#ece5d3", rgb: "236,229,211" },
+  { id: "copper", name: "Copper", css: "#d98a5a", rgb: "217,138,90" },
+  { id: "crimson", name: "Crimson", css: "#c94a4a", rgb: "201,74,74" },
+  { id: "emerald", name: "Emerald", css: "#5ac98a", rgb: "90,201,138" },
+  { id: "sapphire", name: "Sapphire", css: "#6a8ad8", rgb: "106,138,216" },
+  { id: "rose", name: "Rose", css: "#e8a0b4", rgb: "232,160,180" }
+];
 // The tray rim: gold by default, or a wood grain like a real tray.
 const TRAY_MATERIALS = [
   { id: "gold", name: "Gold", girly: false },
@@ -86,7 +99,7 @@ const WOOD_TONES = {
   mahogany: { base: "#4a1a12", dark: "rgba(20,5,2,0.6)", light: "rgba(170,90,50,0.35)" }
 };
 
-const DEFAULT_STYLE = { feltColor: "charcoal", feltDesign: "plain", dieColor: "cream", dieDesign: "classic", tray: "gold" };
+const DEFAULT_STYLE = { feltColor: "charcoal", feltDesign: "plain", dieColor: "cream", dieDesign: "classic", tray: "gold", designColor: "gold" };
 
 // Wood grain for the tray rim: long wavy grain lines running along
 // the length, a few darker streaks, and a few knots. Drawn on a
@@ -191,9 +204,28 @@ function findById(list, id, fallback) {
   return fallback;
 }
 
+// The ink colour for a printed felt design, at the given opacity.
+function designInk(alpha) {
+  var dc = findById(DESIGN_COLORS, style.designColor, DESIGN_COLORS[0]);
+  return "rgba(" + dc.rgb + "," + alpha + ")";
+}
+
+// How each line-art print sits on the felt: focusY is where the face
+// sits as a fraction of the image height (0 top, 1 bottom), so the
+// face lands at the felt centre instead of the image centre.
+var FELT_ART_FIT = {
+  fairy: { focusY: 0.28 },
+  dagger: { focusY: 0.30 },
+  heraldic: { focusY: 0.5 },
+  demon: { focusY: 0.32 },
+  panda: { focusY: 0.35 },
+  wizard: { focusY: 0.35 },
+  gnome: { focusY: 0.45 }
+};
+
 // ---------- style persistence (per device, like the roller pick) ----------
 function loadStyle() {
-  var s = { feltColor: DEFAULT_STYLE.feltColor, feltDesign: DEFAULT_STYLE.feltDesign, dieColor: DEFAULT_STYLE.dieColor, dieDesign: DEFAULT_STYLE.dieDesign, tray: DEFAULT_STYLE.tray };
+  var s = { feltColor: DEFAULT_STYLE.feltColor, feltDesign: DEFAULT_STYLE.feltDesign, dieColor: DEFAULT_STYLE.dieColor, dieDesign: DEFAULT_STYLE.dieDesign, tray: DEFAULT_STYLE.tray, designColor: DEFAULT_STYLE.designColor };
   try {
     var raw = window.localStorage.getItem("hub-dice3d-style");
     if (raw) {
@@ -203,6 +235,7 @@ function loadStyle() {
       if (saved.dieColor) s.dieColor = saved.dieColor;
       if (saved.dieDesign) s.dieDesign = saved.dieDesign;
       if (saved.tray) s.tray = saved.tray;
+      if (saved.designColor) s.designColor = saved.designColor;
     }
   } catch (e) {}
   return s;
@@ -529,7 +562,7 @@ function makeFeltTexture() {
     // outer hexagon, inner triangle, and the spokes between them,
     // with a 20 in the middle. Light gold line over the felt.
     var cx = W / 2, cy = H / 2, R = 280;
-    var ink = "rgba(240,220,170,0.85)";
+    var ink = designInk(0.85);
     function pt(ang, r) {
       var a = ang * Math.PI / 180;
       return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
@@ -569,7 +602,7 @@ function makeFeltTexture() {
     // A crescent moon in the center, cream gold over the felt, with
     // a scatter of small stars around it.
     var mx = W / 2, my = H / 2, mr = 260;
-    ctx.fillStyle = "rgba(240,220,170,0.9)";
+    ctx.fillStyle = designInk(0.9);
     ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
     // cut the crescent with a felt-coloured disc, offset up and right
     ctx.fillStyle = base;
@@ -580,7 +613,7 @@ function makeFeltTexture() {
       var ddx = sx2 - mx, ddy = sy2 - my;
       if (Math.sqrt(ddx * ddx + ddy * ddy) < mr + 60) continue;
       var sr2 = randRange(2, 6);
-      ctx.fillStyle = "rgba(240,220,170," + randRange(0.5, 0.95) + ")";
+      ctx.fillStyle = designInk(randRange(0.5, 0.95));
       ctx.beginPath(); ctx.arc(sx2, sy2, sr2, 0, Math.PI * 2); ctx.fill();
     }
     for (var st2 = 0; st2 < 8; st2++) {
@@ -588,22 +621,36 @@ function makeFeltTexture() {
       var fdx = fx - mx, fdy = fy - my;
       if (Math.sqrt(fdx * fdx + fdy * fdy) < mr + 80) continue;
       var fr = randRange(10, 18);
-      ctx.fillStyle = "rgba(240,220,170,0.95)";
+      ctx.fillStyle = designInk(0.95);
       ctx.beginPath();
       ctx.moveTo(fx, fy - fr); ctx.quadraticCurveTo(fx, fy, fx + fr, fy);
       ctx.quadraticCurveTo(fx, fy, fx, fy + fr); ctx.quadraticCurveTo(fx, fy, fx - fr, fy);
       ctx.quadraticCurveTo(fx, fy, fx, fy - fr); ctx.fill();
     }
   } else if (FELT_ART_IDS.indexOf(style.feltDesign) !== -1) {
-    // One of the line-art designs: a transparent gold print, fitted
-    // and centered on the felt.
+    // One of the line-art designs: the image is a white mask, tinted
+    // to the chosen design colour, fitted to the felt and shifted so
+    // the face lands at the felt centre.
     var art = feltArt[style.feltDesign];
     if (feltArtReady[style.feltDesign] && art) {
-      var maxW = 1000, maxH = 700;
+      var dc = findById(DESIGN_COLORS, style.designColor, DESIGN_COLORS[0]);
+      var tint = document.createElement("canvas");
+      tint.width = art.naturalWidth; tint.height = art.naturalHeight;
+      var tctx = tint.getContext("2d");
+      tctx.drawImage(art, 0, 0);
+      tctx.globalCompositeOperation = "source-in";
+      tctx.fillStyle = dc.css;
+      tctx.fillRect(0, 0, tint.width, tint.height);
+      var maxW = 1150, maxH = 760;
       var iw = art.naturalWidth, ih = art.naturalHeight;
       var sc = Math.min(maxW / iw, maxH / ih, 1);
       var dw = iw * sc, dh = ih * sc;
-      ctx.drawImage(art, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      var dx = (W - dw) / 2;
+      var dy = (H - dh) / 2;
+      var fit = FELT_ART_FIT[style.feltDesign] || { focusY: 0.5 };
+      dy += (0.5 - fit.focusY) * dh;
+      dy = Math.max(0, Math.min(H - dh, dy));
+      ctx.drawImage(tint, dx, dy, dw, dh);
     }
     // wash the felt colour over the top so the art sits IN the
     // fabric, then re-grain so the cloth texture covers it too.
@@ -1256,6 +1303,7 @@ function setStyle(patch) {
   if (patch.dieColor) style.dieColor = patch.dieColor;
   if (patch.dieDesign) style.dieDesign = patch.dieDesign;
   if (patch.tray) style.tray = patch.tray;
+  if (patch.designColor) style.designColor = patch.designColor;
   saveStyle(style);
   applyFelt();
   applyDieStyle();
@@ -1264,7 +1312,7 @@ function setStyle(patch) {
 }
 
 // ---------- pickers ----------
-// The Design section is a collapsed <details> with four dropdowns.
+// The Design section is a collapsed <details> with six dropdowns.
 function buildPickers() {
   function buildOne(selectId, list, key) {
     var sel = document.getElementById(selectId);
@@ -1285,6 +1333,7 @@ function buildPickers() {
   }
   buildOne("felt-color-select", FELT_COLORS, "feltColor");
   buildOne("felt-design-select", FELT_DESIGNS, "feltDesign");
+  buildOne("design-color-select", DESIGN_COLORS, "designColor");
   buildOne("die-color-select", DIE_COLORS, "dieColor");
   buildOne("die-design-select", DIE_DESIGNS, "dieDesign");
   buildOne("tray-select", TRAY_MATERIALS, "tray");
@@ -1298,6 +1347,7 @@ function syncPickers() {
   }
   setVal("felt-color-select", style.feltColor);
   setVal("felt-design-select", style.feltDesign);
+  setVal("design-color-select", style.designColor);
   setVal("die-color-select", style.dieColor);
   setVal("die-design-select", style.dieDesign);
   setVal("tray-select", style.tray);
@@ -1311,7 +1361,7 @@ window.HubDice3D = {
   roll: rollDice,
   setStyle: setStyle,
   buildPickers: buildPickers,
-  getStyle: function () { return { feltColor: style.feltColor, feltDesign: style.feltDesign, dieColor: style.dieColor, dieDesign: style.dieDesign, tray: style.tray }; },
+  getStyle: function () { return { feltColor: style.feltColor, feltDesign: style.feltDesign, dieColor: style.dieColor, dieDesign: style.dieDesign, tray: style.tray, designColor: style.designColor }; },
   FELT_COLORS: FELT_COLORS,
   DIE_COLORS: DIE_COLORS,
   FELT_DESIGNS: FELT_DESIGNS,

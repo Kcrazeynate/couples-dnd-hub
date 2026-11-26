@@ -307,17 +307,72 @@
   // Narration voice picker for the AI Chat. Lists the voices on this
   // device, remembers the pick per device, and uses it when a Rick
   // reply is played aloud. Voices load asynchronously, so the list is
-  // filled again when the browser reports them.
+  // filled again when the browser reports them. The voice list is
+  // filtered to the device language by default, with a language
+  // dropdown to see the other languages.
   var AI_CHAT_VOICE_KEY = "hub-aichat-voice";
+  var AI_CHAT_VOICE_LANG_KEY = "hub-aichat-voice-lang";
 
   function aiChatSavedVoiceURI() {
     try { return window.localStorage.getItem(AI_CHAT_VOICE_KEY) || ""; } catch (e) { return ""; }
+  }
+
+  function aiChatDeviceLang() {
+    var lang = (navigator.language || "en").toLowerCase();
+    return lang.split("-")[0];
+  }
+
+  function aiChatSavedVoiceLang() {
+    try { return window.localStorage.getItem(AI_CHAT_VOICE_LANG_KEY) || ""; } catch (e) { return ""; }
+  }
+
+  function aiChatVoiceLang() {
+    var saved = aiChatSavedVoiceLang();
+    if (saved) return saved;
+    return aiChatDeviceLang();
+  }
+
+  function aiChatLangName(code) {
+    try {
+      if ("Intl" in window && Intl.DisplayNames) {
+        return new Intl.DisplayNames([navigator.language || "en"], { type: "language" }).of(code);
+      }
+    } catch (e) {}
+    return code;
+  }
+
+  function aiChatPopulateLangs(voices) {
+    var langSel = $("aichat-voice-lang");
+    if (!langSel) return;
+    var seen = {};
+    var codes = [];
+    voices.forEach(function (v) {
+      var code = (v.lang || "").toLowerCase().split("-")[0];
+      if (code && !seen[code]) { seen[code] = true; codes.push(code); }
+    });
+    codes.sort();
+    var current = aiChatVoiceLang();
+    langSel.innerHTML = "";
+    var all = document.createElement("option");
+    all.value = "";
+    all.textContent = "All languages";
+    langSel.appendChild(all);
+    codes.forEach(function (code) {
+      var opt = document.createElement("option");
+      opt.value = code;
+      opt.textContent = aiChatLangName(code);
+      langSel.appendChild(opt);
+    });
+    langSel.value = current;
+    if (langSel.value !== current) langSel.value = "";
   }
 
   function aiChatPopulateVoices() {
     var sel = $("aichat-voice");
     if (!sel || !("speechSynthesis" in window)) return;
     var voices = window.speechSynthesis.getVoices();
+    aiChatPopulateLangs(voices);
+    var lang = aiChatVoiceLang();
     var saved = aiChatSavedVoiceURI();
     sel.innerHTML = "";
     var def = document.createElement("option");
@@ -325,6 +380,8 @@
     def.textContent = "Default voice";
     sel.appendChild(def);
     voices.forEach(function (v) {
+      var code = (v.lang || "").toLowerCase().split("-")[0];
+      if (lang && code !== lang) return;
       var opt = document.createElement("option");
       opt.value = v.voiceURI;
       opt.textContent = v.name + (v.lang ? " (" + v.lang + ")" : "");
@@ -4631,6 +4688,13 @@
     if (aiChatVoiceSel) {
       aiChatVoiceSel.addEventListener("change", function () {
         try { window.localStorage.setItem(AI_CHAT_VOICE_KEY, aiChatVoiceSel.value); } catch (e) {}
+      });
+    }
+    var aiChatVoiceLangSel = $("aichat-voice-lang");
+    if (aiChatVoiceLangSel) {
+      aiChatVoiceLangSel.addEventListener("change", function () {
+        try { window.localStorage.setItem(AI_CHAT_VOICE_LANG_KEY, aiChatVoiceLangSel.value); } catch (e) {}
+        aiChatPopulateVoices();
       });
     }
     if ("speechSynthesis" in window) {

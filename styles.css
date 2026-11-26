@@ -2046,7 +2046,7 @@ header {
   right: calc(max(18px, env(safe-area-inset-right)) + 56px);
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 44px + 12px + 36px + 12px);
   z-index: 40;
-  width: min(280px, calc(100vw - 28px));
+  width: min(360px, calc(100vw - 28px));
   background: #342f27;
   border: 1px solid #7a6238;
   border-radius: 12px;
@@ -2063,7 +2063,25 @@ header {
   font-size: 1rem;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+/* The song title scrolls across when it is too long to fit, so the
+   whole name is visible instead of being cut off with an ellipsis.
+   The scrolling class and the shift and duration are set by
+   musicTitleMarquee in app.js. */
+.music-panel-title-text {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.music-panel-title.scrolling .music-panel-title-text {
+  animation: music-title-scroll var(--marquee-duration, 6s) linear infinite;
+}
+
+@keyframes music-title-scroll {
+  0%, 20% { transform: translateX(0); }
+  70%, 85% { transform: translateX(var(--marquee-shift, 0px)); }
+  100% { transform: translateX(0); }
 }
 
 .music-panel-top {

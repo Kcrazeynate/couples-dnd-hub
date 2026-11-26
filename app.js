@@ -1536,18 +1536,21 @@
         var e = res.data[i];
         var m = e.area_map_url || null;
         var pn = null;
+        var mids = locByLog[e.id] || [];
         if (!m) {
-          var mids = locByLog[e.id] || [];
           for (var j = 0; j < mids.length; j++) {
             var mk = mapMarkers.find(function (mm) { return mm.id === mids[j]; });
             if (!mk) continue;
-            pn = mk.label;
+            if (!pn) pn = mk.label;
             if (mk.area_map_url && mk.visited) { m = mk.area_map_url; break; }
             var entry = npcsByName[normName(mk.label)];
             if (entry && entry.area_map_url && entry.visited) { m = entry.area_map_url; break; }
           }
         }
-        if (m) {
+        // This entry records where the party is: it has its own map or it
+        // has locations. Stop here even if its place has no area map, so
+        // the area map closes instead of falling back to an older place.
+        if (m || mids.length) {
           mapUrl = m;
           placeName = pn;
           entryTitle = e.title;

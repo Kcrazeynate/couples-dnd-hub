@@ -98,22 +98,25 @@ header {
   margin: 0;
 }
 
-/* Floating hamburger menu. The tab grid is gone; one button floats
+/* Floating buttons. The tab grid is gone; one button floats
    bottom-right (thumb-friendly on phones) and opens a panel holding
-   the same tabs, grouped the same way. The button sits above the
-   music bar, and the back-to-top button moved to the bottom-left so
-   the two never collide. A smaller floating dice button sits directly
+   the same tabs, grouped the same way. The back-to-top button moved
+   to the bottom-left so the two never collide. The four buttons form
+   a 2x2 cluster at the bottom-right: a smaller dice button directly
    above the menu button, so the dice roller is one tap away from any
-   tab; the menu panel anchors above the dice button, so the three
-   stack neatly and never cover each other. A smaller floating chat
-   button sits to the left of the menu button at the same height, so
-   the AI Chat is one tap away too; it sits underneath the panel area
-   when the menu is open, the same way the menu button does. */
+   tab; a smaller chat button to the left of the menu button at the
+   same height, so the AI Chat is one tap away too; and a smaller
+   music button directly above the chat button, which pops out the
+   music controls (song title, volume, play/pause). The menu panel
+   anchors above the dice button, and the music panel anchors above
+   the music button, so the panels never cover the buttons. The chat
+   and music buttons sit underneath the panel area when the menu is
+   open, the same way the menu button does. */
 
 .dice-btn {
   position: fixed;
   right: max(18px, env(safe-area-inset-right));
-  bottom: calc(64px + max(18px, env(safe-area-inset-bottom)) + 56px + 12px);
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 56px + 12px);
   z-index: 41;
   width: 44px;
   height: 44px;
@@ -148,7 +151,7 @@ header {
 .aichat-btn {
   position: fixed;
   right: calc(max(18px, env(safe-area-inset-right)) + 56px + 12px);
-  bottom: calc(64px + max(18px, env(safe-area-inset-bottom)));
+  bottom: max(12px, env(safe-area-inset-bottom));
   z-index: 41;
   width: 44px;
   height: 44px;
@@ -177,10 +180,46 @@ header {
   outline-offset: 3px;
 }
 
+/* Floating music button: same size and style as the dice and chat
+   buttons, sitting directly above the chat button so the four
+   buttons form a 2x2 cluster. Visible in all modes. Tapping it pops
+   out the music controls panel. */
+.music-float-btn {
+  position: fixed;
+  right: calc(max(18px, env(safe-area-inset-right)) + 56px + 12px);
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 44px + 12px);
+  z-index: 41;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #342f27;
+  border: 1px solid #d9a441;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.music-float-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.music-float-btn:hover {
+  background: #342f27;
+  border-color: #f0c96a;
+}
+
+.music-float-btn:focus-visible {
+  outline: 3px solid #d9a441;
+  outline-offset: 3px;
+}
+
 .menu-btn {
   position: fixed;
   right: max(18px, env(safe-area-inset-right));
-  bottom: calc(64px + max(18px, env(safe-area-inset-bottom)));
+  bottom: max(12px, env(safe-area-inset-bottom));
   z-index: 41;
   width: 56px;
   height: 56px;
@@ -240,7 +279,7 @@ header {
 .nav-menu {
   position: fixed;
   right: max(14px, env(safe-area-inset-right));
-  bottom: calc(64px + max(18px, env(safe-area-inset-bottom)) + 56px + 12px + 44px + 12px);
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 56px + 12px + 44px + 12px);
   z-index: 40;
   width: min(340px, calc(100vw - 28px));
   max-height: min(72vh, 560px);
@@ -454,7 +493,7 @@ body.mode-interact [data-mode="dm"] {
 @media (max-width: 760px) {
   .dice-btn {
     right: max(14px, env(safe-area-inset-right));
-    bottom: calc(64px + max(14px, env(safe-area-inset-bottom)) + 52px + 10px);
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 52px + 10px);
     width: 40px;
     height: 40px;
   }
@@ -466,7 +505,7 @@ body.mode-interact [data-mode="dm"] {
 
   .aichat-btn {
     right: calc(max(14px, env(safe-area-inset-right)) + 52px + 10px);
-    bottom: calc(64px + max(14px, env(safe-area-inset-bottom)));
+    bottom: max(12px, env(safe-area-inset-bottom));
     width: 40px;
     height: 40px;
   }
@@ -476,16 +515,33 @@ body.mode-interact [data-mode="dm"] {
     height: 22px;
   }
 
+  .music-float-btn {
+    right: calc(max(14px, env(safe-area-inset-right)) + 52px + 10px);
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 40px + 10px);
+    width: 40px;
+    height: 40px;
+  }
+
+  .music-float-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .music-panel {
+    right: calc(max(14px, env(safe-area-inset-right)) + 52px + 10px);
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 40px + 10px + 40px + 10px);
+  }
+
   .menu-btn {
     right: max(14px, env(safe-area-inset-right));
-    bottom: calc(64px + max(14px, env(safe-area-inset-bottom)));
+    bottom: max(12px, env(safe-area-inset-bottom));
     width: 52px;
     height: 52px;
   }
 
   .nav-menu {
     right: max(10px, env(safe-area-inset-right));
-    bottom: calc(64px + max(14px, env(safe-area-inset-bottom)) + 52px + 10px + 40px + 10px);
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 52px + 10px + 40px + 10px);
     /* On phones the menu takes up only half the screen: it is shorter
        and scrolls inside itself, so the top tabs and the submenus
        stay reachable without shrinking the rows or the text. It is
@@ -1985,30 +2041,44 @@ header {
 }
 
 /* Ambient music player */
-.music-bar {
+.music-panel {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 30;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
-  background: rgba(33, 25, 16, 0.97);
-  border-top: 1px solid #7a6238;
-  color: #f2e9d5;
+  right: calc(max(18px, env(safe-area-inset-right)) + 56px + 12px);
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 44px + 12px + 44px + 12px);
+  z-index: 40;
+  width: min(280px, calc(100vw - 28px));
+  background: #342f27;
+  border: 1px solid #7a6238;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+  padding: 0.75rem 1rem;
 }
 
-.music-bar-mood {
-  background: none;
-  border: none;
+.music-panel-title {
+  margin: 0 0 0.5rem;
   color: #f0c96a;
   font-family: Georgia, "Palatino Linotype", "Book Antiqua", serif;
-  font-size: 15px;
-  padding: 4px 2px;
-  cursor: pointer;
+  font-size: 1rem;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.music-panel-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.music-panel-controls .music-vol-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.music-panel-controls .music-vol-label input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  width: auto;
 }
 
 .music-btn {
@@ -2025,12 +2095,6 @@ header {
 .music-btn:hover {
   background: #342f27;
   border-color: #d9a441;
-}
-
-.music-bar-vol {
-  flex: 1;
-  min-width: 60px;
-  accent-color: #d9a441;
 }
 
 .music-now .music-controls {
@@ -2076,23 +2140,56 @@ header {
 
 .music-tracks {
   margin: 8px 0 0;
-  padding-left: 18px;
+  padding-left: 0;
+  list-style: none;
   font-size: 14px;
   color: #f2e9d5;
 }
 
-/* Keep page content and the back-to-top button clear of the music bar. */
+.music-tracks li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.music-tracks li span {
+  flex: 1;
+  min-width: 0;
+}
+
+.music-track-off span {
+  color: #b3a284;
+  text-decoration: line-through;
+}
+
+.music-track-toggle {
+  flex: none;
+  background: #342f27;
+  color: #f0c96a;
+  border: 1px solid #7a6238;
+  border-radius: 6px;
+  padding: 2px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.music-track-toggle:hover {
+  border-color: #d9a441;
+}
+
+/* Keep page content clear of the floating buttons at the bottom. */
 #app main {
-  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
 }
 
 .back-to-top {
-  bottom: calc(64px + max(18px, env(safe-area-inset-bottom)));
+  bottom: max(12px, env(safe-area-inset-bottom));
 }
 
 @media (max-width: 760px) {
   .back-to-top {
-    bottom: calc(64px + max(14px, env(safe-area-inset-bottom)));
+    bottom: max(12px, env(safe-area-inset-bottom));
   }
 }
 

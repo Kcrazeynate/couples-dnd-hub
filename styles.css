@@ -151,6 +151,15 @@ header .subtitle {
   flex: none;
 }
 
+.zoom-label {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  color: #f2e9d5;
+  min-width: 3.5rem;
+  justify-content: center;
+}
+
 /* Floating buttons. The tab grid is gone; one button floats
    bottom-right (thumb-friendly on phones) and opens a panel holding
    the same tabs, grouped the same way. The back-to-top button moved

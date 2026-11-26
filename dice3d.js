@@ -23,7 +23,10 @@ const FELT_COLORS = [
   { id: "teal", name: "Teal", css: "#14524a", hex: 0x14524a, girly: false },
   { id: "royal", name: "Royal Purple", css: "#4a2a6a", hex: 0x4a2a6a, girly: false },
   { id: "chocolate", name: "Chocolate", css: "#4a3220", hex: 0x4a3220, girly: false },
-  { id: "slate", name: "Slate", css: "#3a3f44", hex: 0x3a3f44, girly: false }
+  { id: "slate", name: "Slate", css: "#3a3f44", hex: 0x3a3f44, girly: false },
+  { id: "crimson", name: "Crimson", css: "#6a1a1a", hex: 0x6a1a1a, girly: false },
+  { id: "midnight", name: "Midnight Blue", css: "#16233d", hex: 0x16233d, girly: false },
+  { id: "emerald", name: "Emerald", css: "#0f3d2a", hex: 0x0f3d2a, girly: false }
 ];
 const DIE_COLORS = [
   { id: "cream", name: "Cream", css: "#ece5d3", hex: 0xece5d3, girly: false },
@@ -35,14 +38,19 @@ const DIE_COLORS = [
   { id: "copper", name: "Copper", css: "#b87333", hex: 0xb87333, girly: false },
   { id: "emerald", name: "Emerald", css: "#1a6a3a", hex: 0x1a6a3a, girly: false, dark: true },
   { id: "sapphire", name: "Sapphire", css: "#1a3a8a", hex: 0x1a3a8a, girly: false, dark: true },
-  { id: "onyx", name: "Onyx", css: "#1a1a1a", hex: 0x1a1a1a, girly: false, dark: true }
+  { id: "onyx", name: "Onyx", css: "#1a1a1a", hex: 0x1a1a1a, girly: false, dark: true },
+  { id: "amethyst", name: "Amethyst", css: "#7a4a9a", hex: 0x7a4a9a, girly: false, dark: true },
+  { id: "jade", name: "Jade", css: "#2a7a5a", hex: 0x2a7a5a, girly: false, dark: true },
+  { id: "topaz", name: "Topaz", css: "#d98a2a", hex: 0xd98a2a, girly: false }
 ];
 const FELT_DESIGNS = [
   { id: "plain", name: "Plain", girly: false },
   { id: "mottled", name: "Mottled", girly: false },
   { id: "leather", name: "Leather", girly: false },
   { id: "roses", name: "Roses", girly: true },
-  { id: "starlight", name: "Starlight", girly: true }
+  { id: "starlight", name: "Starlight", girly: true },
+  { id: "d20", name: "D20 Outline", girly: false },
+  { id: "moon", name: "Crescent Moon", girly: false }
 ];
 const DIE_DESIGNS = [
   { id: "classic", name: "Classic", girly: false },
@@ -56,47 +64,80 @@ const TRAY_MATERIALS = [
   { id: "gold", name: "Gold", girly: false },
   { id: "walnut", name: "Walnut", girly: false },
   { id: "oak", name: "Oak", girly: false },
-  { id: "ebony", name: "Ebony", girly: false }
+  { id: "ebony", name: "Ebony", girly: false },
+  { id: "cherry", name: "Cherry", girly: false },
+  { id: "maple", name: "Maple", girly: false },
+  { id: "mahogany", name: "Mahogany", girly: false }
 ];
 // Wood tones: base, dark grain, light grain.
 const WOOD_TONES = {
   walnut: { base: "#4a2c17", dark: "rgba(30,15,5,0.55)", light: "rgba(190,130,70,0.35)" },
   oak: { base: "#8a5a28", dark: "rgba(70,40,10,0.5)", light: "rgba(230,180,110,0.35)" },
-  ebony: { base: "#241a14", dark: "rgba(5,3,2,0.6)", light: "rgba(120,90,60,0.3)" }
+  ebony: { base: "#241a14", dark: "rgba(5,3,2,0.6)", light: "rgba(120,90,60,0.3)" },
+  cherry: { base: "#6a2a1a", dark: "rgba(40,12,5,0.55)", light: "rgba(220,140,90,0.35)" },
+  maple: { base: "#c8a06a", dark: "rgba(120,80,30,0.5)", light: "rgba(245,220,170,0.4)" },
+  mahogany: { base: "#4a1a12", dark: "rgba(20,5,2,0.6)", light: "rgba(170,90,50,0.35)" }
 };
 
 const DEFAULT_STYLE = { feltColor: "charcoal", feltDesign: "plain", dieColor: "cream", dieDesign: "classic", tray: "gold" };
 
 // Wood grain for the tray rim: long wavy grain lines running along
-// the length, a few darker streaks, and a knot or two. Drawn on a
-// wide canvas so the grain runs along the rim, not across it.
+// the length, a few darker streaks, and a few knots. Drawn on a
+// wide high-res canvas (1024x256) so the grain runs along the rim,
+// not across it, and stays sharp up close.
 function makeWoodTexture(tone) {
+  var W = 1024, H = 256;
   var c = document.createElement("canvas");
-  c.width = 512; c.height = 128;
+  c.width = W; c.height = H;
   var ctx = c.getContext("2d");
   ctx.fillStyle = tone.base;
-  ctx.fillRect(0, 0, 512, 128);
+  ctx.fillRect(0, 0, W, H);
+  // soft broad colour bands, so the wood is not one flat tone
+  for (var b = 0; b < 8; b++) {
+    var by = randRange(0, H), br = randRange(40, 110);
+    var bg = ctx.createRadialGradient(W / 2, by, 0, W / 2, by, br * 2);
+    bg.addColorStop(0, Math.random() < 0.5 ? tone.light : tone.dark);
+    bg.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+  }
   // long grain lines, gently wavy
-  for (var i = 0; i < 60; i++) {
-    var y = randRange(0, 128);
+  for (var i = 0; i < 140; i++) {
+    var y = randRange(0, H);
     var dark = Math.random() < 0.65;
     ctx.beginPath();
     ctx.moveTo(-10, y);
-    var segs = 5;
+    var segs = 6;
     for (var k = 1; k <= segs; k++) {
-      ctx.lineTo((k / segs) * 522 - 10, y + randRange(-6, 6));
+      ctx.lineTo((k / segs) * (W + 20) - 10, y + randRange(-8, 8));
     }
     ctx.strokeStyle = dark ? tone.dark : tone.light;
-    ctx.lineWidth = randRange(0.8, 2.4);
+    ctx.lineWidth = randRange(0.7, 2.2);
     ctx.stroke();
   }
+  // fine grain: many hairline lines for a close-up read
+  for (var f = 0; f < 220; f++) {
+    var fy = randRange(0, H);
+    ctx.beginPath();
+    ctx.moveTo(-10, fy);
+    for (var k2 = 1; k2 <= 4; k2++) {
+      ctx.lineTo((k2 / 4) * (W + 20) - 10, fy + randRange(-3, 3));
+    }
+    ctx.strokeStyle = Math.random() < 0.6 ? tone.dark : tone.light;
+    ctx.globalAlpha = randRange(0.25, 0.6);
+    ctx.lineWidth = randRange(0.4, 0.9);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
   // a few darker streaks
-  for (var j = 0; j < 10; j++) {
-    var y2 = randRange(0, 128);
+  for (var j = 0; j < 20; j++) {
+    var y2 = randRange(0, H);
     ctx.beginPath();
     ctx.moveTo(-10, y2);
-    for (var k2 = 1; k2 <= 4; k2++) {
-      ctx.lineTo((k2 / 4) * 522 - 10, y2 + randRange(-4, 4));
+    for (var k3 = 1; k3 <= 5; k3++) {
+      ctx.lineTo((k3 / 5) * (W + 20) - 10, y2 + randRange(-5, 5));
     }
     ctx.strokeStyle = tone.dark;
     ctx.lineWidth = randRange(2.5, 5);
@@ -104,20 +145,27 @@ function makeWoodTexture(tone) {
     ctx.stroke();
     ctx.globalAlpha = 1;
   }
-  // a knot
-  var kx = randRange(80, 432), ky = randRange(30, 98);
-  for (var r = 12; r > 0; r -= 3) {
-    ctx.beginPath();
-    ctx.ellipse(kx, ky, r * 1.8, r, 0, 0, Math.PI * 2);
-    ctx.strokeStyle = tone.dark;
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
+  // knots
+  for (var n = 0; n < 3; n++) {
+    var kx = randRange(120, W - 120), ky = randRange(40, H - 40);
+    for (var r = 22; r > 0; r -= 4) {
+      ctx.beginPath();
+      ctx.ellipse(kx, ky, r * 1.8, r, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = tone.dark;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
+  }
+  // fine pore speckle
+  for (var p = 0; p < 1800; p++) {
+    ctx.fillStyle = Math.random() < 0.5 ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.06)";
+    ctx.fillRect(randRange(0, W), randRange(0, H), randRange(1, 2), randRange(1, 2));
   }
   var tex = new THREE.CanvasTexture(c);
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(2, 1);
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
@@ -198,7 +246,7 @@ function canvasTexture(size, draw) {
   var ctx = c.getContext("2d");
   draw(ctx, size);
   var tex = new THREE.CanvasTexture(c);
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
@@ -244,6 +292,26 @@ function makeFeltTexture() {
   var ctx = c.getContext("2d");
   ctx.fillStyle = base;
   ctx.fillRect(0, 0, W, H);
+  // Fine woven cloth grain over the whole felt, so it reads as fabric
+  // and not flat paint, under every design.
+  ctx.globalAlpha = 0.05;
+  ctx.strokeStyle = "rgba(255,255,255,0.5)";
+  ctx.lineWidth = 1;
+  for (var wx = 0; wx < W; wx += 4) {
+    ctx.beginPath(); ctx.moveTo(wx, 0); ctx.lineTo(wx, H); ctx.stroke();
+  }
+  for (var wy = 0; wy < H; wy += 4) {
+    ctx.beginPath(); ctx.moveTo(0, wy); ctx.lineTo(W, wy); ctx.stroke();
+  }
+  ctx.globalAlpha = 0.04;
+  ctx.strokeStyle = "rgba(0,0,0,0.6)";
+  for (var wx2 = 2; wx2 < W; wx2 += 4) {
+    ctx.beginPath(); ctx.moveTo(wx2, 0); ctx.lineTo(wx2, H); ctx.stroke();
+  }
+  for (var wy2 = 2; wy2 < H; wy2 += 4) {
+    ctx.beginPath(); ctx.moveTo(0, wy2); ctx.lineTo(W, wy2); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
   if (style.feltDesign === "mottled") {
     // Mottled like the reference wallpaper, as one composition
     // across the whole tray: big irregular patches with torn edges
@@ -429,6 +497,76 @@ function makeFeltTexture() {
       ctx.fillStyle = "rgba(255,255,255,0.95)";
       ctx.beginPath(); ctx.arc(sx, sy, sr * 0.22, 0, Math.PI * 2); ctx.fill();
     }
+  } else if (style.feltDesign === "d20") {
+    // A wireframe d20 outline in the center, like the printed trays:
+    // outer hexagon, inner triangle, and the spokes between them,
+    // with a 20 in the middle. Light gold line over the felt.
+    var cx = W / 2, cy = H / 2, R = 280;
+    var ink = "rgba(240,220,170,0.85)";
+    function pt(ang, r) {
+      var a = ang * Math.PI / 180;
+      return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+    }
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 6;
+    ctx.lineJoin = "round";
+    ctx.shadowColor = "rgba(240,220,170,0.5)";
+    ctx.shadowBlur = 12;
+    // outer hexagon, pointy top
+    var hex = [-90, -30, 30, 90, 150, 210].map(function (a) { return pt(a, R); });
+    ctx.beginPath();
+    hex.forEach(function (p, i) { if (i === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); });
+    ctx.closePath();
+    ctx.stroke();
+    // inner triangle, the top face
+    var tri = [pt(-90, R * 0.45), pt(30, R * 0.45), pt(150, R * 0.45)];
+    ctx.beginPath();
+    tri.forEach(function (p, i) { if (i === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); });
+    ctx.closePath();
+    ctx.stroke();
+    // spokes from each inner vertex to the nearest outer vertices
+    ctx.beginPath();
+    ctx.moveTo(tri[0][0], tri[0][1]); ctx.lineTo(hex[0][0], hex[0][1]);
+    ctx.moveTo(tri[1][0], tri[1][1]); ctx.lineTo(hex[2][0], hex[2][1]);
+    ctx.moveTo(tri[1][0], tri[1][1]); ctx.lineTo(hex[3][0], hex[3][1]);
+    ctx.moveTo(tri[2][0], tri[2][1]); ctx.lineTo(hex[4][0], hex[4][1]);
+    ctx.moveTo(tri[2][0], tri[2][1]); ctx.lineTo(hex[3][0], hex[3][1]);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = ink;
+    ctx.font = "800 110px Georgia, 'Times New Roman', serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("20", cx, cy + 6);
+  } else if (style.feltDesign === "moon") {
+    // A crescent moon in the center, cream gold over the felt, with
+    // a scatter of small stars around it.
+    var mx = W / 2, my = H / 2, mr = 260;
+    ctx.fillStyle = "rgba(240,220,170,0.9)";
+    ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
+    // cut the crescent with a felt-coloured disc, offset up and right
+    ctx.fillStyle = base;
+    ctx.beginPath(); ctx.arc(mx + 110, my - 50, mr * 0.92, 0, Math.PI * 2); ctx.fill();
+    // small stars around the moon
+    for (var st = 0; st < 40; st++) {
+      var sx2 = randRange(60, W - 60), sy2 = randRange(60, H - 60);
+      var ddx = sx2 - mx, ddy = sy2 - my;
+      if (Math.sqrt(ddx * ddx + ddy * ddy) < mr + 60) continue;
+      var sr2 = randRange(2, 6);
+      ctx.fillStyle = "rgba(240,220,170," + randRange(0.5, 0.95) + ")";
+      ctx.beginPath(); ctx.arc(sx2, sy2, sr2, 0, Math.PI * 2); ctx.fill();
+    }
+    for (var st2 = 0; st2 < 8; st2++) {
+      var fx = randRange(80, W - 80), fy = randRange(80, H - 80);
+      var fdx = fx - mx, fdy = fy - my;
+      if (Math.sqrt(fdx * fdx + fdy * fdy) < mr + 80) continue;
+      var fr = randRange(10, 18);
+      ctx.fillStyle = "rgba(240,220,170,0.95)";
+      ctx.beginPath();
+      ctx.moveTo(fx, fy - fr); ctx.quadraticCurveTo(fx, fy, fx + fr, fy);
+      ctx.quadraticCurveTo(fx, fy, fx, fy + fr); ctx.quadraticCurveTo(fx, fy, fx - fr, fy);
+      ctx.quadraticCurveTo(fx, fy, fx, fy - fr); ctx.fill();
+    }
   }
   // Soft dark vignette at the corners, like a real tray.
   var grad = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, W * 0.62);
@@ -439,7 +577,7 @@ function makeFeltTexture() {
   var tex = new THREE.CanvasTexture(c);
   tex.wrapS = THREE.ClampToEdgeWrapping;
   tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
@@ -457,7 +595,7 @@ function makeDieMaterial() {
     });
   }
   if (style.dieDesign === "marble") {
-    var marbleTex = canvasTexture(256, function (ctx, s) {
+    var marbleTex = canvasTexture(512, function (ctx, s) {
       ctx.fillStyle = die.css;
       ctx.fillRect(0, 0, s, s);
       // Swirled second color, Baron of Dice style.
@@ -481,7 +619,7 @@ function makeDieMaterial() {
     return new THREE.MeshStandardMaterial({ map: marbleTex, metalness: 0.08, roughness: 0.3 });
   }
   if (style.dieDesign === "glitter") {
-    var glitterTex = canvasTexture(256, function (ctx, s) {
+    var glitterTex = canvasTexture(512, function (ctx, s) {
       ctx.fillStyle = die.css;
       ctx.fillRect(0, 0, s, s);
       var cols = ["rgba(255,255,255,0.9)", "rgba(255,215,130,0.9)", "rgba(255,150,200,0.9)", "rgba(180,220,255,0.9)"];
@@ -499,7 +637,7 @@ function makeDieMaterial() {
 // Face texture: a number, or pips for a d6. Transparent background.
 function makeFaceTexture(value, sides) {
   var ink = faceInkColor();
-  return canvasTexture(256, function (ctx, s) {
+  return canvasTexture(512, function (ctx, s) {
     ctx.clearRect(0, 0, s, s);
     ctx.fillStyle = ink;
     ctx.strokeStyle = ink;

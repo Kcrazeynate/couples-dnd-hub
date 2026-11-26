@@ -864,9 +864,12 @@ function makeDieMaterial() {
 }
 
 // Face texture: a number, or pips for a d6. Transparent background.
+// 512, not 1024: five d20s is a hundred face textures, and 1024 each
+// is 400MB of GPU memory, which crashed phones. 512 is still sharp
+// at die size and quarters the memory.
 function makeFaceTexture(value, sides) {
   var ink = faceInkColor();
-  return canvasTexture(1024, function (ctx, s) {
+  return canvasTexture(512, function (ctx, s) {
     ctx.clearRect(0, 0, s, s);
     ctx.fillStyle = ink;
     ctx.strokeStyle = ink;

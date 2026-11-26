@@ -50,7 +50,14 @@ const FELT_DESIGNS = [
   { id: "roses", name: "Roses", girly: true },
   { id: "starlight", name: "Starlight", girly: true },
   { id: "d20", name: "D20 Outline", girly: false },
-  { id: "moon", name: "Crescent Moon", girly: false }
+  { id: "moon", name: "Crescent Moon", girly: false },
+  { id: "fairy", name: "Fairy", girly: true },
+  { id: "dagger", name: "Dagger & Skull", girly: false },
+  { id: "heraldic", name: "Heraldic Beasts", girly: false },
+  { id: "demon", name: "Demon", girly: false },
+  { id: "panda", name: "Panda Warrior", girly: false },
+  { id: "wizard", name: "Wizard", girly: false },
+  { id: "gnome", name: "Gnome", girly: true }
 ];
 const DIE_DESIGNS = [
   { id: "classic", name: "Classic", girly: false },
@@ -220,6 +227,26 @@ try {
   };
   roseImg.src = "assets/felt-rose.png";
 } catch (e) { roseImg = null; }
+
+// The line-art felt designs are transparent PNGs with gold line work,
+// made from Nathan's reference images. Preload them at module load so
+// they are ready when the Dice tab opens; when one finishes loading,
+// redraw the felt if it is the current design.
+var FELT_ART_IDS = ["fairy", "dagger", "heraldic", "demon", "panda", "wizard", "gnome"];
+var feltArt = {}, feltArtReady = {};
+FELT_ART_IDS.forEach(function (id) {
+  try {
+    var img = new Image();
+    img.onload = function () {
+      feltArtReady[id] = true;
+      try {
+        if (trayFloor && style.feltDesign === id) applyFelt();
+      } catch (e) {}
+    };
+    img.src = "assets/felt-" + id + ".png";
+    feltArt[id] = img;
+  } catch (e) {}
+});
 
 // ---------- crypto random ----------
 function randRange(min, max) {
@@ -566,6 +593,27 @@ function makeFeltTexture() {
       ctx.moveTo(fx, fy - fr); ctx.quadraticCurveTo(fx, fy, fx + fr, fy);
       ctx.quadraticCurveTo(fx, fy, fx, fy + fr); ctx.quadraticCurveTo(fx, fy, fx - fr, fy);
       ctx.quadraticCurveTo(fx, fy, fx, fy - fr); ctx.fill();
+    }
+  } else if (FELT_ART_IDS.indexOf(style.feltDesign) !== -1) {
+    // One of the line-art designs: a transparent gold print, fitted
+    // and centered on the felt.
+    var art = feltArt[style.feltDesign];
+    if (feltArtReady[style.feltDesign] && art) {
+      var maxW = 1000, maxH = 700;
+      var iw = art.naturalWidth, ih = art.naturalHeight;
+      var sc = Math.min(maxW / iw, maxH / ih, 1);
+      var dw = iw * sc, dh = ih * sc;
+      ctx.drawImage(art, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    }
+    // wash the felt colour over the top so the art sits IN the
+    // fabric, then re-grain so the cloth texture covers it too.
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+    for (var n = 0; n < 1200; n++) {
+      ctx.fillStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.05)";
+      ctx.fillRect(Math.random() * W, Math.random() * H, 2, 2);
     }
   }
   // Soft dark vignette at the corners, like a real tray.

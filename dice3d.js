@@ -771,14 +771,42 @@ function makeFeltTexture() {
   return tex;
 }
 
+// Real photo textures for the die bodies (all CC0). Loaded once at page
+// load; a die falls back to a solid color until its image arrives, then
+// refreshes to the textured look.
+var DIE_TEX = { marble: null, glitter: null, brushed: null };
+var DIE_TEX_URLS = {
+  marble: "assets/die-marble.jpg",
+  glitter: "assets/die-glitter.jpg",
+  brushed: "assets/die-brushed.jpg"
+};
+function loadDieTextures() {
+  Object.keys(DIE_TEX_URLS).forEach(function (key) {
+    if (DIE_TEX[key]) return;
+    var img = new Image();
+    img.onload = function () {
+      var tex = new THREE.CanvasTexture(img);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.anisotropy = 8;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      DIE_TEX[key] = tex;
+      applyDieStyle();
+    };
+    img.src = DIE_TEX_URLS[key];
+  });
+}
+loadDieTextures();
+
 // Die body material, from the die color and design. The look is smooth
 // manufactured dice, not drawn: solid color and soft blended color, with
 // the richness from gloss and reflections, not from a pattern on the face.
 function makeDieMaterial() {
   var die = findById(DIE_COLORS, style.dieColor, DIE_COLORS[0]);
   if (style.dieDesign === "metal") {
-    // Smooth polished metal. No texture: the environment map gives it
-    // realistic reflections.
+    if (DIE_TEX.brushed) {
+      return new THREE.MeshStandardMaterial({ map: DIE_TEX.brushed, color: die.hex, metalness: 0.9, roughness: 0.32 });
+    }
     return new THREE.MeshStandardMaterial({ color: die.hex, metalness: 0.95, roughness: 0.22 });
   }
   if (style.dieDesign === "pearl") {
@@ -788,53 +816,16 @@ function makeDieMaterial() {
     });
   }
   if (style.dieDesign === "marble") {
-    // Smooth swirled resin: large soft color blends, no hard lines.
-    var marbleTex = canvasTexture(1024, function (ctx, s) {
-      ctx.fillStyle = die.css;
-      ctx.fillRect(0, 0, s, s);
-      var second = die.id === "cream" ? "rgba(150, 40, 50, 0.6)" :
-        die.id === "bloodred" ? "rgba(230, 220, 200, 0.55)" :
-        die.id === "gold" ? "rgba(120, 30, 30, 0.55)" :
-        die.id === "rosepink" ? "rgba(150, 60, 110, 0.55)" :
-        die.dark ? "rgba(230, 220, 200, 0.55)" : "rgba(60, 40, 120, 0.55)";
-      // Large soft blobs of the second color, blurred into smooth blends.
-      ctx.filter = "blur(28px)";
-      for (var i = 0; i < 14; i++) {
-        var x = randRange(0, s), y = randRange(0, s), r = randRange(s * 0.12, s * 0.3);
-        var g = ctx.createRadialGradient(x, y, 0, x, y, r);
-        g.addColorStop(0, second);
-        g.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-      }
-      ctx.filter = "none";
-      // A few soft pale wisps for depth.
-      ctx.filter = "blur(10px)";
-      for (var w = 0; w < 10; w++) {
-        var wx = randRange(0, s), wy = randRange(0, s), wr = randRange(s * 0.05, s * 0.14);
-        var wg = ctx.createRadialGradient(wx, wy, 0, wx, wy, wr);
-        wg.addColorStop(0, "rgba(255,255,255,0.25)");
-        wg.addColorStop(1, "rgba(255,255,255,0)");
-        ctx.fillStyle = wg;
-        ctx.beginPath(); ctx.arc(wx, wy, wr, 0, Math.PI * 2); ctx.fill();
-      }
-      ctx.filter = "none";
-    });
-    return new THREE.MeshPhysicalMaterial({ map: marbleTex, metalness: 0.08, roughness: 0.28, clearcoat: 0.8, clearcoatRoughness: 0.18 });
+    if (DIE_TEX.marble) {
+      return new THREE.MeshPhysicalMaterial({ map: DIE_TEX.marble, color: die.hex, metalness: 0.08, roughness: 0.28, clearcoat: 0.8, clearcoatRoughness: 0.18 });
+    }
+    return new THREE.MeshPhysicalMaterial({ color: die.hex, metalness: 0.05, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.22 });
   }
   if (style.dieDesign === "glitter") {
-    // Fine suspended glitter flecks, small and dense.
-    var glitterTex = canvasTexture(1024, function (ctx, s) {
-      ctx.fillStyle = die.css;
-      ctx.fillRect(0, 0, s, s);
-      var cols = ["rgba(255,255,255,0.85)", "rgba(255,215,130,0.85)", "rgba(255,150,200,0.7)", "rgba(180,220,255,0.7)"];
-      for (var i = 0; i < 2600; i++) {
-        ctx.fillStyle = cols[Math.floor(randRange(0, cols.length))];
-        var gx = randRange(0, s), gy = randRange(0, s), gr = randRange(0.5, 1.6);
-        ctx.beginPath(); ctx.arc(gx, gy, gr, 0, Math.PI * 2); ctx.fill();
-      }
-    });
-    return new THREE.MeshPhysicalMaterial({ map: glitterTex, metalness: 0.25, roughness: 0.28, clearcoat: 0.8, clearcoatRoughness: 0.18 });
+    if (DIE_TEX.glitter) {
+      return new THREE.MeshPhysicalMaterial({ map: DIE_TEX.glitter, color: die.hex, metalness: 0.25, roughness: 0.28, clearcoat: 0.8, clearcoatRoughness: 0.18 });
+    }
+    return new THREE.MeshPhysicalMaterial({ color: die.hex, metalness: 0.05, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.22 });
   }
   // Classic: clean polished resin, solid color, no pattern.
   return new THREE.MeshPhysicalMaterial({ color: die.hex, metalness: 0.05, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.22 });

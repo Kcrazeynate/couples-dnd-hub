@@ -290,6 +290,9 @@
   // Reads a Rick reply aloud with the browser speech synthesis.
   // Tapping Play on another reply stops the one already playing.
   // Uses the narration voice picked in the AI Chat tab, when one is set.
+  // iOS Safari needs resume() and a short pause after cancel(), or it
+  // silently drops the new utterance, so a speak that follows a cancel
+  // waits a beat first.
   function aiChatPlay(id) {
     if (!("speechSynthesis" in window)) {
       alert("This browser does not support reading aloud.");
@@ -297,11 +300,17 @@
     }
     var text = aiChatCache[id];
     if (!text) return;
-    window.speechSynthesis.cancel();
+    var synth = window.speechSynthesis;
+    synth.resume();
     var utter = new SpeechSynthesisUtterance(text);
     var voice = aiChatChosenVoice();
     if (voice) utter.voice = voice;
-    window.speechSynthesis.speak(utter);
+    if (synth.speaking || synth.pending) {
+      synth.cancel();
+      setTimeout(function () { synth.speak(utter); }, 120);
+    } else {
+      synth.speak(utter);
+    }
   }
 
   // Narration voice picker for the AI Chat. Lists the voices on this

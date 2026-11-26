@@ -791,7 +791,11 @@ function loadDieTextures() {
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.RepeatWrapping;
       tex.anisotropy = 8;
-      tex.colorSpace = THREE.SRGBColorSpace;
+      // Color maps are sRGB; metalness/roughness maps stay linear so
+      // their values are read as-is.
+      if (key !== "glitterMetal" && key !== "glitterRough") {
+        tex.colorSpace = THREE.SRGBColorSpace;
+      }
       DIE_TEX[key] = tex;
       applyDieStyle();
     };
@@ -828,12 +832,13 @@ function makeDieMaterial() {
       // Real sparkle: the flakes are metallic and smooth, the resin base
       // is not, so the flakes flash as the die turns. The metalness and
       // roughness maps isolate the flakes; envMapIntensity makes the
-      // flash bright.
+      // flash bright. Metalness stays below 1 so the glitter texture
+      // itself still shows through on dark die colors.
       var glitterMat = {
         map: DIE_TEX.glitter, color: die.hex,
-        metalness: 1.0, roughness: 0.35,
+        metalness: 0.7, roughness: 0.35,
         clearcoat: 0.8, clearcoatRoughness: 0.18,
-        envMapIntensity: 1.8
+        envMapIntensity: 2.0
       };
       if (DIE_TEX.glitterMetal) glitterMat.metalnessMap = DIE_TEX.glitterMetal;
       if (DIE_TEX.glitterRough) glitterMat.roughnessMap = DIE_TEX.glitterRough;

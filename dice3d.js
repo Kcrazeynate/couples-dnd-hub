@@ -829,16 +829,15 @@ function makeDieMaterial() {
   }
   if (style.dieDesign === "glitter") {
     if (DIE_TEX.glitter) {
-      // Real sparkle: the flakes are metallic and smooth, the resin base
-      // is not, so the flakes flash as the die turns. The metalness and
-      // roughness maps isolate the flakes; envMapIntensity makes the
-      // flash bright. Metalness stays below 1 so the glitter texture
-      // itself still shows through on dark die colors.
+      // Glitter done right: the base resin is nearly matte, only the
+      // flakes are shiny. No clearcoat (that glossed the whole die).
+      // The metalness map makes only the flakes metallic, the roughness
+      // map makes only the flakes smooth, and the base stays matte.
       var glitterMat = {
         map: DIE_TEX.glitter, color: die.hex,
-        metalness: 0.7, roughness: 0.35,
-        clearcoat: 0.8, clearcoatRoughness: 0.18,
-        envMapIntensity: 2.0
+        metalness: 1.0, roughness: 1.0,
+        clearcoat: 0.0,
+        envMapIntensity: 1.0
       };
       if (DIE_TEX.glitterMetal) glitterMat.metalnessMap = DIE_TEX.glitterMetal;
       if (DIE_TEX.glitterRough) glitterMat.roughnessMap = DIE_TEX.glitterRough;

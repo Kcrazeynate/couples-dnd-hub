@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=73">
+<link rel="stylesheet" href="styles.css?v=74">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=4"></script>
 <script type="importmap">
@@ -343,10 +343,16 @@
           <button type="button" data-die="12">d12</button>
           <button type="button" data-die="20" class="selected">d20</button>
         </div>
-        <label for="dice-mod">Modifier</label>
-        <input type="number" id="dice-mod" value="0" step="1">
-        <label for="dice-mod-source">Modifier from</label>
-        <select id="dice-mod-source"></select>
+        <div class="row dice-mod-row">
+          <div>
+            <label for="dice-mod">Modifier</label>
+            <input type="number" id="dice-mod" value="0" step="1">
+          </div>
+          <div>
+            <label for="dice-mod-source">Modifier from</label>
+            <select id="dice-mod-source"></select>
+          </div>
+        </div>
         <p class="hint">Fills from the rolling character's sheet. Pick Manual to type it yourself.</p>
         <label for="dice-mode">Roll type</label>
         <select id="dice-mode">

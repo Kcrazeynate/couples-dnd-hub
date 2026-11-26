@@ -3354,6 +3354,8 @@
       { file: "assets/music/combat-battle-against-unrivaled-combatants.mp3", title: "Battle Against Unrivaled Combatants", gain: 0.62 },
       { file: "assets/music/combat-the-skirmish-in-the-keep.mp3", title: "The Skirmish in the Keep", gain: 0.58 },
       { file: "assets/music/combat-the-siege-of-night-battle-at-the-gates.mp3", title: "The Siege of Night - Battle at the Gates", gain: 0.59 },
+      { file: "assets/music/combat-the-siege-of-night-siege-of-the-undead.mp3", title: "The Siege of Night - Siege of the Undead", gain: 0.63 },
+      { file: "assets/music/combat-the-siege-of-night-shadows-over-the-erdtree.mp3", title: "The Siege of Night - Shadows over the Erdtree", gain: 0.64 },
     ],
     dungeon: [
       { file: "assets/music/dungeon-blood-magic.mp3", title: "Blood Magic", gain: 1.0 },

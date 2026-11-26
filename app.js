@@ -3195,6 +3195,7 @@
 
       { file: "assets/music/travel-the-road-goes-ever-on.mp3", title: "The Road Goes Ever On", gain: 0.61 },
       { file: "assets/music/travel-the-road-goes-ever-on-north-by-foot.mp3", title: "The Road Goes Ever On (North by Foot)", gain: 0.61 },
+      { file: "assets/music/travel-pine-forests-in-the-morning-sun.mp3", title: "Pine Forests in the Morning Sun", gain: 0.63 },
     ],
     combat: [
       { file: "assets/music/combat-to-crush-your-enemies.mp3", title: "To Crush Your Enemies", gain: 0.98 },

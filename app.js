@@ -429,6 +429,14 @@
     def.value = "";
     def.textContent = "Default voice";
     sel.appendChild(def);
+    voices.sort(function (a, b) {
+      var sa = aiChatVoiceScore(a);
+      var sb = aiChatVoiceScore(b);
+      if (sa !== sb) return sa - sb;
+      var na = (a.name || "").toLowerCase();
+      var nb = (b.name || "").toLowerCase();
+      return na < nb ? -1 : na > nb ? 1 : 0;
+    });
     voices.forEach(function (v) {
       var code = (v.lang || "").toLowerCase().split("-")[0];
       if (lang && code !== lang) return;
@@ -439,6 +447,15 @@
     });
     sel.value = saved;
     if (sel.value !== saved) sel.value = "";
+  }
+
+  // Best voices first in the picker: Enhanced or Premium voices, then
+  // on-device voices, then the rest.
+  function aiChatVoiceScore(v) {
+    var name = (v.name || "").toLowerCase();
+    if (name.indexOf("enhanced") !== -1 || name.indexOf("premium") !== -1) return 0;
+    if (v.localService) return 1;
+    return 2;
   }
 
   function aiChatChosenVoice() {

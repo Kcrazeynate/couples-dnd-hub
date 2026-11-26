@@ -790,9 +790,13 @@ function makeDieMaterial() {
     return new THREE.MeshStandardMaterial({ color: die.hex, metalness: 0.95, roughness: 0.22 });
   }
   if (style.dieDesign === "pearl") {
+    // Pearl that works in every color: the die color is the base tint
+    // and the iridescence adds the pearly rainbow shimmer on top, so
+    // a red die is a red pearl, a blue die a blue pearl, and so on.
+    // (It used to be hardcoded to one off-white, ignoring the color.)
     return new THREE.MeshPhysicalMaterial({
-      color: 0xf5efe2, metalness: 0.1, roughness: 0.25,
-      iridescence: 0.7, iridescenceIOR: 1.3, clearcoat: 0.6, clearcoatRoughness: 0.3
+      color: die.hex, metalness: 0.1, roughness: 0.25,
+      iridescence: 0.8, iridescenceIOR: 1.3, clearcoat: 0.6, clearcoatRoughness: 0.3
     });
   }
   if (style.dieDesign === "marble") {

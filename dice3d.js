@@ -78,7 +78,12 @@ const DESIGN_COLORS = [
   { id: "crimson", name: "Crimson", css: "#c94a4a", rgb: "201,74,74" },
   { id: "emerald", name: "Emerald", css: "#5ac98a", rgb: "90,201,138" },
   { id: "sapphire", name: "Sapphire", css: "#6a8ad8", rgb: "106,138,216" },
-  { id: "rose", name: "Rose", css: "#e8a0b4", rgb: "232,160,180" }
+  { id: "rose", name: "Rose", css: "#e8a0b4", rgb: "232,160,180" },
+  { id: "black", name: "Black", css: "#1a1a1a", rgb: "26,26,26" },
+  { id: "oxblood", name: "Oxblood", css: "#5a1a1a", rgb: "90,26,26" },
+  { id: "midnight", name: "Midnight", css: "#1a2a4a", rgb: "26,42,74" },
+  { id: "forest", name: "Forest", css: "#1a3a2a", rgb: "26,58,42" },
+  { id: "plum", name: "Plum", css: "#3a1a4a", rgb: "58,26,74" }
 ];
 // The tray rim: gold by default, or a wood grain like a real tray.
 const TRAY_MATERIALS = [
@@ -100,7 +105,7 @@ const WOOD_TONES = {
   mahogany: { base: "#4a1a12", dark: "rgba(20,5,2,0.6)", light: "rgba(170,90,50,0.35)" }
 };
 
-const DEFAULT_STYLE = { feltColor: "charcoal", feltDesign: "plain", dieColor: "cream", dieDesign: "classic", tray: "gold", designColor: "gold" };
+const DEFAULT_STYLE = { feltColor: "charcoal", feltDesign: "plain", dieColor: "cream", dieDesign: "classic", tray: "gold", designColor: "gold", designZoom: 1 };
 
 // Wood grain for the tray rim: long wavy grain lines running along
 // the length, a few darker streaks, and a few knots. Drawn on a
@@ -226,7 +231,7 @@ var FELT_ART_FIT = {
 
 // ---------- style persistence (per device, like the roller pick) ----------
 function loadStyle() {
-  var s = { feltColor: DEFAULT_STYLE.feltColor, feltDesign: DEFAULT_STYLE.feltDesign, dieColor: DEFAULT_STYLE.dieColor, dieDesign: DEFAULT_STYLE.dieDesign, tray: DEFAULT_STYLE.tray, designColor: DEFAULT_STYLE.designColor };
+  var s = { feltColor: DEFAULT_STYLE.feltColor, feltDesign: DEFAULT_STYLE.feltDesign, dieColor: DEFAULT_STYLE.dieColor, dieDesign: DEFAULT_STYLE.dieDesign, tray: DEFAULT_STYLE.tray, designColor: DEFAULT_STYLE.designColor, designZoom: DEFAULT_STYLE.designZoom };
   try {
     var raw = window.localStorage.getItem("hub-dice3d-style");
     if (raw) {
@@ -237,6 +242,7 @@ function loadStyle() {
       if (saved.dieDesign) s.dieDesign = saved.dieDesign;
       if (saved.tray) s.tray = saved.tray;
       if (saved.designColor) s.designColor = saved.designColor;
+      if (typeof saved.designZoom === "number" && saved.designZoom >= 0.5 && saved.designZoom <= 2) s.designZoom = saved.designZoom;
     }
   } catch (e) {}
   return s;
@@ -726,13 +732,18 @@ function makeFeltTexture() {
       tctx.fillRect(0, 0, tint.width, tint.height);
       var maxW = 1150, maxH = 760;
       var iw = art.naturalWidth, ih = art.naturalHeight;
-      var sc = Math.min(maxW / iw, maxH / ih, 1);
+      var sc = Math.min(maxW / iw, maxH / ih, 1) * (style.designZoom || 1);
       var dw = iw * sc, dh = ih * sc;
       var dx = (W - dw) / 2;
       var dy = (H - dh) / 2;
       var fit = isCustom ? { focusY: 0.5 } : (FELT_ART_FIT[style.feltDesign] || { focusY: 0.5 });
       dy += (0.5 - fit.focusY) * dh;
-      dy = Math.max(0, Math.min(H - dh, dy));
+      // Only clamp when the design fits the felt; when zoomed in, let
+      // it crop around the face instead of sliding away.
+      if (dw <= W && dh <= H) {
+        dx = Math.max(0, Math.min(W - dw, dx));
+        dy = Math.max(0, Math.min(H - dh, dy));
+      }
       ctx.drawImage(tint, dx, dy, dw, dh);
     }
     // wash the felt colour over the top so the art sits IN the
@@ -1387,6 +1398,7 @@ function setStyle(patch) {
   if (patch.dieDesign) style.dieDesign = patch.dieDesign;
   if (patch.tray) style.tray = patch.tray;
   if (patch.designColor) style.designColor = patch.designColor;
+  if (typeof patch.designZoom === "number") style.designZoom = Math.max(0.5, Math.min(2, patch.designZoom));
   saveStyle(style);
   applyFelt();
   applyDieStyle();
@@ -1470,6 +1482,19 @@ function buildPickers() {
     });
   }
   updateCustomDesignUI();
+  // Design zoom: bigger or smaller print on the felt.
+  var zin = document.getElementById("design-zoom-in");
+  if (zin) zin.addEventListener("click", function () {
+    setStyle({ designZoom: Math.min(2, (style.designZoom || 1) + 0.25) });
+  });
+  var zout = document.getElementById("design-zoom-out");
+  if (zout) zout.addEventListener("click", function () {
+    setStyle({ designZoom: Math.max(0.5, (style.designZoom || 1) - 0.25) });
+  });
+  var zreset = document.getElementById("design-zoom-reset");
+  if (zreset) zreset.addEventListener("click", function () {
+    setStyle({ designZoom: 1 });
+  });
   syncPickers();
 }
 
@@ -1484,6 +1509,8 @@ function syncPickers() {
   setVal("die-color-select", style.dieColor);
   setVal("die-design-select", style.dieDesign);
   setVal("tray-select", style.tray);
+  var zl = document.getElementById("design-zoom-label");
+  if (zl) zl.textContent = Math.round((style.designZoom || 1) * 100) + "%";
 }
 
 // ---------- public API ----------
@@ -1494,7 +1521,7 @@ window.HubDice3D = {
   roll: rollDice,
   setStyle: setStyle,
   buildPickers: buildPickers,
-  getStyle: function () { return { feltColor: style.feltColor, feltDesign: style.feltDesign, dieColor: style.dieColor, dieDesign: style.dieDesign, tray: style.tray, designColor: style.designColor }; },
+  getStyle: function () { return { feltColor: style.feltColor, feltDesign: style.feltDesign, dieColor: style.dieColor, dieDesign: style.dieDesign, tray: style.tray, designColor: style.designColor, designZoom: style.designZoom }; },
   FELT_COLORS: FELT_COLORS,
   DIE_COLORS: DIE_COLORS,
   FELT_DESIGNS: FELT_DESIGNS,

@@ -180,17 +180,17 @@ header {
   outline-offset: 3px;
 }
 
-/* Floating music button: same size and style as the dice and chat
-   buttons, sitting directly above the chat button so the four
-   buttons form a 2x2 cluster. Visible in all modes. Tapping it pops
-   out the music controls panel. */
+/* Floating music button: slightly smaller than the dice and chat
+   buttons, shifted right of the chat button so it sits an equal
+   distance from the dice button and the chat button. Visible in
+   all modes. Tapping it pops out the music controls panel. */
 .music-float-btn {
   position: fixed;
-  right: calc(max(18px, env(safe-area-inset-right)) + 56px + 12px);
+  right: calc(max(18px, env(safe-area-inset-right)) + 56px);
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 44px + 12px);
   z-index: 41;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: #342f27;
   border: 1px solid #d9a441;
@@ -202,8 +202,8 @@ header {
 }
 
 .music-float-btn svg {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
 }
 
 .music-float-btn:hover {
@@ -516,20 +516,20 @@ body.mode-interact [data-mode="dm"] {
   }
 
   .music-float-btn {
-    right: calc(max(14px, env(safe-area-inset-right)) + 52px + 10px);
+    right: calc(max(14px, env(safe-area-inset-right)) + 50px);
     bottom: calc(max(12px, env(safe-area-inset-bottom)) + 40px + 10px);
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
   }
 
   .music-float-btn svg {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
   }
 
   .music-panel {
-    right: calc(max(14px, env(safe-area-inset-right)) + 52px + 10px);
-    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 40px + 10px + 40px + 10px);
+    right: calc(max(14px, env(safe-area-inset-right)) + 50px);
+    bottom: calc(max(12px, env(safe-area-inset-bottom)) + 40px + 10px + 32px + 10px);
   }
 
   .menu-btn {
@@ -2043,8 +2043,8 @@ header {
 /* Ambient music player */
 .music-panel {
   position: fixed;
-  right: calc(max(18px, env(safe-area-inset-right)) + 56px + 12px);
-  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 44px + 12px + 44px + 12px);
+  right: calc(max(18px, env(safe-area-inset-right)) + 56px);
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + 44px + 12px + 36px + 12px);
   z-index: 40;
   width: min(280px, calc(100vw - 28px));
   background: #342f27;

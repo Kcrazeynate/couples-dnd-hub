@@ -3271,6 +3271,7 @@
       { file: "assets/music/combat-trollocs.mp3", title: "Trollocs", gain: 0.37 },
 
       { file: "assets/music/combat-riverton.mp3", title: "Riverton", gain: 0.63 },
+      { file: "assets/music/combat-battle-against-unrivaled-combatants.mp3", title: "Battle Against Unrivaled Combatants", gain: 0.62 },
     ],
     dungeon: [
       { file: "assets/music/dungeon-blood-magic.mp3", title: "Blood Magic", gain: 1.0 },

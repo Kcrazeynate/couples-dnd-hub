@@ -774,11 +774,13 @@ function makeFeltTexture() {
 // Real photo textures for the die bodies (all CC0). Loaded once at page
 // load; a die falls back to a solid color until its image arrives, then
 // refreshes to the textured look.
-var DIE_TEX = { marble: null, glitter: null, brushed: null };
+var DIE_TEX = { marble: null, glitter: null, brushed: null, glitterMetal: null, glitterRough: null };
 var DIE_TEX_URLS = {
   marble: "assets/die-marble.jpg",
   glitter: "assets/die-glitter.jpg",
-  brushed: "assets/die-brushed.jpg"
+  brushed: "assets/die-brushed.jpg",
+  glitterMetal: "assets/die-glitter-metal.png",
+  glitterRough: "assets/die-glitter-rough.png"
 };
 function loadDieTextures() {
   Object.keys(DIE_TEX_URLS).forEach(function (key) {
@@ -823,7 +825,19 @@ function makeDieMaterial() {
   }
   if (style.dieDesign === "glitter") {
     if (DIE_TEX.glitter) {
-      return new THREE.MeshPhysicalMaterial({ map: DIE_TEX.glitter, color: die.hex, metalness: 0.25, roughness: 0.28, clearcoat: 0.8, clearcoatRoughness: 0.18 });
+      // Real sparkle: the flakes are metallic and smooth, the resin base
+      // is not, so the flakes flash as the die turns. The metalness and
+      // roughness maps isolate the flakes; envMapIntensity makes the
+      // flash bright.
+      var glitterMat = {
+        map: DIE_TEX.glitter, color: die.hex,
+        metalness: 1.0, roughness: 0.35,
+        clearcoat: 0.8, clearcoatRoughness: 0.18,
+        envMapIntensity: 1.8
+      };
+      if (DIE_TEX.glitterMetal) glitterMat.metalnessMap = DIE_TEX.glitterMetal;
+      if (DIE_TEX.glitterRough) glitterMat.roughnessMap = DIE_TEX.glitterRough;
+      return new THREE.MeshPhysicalMaterial(glitterMat);
     }
     return new THREE.MeshPhysicalMaterial({ color: die.hex, metalness: 0.05, roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.22 });
   }

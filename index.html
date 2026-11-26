@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=60">
+<link rel="stylesheet" href="styles.css?v=62">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=4"></script>
 <script type="importmap">
@@ -128,6 +128,27 @@
       <h3>Archive</h3>
       <p class="hint">Past scenes, newest first. Facts that are no longer current move here, with what changed (XP, gold, items), so anything from the past can still be checked.</p>
       <div id="state-archive"></div>
+    </section>
+
+    <section id="tab-aichat" class="tab-panel">
+      <h2>AI Chat</h2>
+      <p class="hint">Talk to Rick, your Dungeon Master, without leaving the hub. Ask what is happening, say what your hero does, or ask a rules question. Rick answers here, usually within a minute or two.</p>
+      <div id="aichat-list" class="aichat-list"></div>
+      <form id="aichat-form" class="form" data-mode="interact">
+        <label for="aichat-author">Chatting as</label>
+        <select id="aichat-author">
+          <option value="Nathan">Nathan</option>
+          <option value="Angela">Angela</option>
+        </select>
+        <label for="aichat-body">Message Rick</label>
+        <textarea id="aichat-body" rows="3" placeholder="Say what your hero does, or ask Rick a question"></textarea>
+        <div class="row">
+          <button type="submit">Send</button>
+          <button type="button" id="aichat-dictate">Dictate</button>
+          <button type="button" id="aichat-refresh">Refresh</button>
+        </div>
+        <p class="hint" id="aichat-dictate-status"></p>
+      </form>
     </section>
 
     <section id="tab-companions" class="tab-panel" hidden>
@@ -516,6 +537,7 @@
       <div class="nav-menu-btns nav-menu-sub-rows">
         <button type="button" data-tab="aiguide" class="tab-btn ai-tab">AI Guide</button>
         <button type="button" data-tab="state" class="tab-btn ai-tab">State</button>
+        <button type="button" data-tab="aichat" class="tab-btn ai-tab">AI Chat</button>
       </div>
     </div>
     <div class="nav-menu-sub" data-submenu="more">
@@ -532,6 +554,9 @@
       </div>
     </div>
   </nav>
+  <button type="button" id="aichat-btn" class="aichat-btn" aria-label="Go to AI Chat">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-8l-4 4v-4H6a2 2 0 0 1-2-2V5z" fill="none" stroke="#f0c96a" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8.5" cy="9.5" r="1.4" fill="#f0c96a"/><circle cx="12" cy="9.5" r="1.4" fill="#f0c96a"/><circle cx="15.5" cy="9.5" r="1.4" fill="#f0c96a"/></svg>
+  </button>
   <button type="button" id="dice-btn" class="dice-btn" aria-label="Go to Dice">
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="#f0c96a" stroke-width="1.8"/><circle cx="8" cy="8" r="1.8" fill="#f0c96a"/><circle cx="16" cy="8" r="1.8" fill="#f0c96a"/><circle cx="12" cy="12" r="1.8" fill="#f0c96a"/><circle cx="8" cy="16" r="1.8" fill="#f0c96a"/><circle cx="16" cy="16" r="1.8" fill="#f0c96a"/></svg>
   </button>
@@ -675,6 +700,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=13"></script>
-<script src="app.js?v=96"></script>
+<script src="app.js?v=98"></script>
 </body>
 </html>

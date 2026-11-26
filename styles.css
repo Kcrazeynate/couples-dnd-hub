@@ -741,7 +741,7 @@ button.danger:hover {
 }
 
 .aichat-voice-row select {
-  flex: 1 1 160px;
+  flex: 1 1 120px;
   min-width: 0;
 }
 

@@ -1349,13 +1349,22 @@ function spawnDie(sides) {
   return die;
 }
 
+function isSharedDieTexture(tex) {
+  return tex === DIE_TEX.marble || tex === DIE_TEX.glitter || tex === DIE_TEX.brushed || tex === DIE_TEX.glitterMetal || tex === DIE_TEX.glitterRough;
+}
+
 function clearDice() {
   dice.forEach(function (d) {
     scene.remove(d.group);
     world.removeBody(d.body);
     d.group.traverse(function (o) {
       if (o.material) {
-        if (o.material.map) o.material.map.dispose();
+        // Do not dispose the shared die body textures (DIE_TEX); they
+        // are reused by the next dice. Disposing one here killed the
+        // glitter/marble/brushed look after the first re-roll. Only
+        // dispose one-off textures like the face numbers.
+        var map = o.material.map;
+        if (map && !isSharedDieTexture(map)) map.dispose();
         o.material.dispose();
       }
       if (o.geometry) o.geometry.dispose();

@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=62">
+<link rel="stylesheet" href="styles.css?v=63">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=4"></script>
 <script type="importmap">
@@ -133,6 +133,12 @@
     <section id="tab-aichat" class="tab-panel">
       <h2>AI Chat</h2>
       <p class="hint">Talk to Rick, your Dungeon Master, without leaving the hub. Ask what is happening, say what your hero does, or ask a rules question. Rick answers here, usually within a minute or two.</p>
+      <div class="row aichat-voice-row">
+        <label for="aichat-voice">Narration voice</label>
+        <select id="aichat-voice">
+          <option value="">Default voice</option>
+        </select>
+      </div>
       <div id="aichat-list" class="aichat-list"></div>
       <form id="aichat-form" class="form" data-mode="interact">
         <label for="aichat-author">Chatting as</label>
@@ -700,6 +706,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=13"></script>
-<script src="app.js?v=100"></script>
+<script src="app.js?v=101"></script>
 </body>
 </html>

@@ -144,6 +144,7 @@
     board: loadMessages,
     log: loadLogEntries,
     state: loadState,
+    aichat: loadAiChat,
     characters: loadCharacters,
     companions: loadCompanions,
     quests: loadQuests,
@@ -187,7 +188,7 @@
       list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
       return;
     }
-    var res = await db.from("messages").select("*").order("created_at", { ascending: false });
+    var res = await db.from("messages").select("*").not("body", "like", "[AI chat]%").order("created_at", { ascending: false });
     if (res.error) {
       list.innerHTML = '<p class="error">Could not load messages.</p>';
       return;
@@ -225,6 +226,134 @@
     }
     $("message-body").value = "";
     loadMessages();
+  }
+
+  // ---------- AI Chat ----------
+
+  // The chat lives in the same messages table as the board, with the
+  // "[AI chat] " prefix marking chat rows. The board query excludes
+  // them, and the chat query only fetches them. The prefix is stripped
+  // before rendering, so the player never sees it.
+  var AI_CHAT_PREFIX = "[AI chat] ";
+  var aiChatCache = {};
+
+  function aiChatText(body) {
+    if (!body) return "";
+    if (body.indexOf(AI_CHAT_PREFIX) === 0) return body.slice(AI_CHAT_PREFIX.length);
+    return body;
+  }
+
+  async function loadAiChat() {
+    var list = $("aichat-list");
+    if (!list) return;
+    if (!configured) {
+      list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
+      return;
+    }
+    var res = await db.from("messages").select("*").like("body", "[AI chat]%").order("created_at", { ascending: true });
+    if (res.error) {
+      list.innerHTML = '<p class="error">Could not load the chat.</p>';
+      return;
+    }
+    if (!res.data.length) {
+      list.innerHTML = '<p class="empty">No messages yet. Say hello to Rick below.</p>';
+      return;
+    }
+    aiChatCache = {};
+    list.innerHTML = res.data.map(function (m) {
+      aiChatCache[m.id] = aiChatText(m.body);
+      var isRick = m.author === "Rick";
+      return '<div class="aichat-bubble' + (isRick ? ' aichat-rick' : ' aichat-player') + '">' +
+        '<p class="meta">' + escapeHtml(m.author) + ' - ' + escapeHtml(fmtTime(m.created_at)) + '</p>' +
+        '<p>' + escapeHtml(aiChatText(m.body)) + '</p>' +
+        (isRick ? '<button type="button" class="aichat-play" data-aichat-id="' + escapeHtml(String(m.id)) + '">Play</button>' : '') +
+        '</div>';
+    }).join("");
+    list.scrollTop = list.scrollHeight;
+  }
+
+  async function postAiChat(e) {
+    e.preventDefault();
+    if (!configured) return setupNeeded();
+    var author = $("aichat-author").value;
+    var text = $("aichat-body").value.trim();
+    if (!text) return;
+    var res = await db.from("messages").insert({ author: author, body: AI_CHAT_PREFIX + text });
+    if (res.error) {
+      alert("Could not send the message. Check the connection and try again.");
+      return;
+    }
+    $("aichat-body").value = "";
+    loadAiChat();
+  }
+
+  // Reads a Rick reply aloud with the browser speech synthesis.
+  // Tapping Play on another reply stops the one already playing.
+  function aiChatPlay(id) {
+    if (!("speechSynthesis" in window)) {
+      alert("This browser does not support reading aloud.");
+      return;
+    }
+    var text = aiChatCache[id];
+    if (!text) return;
+    window.speechSynthesis.cancel();
+    var utter = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(utter);
+  }
+
+  // Dictation with the browser speech recognition (Chrome and Safari).
+  // The transcript is appended to the message box, so the player can
+  // check it before sending.
+  var aiChatRecognizing = false;
+  var aiChatRecognition = null;
+
+  function aiChatDictate() {
+    var status = $("aichat-dictate-status");
+    var btn = $("aichat-dictate");
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      if (status) status.textContent = "Dictation is not supported in this browser. Type your message instead.";
+      return;
+    }
+    if (aiChatRecognizing && aiChatRecognition) {
+      aiChatRecognition.stop();
+      return;
+    }
+    var rec = new SR();
+    aiChatRecognition = rec;
+    rec.lang = "en-US";
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onresult = function (ev) {
+      var transcript = "";
+      for (var i = ev.resultIndex; i < ev.results.length; i++) {
+        if (ev.results[i].isFinal) transcript += ev.results[i][0].transcript;
+      }
+      if (transcript) {
+        var box = $("aichat-body");
+        box.value = (box.value ? box.value + " " : "") + transcript.trim();
+        box.focus();
+      }
+    };
+    rec.onend = function () {
+      aiChatRecognizing = false;
+      if (status) status.textContent = "";
+      if (btn) btn.textContent = "Dictate";
+    };
+    rec.onerror = function () {
+      aiChatRecognizing = false;
+      if (status) status.textContent = "Dictation did not hear anything. Try again.";
+      if (btn) btn.textContent = "Dictate";
+    };
+    try {
+      rec.start();
+      aiChatRecognizing = true;
+      if (status) status.textContent = "Listening... tap Dictate again to stop.";
+      if (btn) btn.textContent = "Stop";
+    } catch (e) {
+      aiChatRecognizing = false;
+      if (status) status.textContent = "Dictation could not start in this browser.";
+    }
   }
 
   // ---------- Push notifications ----------
@@ -4136,7 +4265,7 @@
       return;
     }
     var tables = {
-      messages: loadMessages,
+      messages: function () { loadMessages(); loadAiChat(); },
       log_entries: function () { loadLogEntries(); loadCurrentArea(); },
       characters: loadCharacters,
       quests: loadQuests,
@@ -4300,6 +4429,15 @@
       diceBtn.addEventListener("click", function () { switchTab("dice"); closeMenu(); });
     }
 
+    // A smaller floating button to the left of the hamburger button,
+    // so the AI Chat is one tap away from any tab. It carries no
+    // data-mode tag, so it is visible in every mode, and tapping it
+    // closes the menu (if open) and jumps to the AI Chat tab.
+    var aiChatBtn = $("aichat-btn");
+    if (aiChatBtn) {
+      aiChatBtn.addEventListener("click", function () { switchTab("aichat"); closeMenu(); });
+    }
+
     // ---------- hub modes: View / Interact / Dungeon Master ----------
     // View hides every input (anything tagged data-mode). Interact shows
     // the player inputs. Dungeon Master adds the Map and NPC management
@@ -4438,6 +4576,13 @@
 
     $("message-form").addEventListener("submit", postMessage);
     $("messages-refresh").addEventListener("click", loadMessages);
+    $("aichat-form").addEventListener("submit", postAiChat);
+    $("aichat-refresh").addEventListener("click", loadAiChat);
+    $("aichat-dictate").addEventListener("click", aiChatDictate);
+    $("aichat-list").addEventListener("click", function (e) {
+      var btn = e.target.closest ? e.target.closest("[data-aichat-id]") : null;
+      if (btn) aiChatPlay(btn.getAttribute("data-aichat-id"));
+    });
     $("log-form").addEventListener("submit", addLogEntry);
     $("char-form").addEventListener("submit", saveChar);
     $("char-cancel").addEventListener("click", closeCharModal);
@@ -4653,11 +4798,12 @@
     updateDiceMode();
 
     loadMessages();
-    // The 15-second fallback refresh covers the board AND the roll log.
-    // Realtime drops on phones (sleep, background tabs), and the fallback
-    // used to refresh only the board, so a roll on another phone never
-    // showed up until the Dice tab was reopened.
-    setInterval(function () { loadMessages(); refreshRollsList(); }, 15000);
+    loadAiChat();
+    // The 15-second fallback refresh covers the board AND the roll log
+    // AND the AI Chat. Realtime drops on phones (sleep, background
+    // tabs), and the fallback used to refresh only the board, so a roll
+    // on another phone never showed up until the Dice tab was reopened.
+    setInterval(function () { loadMessages(); loadAiChat(); refreshRollsList(); }, 15000);
     loadCombatants();
     loadMusicState();
     document.querySelectorAll("[data-music-toggle]").forEach(function (btn) {

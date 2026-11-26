@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=65">
+<link rel="stylesheet" href="styles.css?v=66">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=4"></script>
 <script type="importmap">
@@ -559,7 +559,10 @@
     </div>
   </nav>
   <div id="music-panel" class="music-panel hidden" aria-label="Music controls">
-    <p class="music-panel-title" data-music-title>Travel</p>
+    <div class="music-panel-top">
+      <p class="music-panel-title" data-music-title>Travel</p>
+      <button type="button" class="music-btn music-skip-btn" data-music-skip>Vote to skip (0/2)</button>
+    </div>
     <div class="music-panel-controls">
       <button type="button" class="music-btn" data-music-toggle><span data-music-play-label>Play</span></button>
       <label class="music-vol-label">Volume <input type="range" min="0" max="100" value="70" data-music-volume aria-label="Volume"></label>
@@ -714,6 +717,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=13"></script>
-<script src="app.js?v=109"></script>
+<script src="app.js?v=110"></script>
 </body>
 </html>

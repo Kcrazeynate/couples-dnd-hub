@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=63">
+<link rel="stylesheet" href="styles.css?v=64">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=4"></script>
 <script type="importmap">
@@ -134,6 +134,10 @@
       <h2>AI Chat</h2>
       <p class="hint">Talk to Rick, your Dungeon Master, without leaving the hub. Ask what is happening, say what your hero does, or ask a rules question. Rick answers here, usually within a minute or two.</p>
       <div class="row aichat-voice-row">
+        <label for="aichat-voice-lang">Language</label>
+        <select id="aichat-voice-lang">
+          <option value="">All languages</option>
+        </select>
         <label for="aichat-voice">Narration voice</label>
         <select id="aichat-voice">
           <option value="">Default voice</option>

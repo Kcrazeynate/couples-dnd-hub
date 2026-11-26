@@ -849,13 +849,14 @@ function makeDieMaterial() {
   if (style.dieDesign === "resin") {
     // See-through resin, like the photo: translucent colored resin,
     // glossy, you can see the tray through it. Transmission does the
-    // see-through; thickness and attenuation give the color depth so
-    // it reads as solid colored resin, not a thin shell.
+    // see-through. Kept the attenuation gentle (long distance, thin
+    // thickness) so the color tints without darkening it murky and
+    // opaque; the first version absorbed too much light and read solid.
     return new THREE.MeshPhysicalMaterial({
-      color: die.hex, metalness: 0, roughness: 0.08,
-      transmission: 0.9, thickness: 1.5, ior: 1.5,
-      attenuationColor: new THREE.Color(die.hex), attenuationDistance: 2.0,
-      clearcoat: 1.0, clearcoatRoughness: 0.08,
+      color: die.hex, metalness: 0, roughness: 0.05,
+      transmission: 1.0, thickness: 0.8, ior: 1.5,
+      attenuationColor: new THREE.Color(die.hex), attenuationDistance: 3.0,
+      clearcoat: 1.0, clearcoatRoughness: 0.05,
       envMapIntensity: 1.2, specularIntensity: 1.0
     });
   }

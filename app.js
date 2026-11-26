@@ -295,13 +295,45 @@
   // Uses the narration voice picked in the AI Chat tab, when one is set.
   // iOS Safari needs resume() and a short pause after cancel(), or it
   // silently drops the new utterance, so a speak that follows a cancel
-  // waits a beat first.
+  // waits a beat first. Long replies are spoken sentence by sentence,
+  // which keeps iOS Safari from garbling long utterances.
   var aiChatPlayingId = null;
   var aiChatPausedId = null;
+  var aiChatSpeechToken = 0;
 
   function aiChatSetPlayLabel(id, label) {
     var btn = document.querySelector('[data-aichat-id="' + id + '"]');
     if (btn) btn.textContent = label;
+  }
+
+  function aiChatSpeakChunks(synth, text, voice, id, token) {
+    var chunks = text.match(/[^.!?]+[.!?]+["')\]]*\s*|[^.!?]+$/g) || [text];
+    chunks = chunks.map(function (c) { return c.trim(); }).filter(function (c) { return c.length > 0; });
+    var i = 0;
+    function speakNext() {
+      if (token !== aiChatSpeechToken) return;
+      if (i >= chunks.length) {
+        aiChatPlayingId = null;
+        aiChatPausedId = null;
+        aiChatSetPlayLabel(id, "Play");
+        return;
+      }
+      var utter = new SpeechSynthesisUtterance(chunks[i]);
+      if (voice) utter.voice = voice;
+      utter.onend = function () {
+        if (token !== aiChatSpeechToken) return;
+        i++;
+        speakNext();
+      };
+      utter.onerror = function () {
+        if (token !== aiChatSpeechToken) return;
+        aiChatPlayingId = null;
+        aiChatPausedId = null;
+        aiChatSetPlayLabel(id, "Play");
+      };
+      synth.speak(utter);
+    }
+    speakNext();
   }
 
   function aiChatPlay(id) {
@@ -330,25 +362,15 @@
     if (aiChatPausedId) aiChatSetPlayLabel(aiChatPausedId, "Play");
     aiChatPlayingId = null;
     aiChatPausedId = null;
+    aiChatSpeechToken++;
+    var token = aiChatSpeechToken;
     synth.resume();
-    var utter = new SpeechSynthesisUtterance(text);
     var voice = aiChatChosenVoice();
-    if (voice) utter.voice = voice;
-    utter.onend = function () {
-      aiChatPlayingId = null;
-      aiChatPausedId = null;
-      aiChatSetPlayLabel(id, "Play");
-    };
-    utter.onerror = function () {
-      aiChatPlayingId = null;
-      aiChatPausedId = null;
-      aiChatSetPlayLabel(id, "Play");
-    };
     if (synth.speaking || synth.pending) {
       synth.cancel();
-      setTimeout(function () { synth.speak(utter); }, 120);
+      setTimeout(function () { aiChatSpeakChunks(synth, text, voice, id, token); }, 120);
     } else {
-      synth.speak(utter);
+      aiChatSpeakChunks(synth, text, voice, id, token);
     }
     aiChatPlayingId = id;
     aiChatSetPlayLabel(id, "Pause");

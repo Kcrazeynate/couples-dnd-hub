@@ -59,10 +59,12 @@ Caveats:
 
 ## Business model
 
+- Joining someone's game is always free. Players never pay to join.
+- The host (the DM or campaign owner) pays for the tier. How many players can join depends on whether the host paid.
 - Free tier: 1 campaign, up to 5 players, core features (board, log, characters, dice, battle, maps, music, AI chat with BYOK).
-- Paid tier (for example $5-10 a month per campaign or per DM): unlimited campaigns, more players, more storage, priority support, custom themes.
+- Paid tier: more players, more campaigns, more storage, priority support, custom themes. Exact price still to be set.
+- The price takes BYOK into account: each group pays for their own AI API usage, so the subscription only covers hosting and infrastructure, not AI calls. It is priced lower than a service that includes AI.
 - Or: free for all while it is small, add paid tiers once there is demand. Do not charge until it is proven.
-- The AI API cost is always the user's (BYOK), so the subscription covers hosting and infrastructure, not AI calls.
 
 ## Phases
 
@@ -72,13 +74,17 @@ Caveats:
 - Phase 4, Launch (free): deploy the frontend to Cloudflare Pages, backend on the Supabase free tier. Invite a few friendly groups to try it. Gather feedback.
 - Phase 5, Scale: when usage grows, upgrade Supabase Pro ($25 a month), add paid tiers, move to a paid server if needed.
 
-## Decisions needed (Nathan's calls)
+## Decisions locked (Nathan, 2026-11-25)
 
-- The "Rick" DM: only for Nathan's campaign (recommended, BYOK only for others).
-- Pricing: free tier limits, paid tier price and features.
-- Name and branding: "The Quest Table" is the hub name; does the hosted service keep that name?
+- The "Rick" DM: only for Nathan's campaign (BYOK only for others).
+- Name and branding: the hosted service keeps the name "The Quest Table".
 - Content: user campaigns are their own; the hub uses SRD content for rules. Avoid D&D trademarks in branding (already done).
-- Moderation: user-generated content; need basic abuse reporting if it is public.
+- Moderation: basic moderation (abuse reporting). Adult-only campaigns with adult content are allowed; nothing illegal.
+- Pricing model: joining someone's game is always free. How many players can join depends on whether the host paid. The price takes BYOK into account (each group pays for their own AI, so the subscription only covers hosting and infrastructure). Exact price still to be set.
+
+## Decisions still needed (Nathan's calls)
+
+- Exact paid tier price and player limits.
 
 ## Risks
 

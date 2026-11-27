@@ -2837,10 +2837,10 @@ header {
   z-index: 1;
 }
 
-/* The home page main titles use the brand font, same as the in-app
-   header title: the store window name and section headings, and the
-   overview campaign name. Section headings inside the app (Message
-   Board, Campaign Log, and the rest) stay in the serif. */
+/* The home page main title uses the brand font, same as the in-app
+   header title: the store window name and the overview campaign
+   name. Section headings inside the app (Message Board, Campaign
+   Log, and the rest) stay in the serif. */
 #home h1 {
   font-family: "UnifrakturMaguntia", Georgia, serif;
   font-size: 2.6rem;
@@ -2850,9 +2850,12 @@ header {
   margin-bottom: 0.15rem;
 }
 
+/* Section headings on the home page use the readable serif, not the
+   blackletter, so the words stay easy to read. The brand title above
+   keeps the blackletter. */
 #home h2,
 #tab-home h2 {
-  font-family: "UnifrakturMaguntia", Georgia, serif;
+  font-family: Georgia, "Palatino Linotype", "Book Antiqua", serif;
   font-size: 1.6rem;
   line-height: 1.1;
   letter-spacing: 0.03em;

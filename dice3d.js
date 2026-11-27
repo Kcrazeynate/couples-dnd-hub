@@ -236,19 +236,6 @@ function saveStyle(s) {
 }
 var style = loadStyle();
 
-// The page background battle art shows in the design color, the same
-// way a design upload turns black-on-white into the chosen color.
-// Update it whenever the style loads or the design color changes.
-function applyPageArt() {
-  try {
-    var el = document.getElementById("bg-art");
-    if (!el) return;
-    var dc = findById(DESIGN_COLORS, style.designColor, DESIGN_COLORS[0]);
-    el.style.backgroundColor = dc.css;
-  } catch (e) {}
-}
-applyPageArt();
-
 // The Roses felt is a real rose photograph, composited over the
 // chosen felt colour. Preload it at module load so it is ready
 // when the Dice tab opens; when it finishes loading, redraw the
@@ -1485,7 +1472,6 @@ function setStyle(patch) {
   applyFelt();
   applyDieStyle();
   applyTray();
-  applyPageArt();
   syncPickers();
 }
 

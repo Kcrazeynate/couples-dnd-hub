@@ -1122,7 +1122,9 @@
   }
 
   // Save the invite settings for the current campaign: the join code
-  // and whether it is public. Only the DM sees these controls.
+  // and whether it is public. Only the DM sees these controls. The
+  // confirmation is set after the reload, because reloading the tab
+  // clears the note first.
   async function saveInviteSettings() {
     var codeEl = $("campaign-join-code");
     var pubEl = $("campaign-is-public");
@@ -1131,12 +1133,12 @@
     var code = (codeEl.value || "").trim();
     var isPublic = pubEl.value === "public";
     var res = await db.from("campaigns").update({ join_code: code || null, is_public: isPublic }).eq("id", currentCampaign.id);
-    if (note) {
-      note.textContent = res.error
-        ? "Could not save the invite settings. The invite columns are not set up yet."
-        : "Invite settings saved.";
+    if (res.error) {
+      if (note) note.textContent = "Could not save the invite settings. The invite columns are not set up yet.";
+      return;
     }
-    if (!res.error) loadCampaigns();
+    await loadCampaigns();
+    if (note) note.textContent = "Invite settings saved.";
   }
 
   // ---------- home overview (signed-in Home tab) ----------

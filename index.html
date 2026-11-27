@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=92">
+<link rel="stylesheet" href="styles.css?v=93">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=5"></script>
 <script type="importmap">
@@ -113,7 +113,7 @@
      Home tab instead, which is the overview. The gate is only the
      sign-in screen now, reached from the buttons below. -->
 <div id="home" class="hidden">
-  <header class="home-header">
+  <header class="home-hero">
     <h1>The Quest Table</h1>
     <p class="subtitle">Your table for Dungeons &amp; Dragons, with an AI dungeon master, your whole party in one place.</p>
     <div class="title-flourish"><i></i></div>
@@ -121,6 +121,7 @@
       <button type="button" id="home-signup-btn" class="home-signup-btn">Sign up free</button>
       <button type="button" id="home-signin-link" class="link-btn">Sign in</button>
     </div>
+    <img class="home-hero-img" src="assets/campaign-icespire-peak.webp" alt="A white dragon over a snow-capped peak, the world of a Dungeons and Dragons campaign">
   </header>
   <main>
     <section class="home-section">
@@ -990,6 +991,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=47"></script>
-<script src="app.js?v=135"></script>
+<script src="app.js?v=136"></script>
 </body>
 </html>

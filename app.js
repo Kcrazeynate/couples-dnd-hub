@@ -63,7 +63,7 @@
     alert("Setup is not finished yet. Fill in config.js first. See README.md.");
   }
 
-  // ---------- campaign select landing screen ----------
+  // ---------- campaign select tab ----------
   //
   // Starter campaigns for the carousel, in display order. The detail
   // modal and the Start button read from this same list. The Start
@@ -113,7 +113,7 @@
     return found;
   }
 
-  function initLanding() {
+  function initCampaigns() {
     var track = $("carousel-track");
     if (!track) return;
 
@@ -220,20 +220,16 @@
   function initGate() {
     var gate = $("gate");
     var app = $("app");
-    var landing = $("landing");
     var setupMsg = $("gate-setup");
     var gateForm = $("gate-form");
     var input = $("passphrase-input");
     var btn = $("passphrase-btn");
     var error = $("gate-error");
 
-    // The campaign select landing screen is the first thing on every
-    // load. The gate and the app stay hidden until the player chooses
-    // to continue into the ongoing campaign.
-    initLanding();
-    if (landing) landing.classList.remove("hidden");
-    gate.classList.add("hidden");
-    app.classList.add("hidden");
+    // Render the campaign select carousel into its tab panel. The
+    // app opens directly: the gate first, unless this is a
+    // remembered device, which goes straight into the board.
+    initCampaigns();
 
     function storedUnlocked() {
       try { if (localStorage.getItem("dnd_hub_unlocked") === "1") return true; } catch (e) {}
@@ -242,7 +238,6 @@
     }
 
     function enterApp() {
-      if (landing) landing.classList.add("hidden");
       gate.classList.add("hidden");
       app.classList.remove("hidden");
       var lockBtn = $("lock-btn");
@@ -256,26 +251,20 @@
       initApp();
     }
 
-    // Continue my campaign: a remembered device goes straight into
-    // the app, otherwise the passphrase gate appears.
-    var continueBtn = $("landing-continue");
-    if (continueBtn) {
-      continueBtn.addEventListener("click", function () {
-        if (storedUnlocked()) {
-          enterApp();
-        } else {
-          if (landing) landing.classList.add("hidden");
-          gate.classList.remove("hidden");
-          input.focus();
-        }
-      });
-    }
-
     if (CONFIG.CAMPAIGN_PASSPHRASE === PLACEHOLDER_PASS) {
       setupMsg.classList.remove("hidden");
       gateForm.classList.add("hidden");
+      gate.classList.remove("hidden");
       return;
     }
+
+    if (storedUnlocked()) {
+      enterApp();
+      return;
+    }
+
+    gate.classList.remove("hidden");
+    input.focus();
 
     function tryUnlock() {
       if (input.value === CONFIG.CAMPAIGN_PASSPHRASE) {

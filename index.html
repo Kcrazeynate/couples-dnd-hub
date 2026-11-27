@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=93">
+<link rel="stylesheet" href="styles.css?v=94">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=5"></script>
 <script type="importmap">
@@ -26,9 +26,14 @@
 <body class="mode-view">
 
 <!-- Page background battle art: the good-vs-evil line art as a mask,
-     showing in the design color over the dark charcoal page. The fade
-     band covers the middle behind the boards so posts stay readable. -->
-<div id="bg-art" aria-hidden="true"></div>
+     showing in the design color over the dark charcoal page. The art
+     is split at the empty centre into a left half (good) and a right
+     half (evil), each shown at near-natural size on its side of the
+     screen, so a large screen does not have to zoom one wide image
+     to fill the viewport. The fade band covers the middle behind the
+     boards so posts stay readable. -->
+<div id="bg-art-left" aria-hidden="true"></div>
+<div id="bg-art-right" aria-hidden="true"></div>
 <div id="bg-fade" aria-hidden="true"></div>
 
 <div id="gate" class="gate hidden">
@@ -678,6 +683,17 @@
       <p class="hint" id="campaigns-account"></p>
       <h3>Current campaign</h3>
       <div id="campaigns-current"></div>
+      <div id="campaign-rename-section" class="hidden">
+        <h3>Campaign name</h3>
+        <div class="card">
+          <label for="campaign-name-input">Campaign name</label>
+          <input type="text" id="campaign-name-input" placeholder="Campaign name" autocomplete="off">
+          <div class="row">
+            <button type="button" id="campaign-name-save">Save campaign name</button>
+          </div>
+          <p class="hint" id="campaign-name-note"></p>
+        </div>
+      </div>
       <div id="campaign-invite-section">
         <h3>Invite</h3>
         <p class="hint">Share this campaign with an invite link. A private campaign still needs its join code; a public campaign lets anyone with the link join.</p>
@@ -991,6 +1007,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=47"></script>
-<script src="app.js?v=136"></script>
+<script src="app.js?v=137"></script>
 </body>
 </html>

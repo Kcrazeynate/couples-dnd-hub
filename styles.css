@@ -77,7 +77,7 @@ p {
   font-weight: 600;
 }
 
-/* Passphrase gate */
+/* Sign-in gate */
 
 .gate {
   min-height: 100vh;
@@ -95,6 +95,63 @@ p {
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Sign-in form inside the gate: labels and fields stack full width. */
+#auth-form label,
+#gate-join label {
+  display: block;
+  margin: 0.75rem 0 0.35rem;
+  font-size: 0.85rem;
+  color: #b3a284;
+}
+
+#auth-form input,
+#gate-join input,
+#gate-join select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#auth-form button,
+#gate-join button {
+  width: 100%;
+  margin-top: 0.9rem;
+}
+
+#gate-join h2 {
+  margin-top: 1.5rem;
+}
+
+/* Plain-text button, for the sign-in / create-account toggle. */
+.link-btn {
+  background: none;
+  border: none;
+  color: #f0c96a;
+  padding: 0;
+  margin: 0;
+  width: auto;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  color: #d9a441;
+}
+
+/* A character waiting for DM approval: gold edge, so it reads as
+   held, not as a party member. */
+.pending-card {
+  border-left: 3px solid #d9a441;
+}
+
+#pending-list h3 {
+  margin-top: 1.5rem;
+}
+
+#my-character-select {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Page background battle art: the good-vs-evil line art as a mask,
@@ -578,28 +635,6 @@ body.mode-interact [data-mode="dm"] {
   box-shadow: inset 3px 0 0 #d9a441;
   color: #f0c96a;
   font-weight: 700;
-}
-
-/* DM passphrase field inside the mode menu. */
-.dm-unlock {
-  padding: 0.6rem 0.9rem 0.9rem;
-}
-
-.dm-unlock label {
-  display: block;
-  margin-bottom: 0.35rem;
-  font-size: 0.85rem;
-  color: #b3a284;
-}
-
-.dm-unlock input {
-  width: 100%;
-  box-sizing: border-box;
-  margin-bottom: 0.5rem;
-}
-
-.dm-unlock .error {
-  margin: 0.5rem 0 0;
 }
 
 @media (max-width: 760px) {
@@ -1744,37 +1779,9 @@ button.danger:hover {
   }
 }
 
-/* Remember this device + Lock */
-.remember {
-  display: block;
-  margin-top: 0.75rem;
-  color: #b3a284;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-.remember input {
-  margin-right: 0.4rem;
-}
 header {
   position: relative;
 }
-.lock-btn {
-  position: absolute;
-  top: 1rem;
-  right: 0.75rem;
-  background: transparent;
-  color: #b3a284;
-  border: 1px solid #57503f;
-  font-size: 0.85rem;
-  padding: 0.3rem 0.7rem;
-  margin-top: 0;
-  width: auto;
-}
-.lock-btn:hover {
-  color: #d9a441;
-  border-color: #d9a441;
-}
-
 /* Map places list + edit toggle + gestures */
 .place-card {
   cursor: pointer;

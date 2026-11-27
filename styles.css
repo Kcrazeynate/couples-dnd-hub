@@ -139,7 +139,8 @@ p {
 
 /* Sign-in form inside the gate: labels and fields stack full width. */
 #auth-form label,
-#gate-join label {
+#gate-join label,
+#auth-recovery label {
   display: block;
   margin: 0.75rem 0 0.35rem;
   font-size: 0.85rem;
@@ -148,19 +149,78 @@ p {
 
 #auth-form input,
 #gate-join input,
-#gate-join select {
+#gate-join select,
+#auth-recovery input {
   width: 100%;
   box-sizing: border-box;
 }
 
 #auth-form button,
-#gate-join button {
+#gate-join button,
+#auth-recovery button {
   width: 100%;
   margin-top: 0.9rem;
 }
 
+#auth-recovery .link-btn {
+  width: auto;
+  margin-top: 0;
+}
+
 #gate-join h2 {
   margin-top: 1.5rem;
+}
+
+#auth-recovery h2 {
+  margin-top: 0.25rem;
+}
+
+/* Password field with a show/hide eye button. The button is small
+   and sits beside the field; it never stretches full width like the
+   other gate buttons. The input takes the rest of the row. */
+.password-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+#auth-form .password-row input,
+#auth-recovery .password-row input {
+  width: auto;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+#auth-form .password-row .eye-btn,
+#auth-recovery .password-row .eye-btn {
+  width: auto;
+  flex: none;
+  margin: 0;
+  padding: 0.35rem;
+  background: none;
+  border: 1px solid #7a6238;
+  border-radius: 8px;
+  color: #f0c96a;
+  cursor: pointer;
+  line-height: 0;
+}
+
+#auth-form .password-row .eye-btn:hover,
+#auth-recovery .password-row .eye-btn:hover {
+  border-color: #d9a441;
+  color: #d9a441;
+}
+
+.eye-btn .icon-eye-off {
+  display: none;
+}
+
+.eye-btn.showing .icon-eye {
+  display: none;
+}
+
+.eye-btn.showing .icon-eye-off {
+  display: inline;
 }
 
 /* Plain-text button, for the sign-in / create-account toggle. */

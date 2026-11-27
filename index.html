@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=77">
+<link rel="stylesheet" href="styles.css?v=78">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=4"></script>
 <script type="importmap">
@@ -24,6 +24,12 @@
 </script>
 </head>
 <body class="mode-view">
+
+<!-- Page background battle art: the good-vs-evil line art as a mask,
+     showing in the design color over the dark charcoal page. The fade
+     band covers the middle behind the boards so posts stay readable. -->
+<div id="bg-art" aria-hidden="true"></div>
+<div id="bg-fade" aria-hidden="true"></div>
 
 <div id="gate" class="gate">
   <div class="gate-box">
@@ -737,7 +743,7 @@
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<script type="module" src="dice3d.js?v=44"></script>
+<script type="module" src="dice3d.js?v=45"></script>
 <script src="app.js?v=121"></script>
 </body>
 </html>

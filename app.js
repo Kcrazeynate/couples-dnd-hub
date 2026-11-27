@@ -448,6 +448,22 @@
     if (err) err.classList.add("hidden");
     var note = $("auth-note");
     if (note) note.classList.add("hidden");
+    // Preview: walk the flow without calling the auth API. Sign-up
+    // shows the same confirmation the real flow shows; sign-in says
+    // plainly that nothing was sent.
+    if (previewMode) {
+      if (authMode === "signup") {
+        if (password.length < 8) {
+          showAuthError("Password must be at least 8 characters.");
+          return;
+        }
+        showAuthNote("Account created. Check your email to confirm it, then sign in.");
+        setAuthMode("signin");
+        return;
+      }
+      showAuthNote("Preview: that would sign you in. Nothing was sent or changed.");
+      return;
+    }
     if (authMode === "signup") {
       var res = await db.auth.signUp({ email: email, password: password });
       if (res.error) {
@@ -585,8 +601,12 @@
     var err = $("recovery-error");
     if (err) err.classList.add("hidden");
     // The same note shows whether or not the email has an account,
-    // so the reply never reveals if it is on file.
-    try { await db.auth.signInWithOtp({ email: email }); } catch (e) {}
+    // so the reply never reveals if it is on file. In preview the
+    // code is never sent; the code step still opens so the flow can
+    // be walked.
+    if (!previewMode) {
+      try { await db.auth.signInWithOtp({ email: email }); } catch (e) {}
+    }
     showRecoveryNote("If that email matches an account, a code is on its way. Check your inbox.");
     showRecoveryCodeStep();
   }
@@ -607,6 +627,13 @@
     }
     if (pw !== pw2) {
       showRecoveryCodeError("The new passwords do not match.");
+      return;
+    }
+    // Preview: no code is verified and no password is set. Show the
+    // success state the real flow would reach, and say it is a preview.
+    if (previewMode) {
+      hideRecovery();
+      showAuthNote("Preview: that password would be set and you would be signed in. Nothing was sent or changed.");
       return;
     }
     var ver = await db.auth.verifyOtp({ email: recoveryEmail, token: code, type: "email" });
@@ -812,6 +839,7 @@
     $("app").classList.add("hidden");
     var home = $("home");
     if (home) home.classList.remove("hidden");
+    updatePreviewNote();
     loadPublicCampaigns();
   }
 
@@ -823,7 +851,43 @@
     setAuthMode(mode || "signin");
     showAuthForm();
     var back = $("gate-back-btn");
-    if (back) back.classList.toggle("hidden", !!currentUser);
+    if (back) back.classList.toggle("hidden", !!currentUser && !previewMode);
+    updatePreviewNote();
+  }
+
+  // Preview as visitor: a DM-only way to walk the visitor side (the
+  // store window and the gate) without signing out. The session is
+  // untouched; the app only renders as if signed out. In preview the
+  // auth calls are never made, so no account is created, no email is
+  // sent, and no password changes. The flag is in-memory only and
+  // resets when the page reloads.
+  var previewMode = false;
+
+  function updatePreviewNote() {
+    var note = $("gate-preview-note");
+    if (note) note.classList.toggle("hidden", !previewMode);
+    var gateExit = $("gate-preview-exit-btn");
+    if (gateExit) gateExit.classList.toggle("hidden", !previewMode);
+    var homeExit = $("home-preview-exit-btn");
+    if (homeExit) homeExit.classList.toggle("hidden", !previewMode);
+    var toggle = $("preview-toggle-btn");
+    if (toggle) toggle.textContent = previewMode ? "Back to my view" : "Preview as visitor";
+  }
+
+  function enterPreview() {
+    if (!currentUser) return;
+    previewMode = true;
+    updatePreviewNote();
+    showStore();
+  }
+
+  function exitPreview() {
+    previewMode = false;
+    updatePreviewNote();
+    $("gate").classList.add("hidden");
+    $("home").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    switchTab("home", false);
   }
 
   // Public campaigns for the store window. There is no visibility
@@ -869,6 +933,11 @@
   // after sign-in they join it instead of landing on the join box.
   async function requestJoinCampaign(id) {
     if (!id) return;
+    // Preview: joining writes a campaign member row, so it is off.
+    if (previewMode) {
+      alert("Preview: joining is turned off. No campaign was joined.");
+      return;
+    }
     if (!currentUser) {
       try { localStorage.setItem(JOIN_INTENT_KEY, id); } catch (e) {}
       showGate("signup");
@@ -6374,7 +6443,10 @@
       if (e.key === "Escape") { closeMenu(); closeMusicPanel(); }
     });
 
+    // Buttons with no data-tab (Sign out, Preview as visitor) get
+    // their own handlers below; they are not tabs.
     document.querySelectorAll(".tab-btn").forEach(function (btn) {
+      if (!btn.dataset.tab) return;
       btn.addEventListener("click", function () { switchTab(btn.dataset.tab); closeMenu(); });
     });
 
@@ -6613,6 +6685,22 @@
     });
     var signoutBtn = $("signout-btn");
     if (signoutBtn) signoutBtn.addEventListener("click", signOut);
+    // Preview as visitor: DM-only. It is hidden for players, like
+    // the DM mode button. Tapping it shows the store window as a
+    // visitor sees it; tapping again, or Back to my view, returns.
+    var previewToggleBtn = $("preview-toggle-btn");
+    if (previewToggleBtn) {
+      previewToggleBtn.classList.toggle("hidden", !isDm());
+      previewToggleBtn.addEventListener("click", function () {
+        closeMenu();
+        if (previewMode) exitPreview();
+        else enterPreview();
+      });
+    }
+    var gatePreviewExitBtn = $("gate-preview-exit-btn");
+    if (gatePreviewExitBtn) gatePreviewExitBtn.addEventListener("click", exitPreview);
+    var homePreviewExitBtn = $("home-preview-exit-btn");
+    if (homePreviewExitBtn) homePreviewExitBtn.addEventListener("click", exitPreview);
     var campaignSignoutBtn = $("campaign-signout-btn");
     if (campaignSignoutBtn) campaignSignoutBtn.addEventListener("click", signOut);
     // Share and invite settings. The Home Share button and the

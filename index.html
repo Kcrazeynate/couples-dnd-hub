@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=83">
+<link rel="stylesheet" href="styles.css?v=84">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=4"></script>
 <script type="importmap">
@@ -30,28 +30,6 @@
      band covers the middle behind the boards so posts stay readable. -->
 <div id="bg-art" aria-hidden="true"></div>
 <div id="bg-fade" aria-hidden="true"></div>
-
-<!-- Campaign select landing screen. Shown first on every load.
-     Pick a starter campaign from the carousel, or continue the
-     ongoing campaign (which goes to the passphrase gate, or
-     straight in on a remembered device). -->
-<div id="landing">
-  <header>
-    <h1>The Quest Table</h1>
-    <p class="subtitle">Choose your adventure</p>
-    <div class="title-flourish"><i></i></div>
-  </header>
-  <p class="landing-intro">Pick a starter campaign and your AI DM will run the story. Each one is ready to play.</p>
-  <div class="carousel">
-    <div class="carousel-track" id="carousel-track"></div>
-    <button type="button" class="carousel-arrow carousel-prev" id="carousel-prev" aria-label="Previous campaign">&#8249;</button>
-    <button type="button" class="carousel-arrow carousel-next" id="carousel-next" aria-label="Next campaign">&#8250;</button>
-  </div>
-  <div class="landing-continue">
-    <button type="button" id="landing-continue">Continue my campaign</button>
-    <p class="hint">Return to the ongoing campaign.</p>
-  </div>
-</div>
 
 <div id="gate" class="gate hidden">
   <div class="gate-box">
@@ -113,6 +91,16 @@
           <button type="button" id="messages-refresh">Refresh</button>
         </div>
       </form>
+    </section>
+
+    <section id="tab-campaigns" class="tab-panel">
+      <h2>Campaigns</h2>
+      <p class="hint">Pick a starter campaign and your AI DM will run the story. Each one is ready to play.</p>
+      <div class="carousel">
+        <div class="carousel-track" id="carousel-track"></div>
+        <button type="button" class="carousel-arrow carousel-prev" id="carousel-prev" aria-label="Previous campaign">&#8249;</button>
+        <button type="button" class="carousel-arrow carousel-next" id="carousel-next" aria-label="Next campaign">&#8250;</button>
+      </div>
     </section>
 
     <section id="tab-log" class="tab-panel">
@@ -548,6 +536,8 @@
     </section>
   </main>
 
+</div>
+
   <div id="menu-backdrop" class="menu-backdrop hidden"></div>
   <nav id="nav-menu" class="nav-menu hidden" aria-label="Campaign menu">
     <!-- Most-used tabs, always visible, in the order the player
@@ -559,6 +549,8 @@
       <button type="button" data-tab="battle" class="tab-btn">Battle</button>
       <button type="button" data-tab="maps" class="tab-btn">Maps</button>
       <button type="button" data-tab="log" class="tab-btn">Campaign Log</button>
+      <button type="button" data-tab="quests" class="tab-btn">Quests</button>
+      <button type="button" data-tab="campaigns" class="tab-btn">Campaigns</button>
     </div>
     <!-- Collapsing submenus: Modes, AI, More. Each group header is a
          flat row like the tabs; tapping it expands or collapses just
@@ -598,7 +590,6 @@
         <span class="nav-menu-sub-chevron" aria-hidden="true"></span>
       </button>
       <div class="nav-menu-btns nav-menu-sub-rows">
-        <button type="button" data-tab="quests" class="tab-btn">Quests</button>
         <button type="button" data-tab="companions" class="tab-btn">Companions</button>
         <button type="button" data-tab="npcs" class="tab-btn">NPCs</button>
         <button type="button" data-tab="music" class="tab-btn">Music</button>
@@ -629,7 +620,6 @@
   <button type="button" id="menu-btn" class="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
     <span></span><span></span><span></span>
   </button>
-</div>
 
 <div id="char-modal" class="modal hidden" data-mode="interact">
   <div class="modal-box">
@@ -792,6 +782,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=46"></script>
-<script src="app.js?v=122"></script>
+<script src="app.js?v=123"></script>
 </body>
 </html>

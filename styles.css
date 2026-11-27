@@ -99,6 +99,16 @@ p {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
 }
 
+/* Gate title uses the same blackletter brand font as the in-app header. */
+.gate-box h1 {
+  font-family: "UnifrakturMaguntia", Georgia, serif;
+  font-size: 2.2rem;
+  line-height: 1.1;
+  letter-spacing: 0.03em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.65), 0 0 24px rgba(217, 164, 65, 0.3);
+  margin-bottom: 0.15rem;
+}
+
 /* Sign-in form inside the gate: labels and fields stack full width. */
 #auth-form label,
 #gate-join label {

@@ -355,6 +355,7 @@ function randRange(min, max) {
 // Number ink: dark on light dice, gold on dark dice and on metal.
 function faceInkColor() {
   var die = findById(DIE_COLORS, style.dieColor, DIE_COLORS[0]);
+  if (style.dieDesign === "pearl") return "#171410";
   if (style.dieDesign === "metal") return "#e8c96a";
   if (die.dark) return "#e8c96a";
   return "#171410";
@@ -801,7 +802,7 @@ function makeDieMaterial() {
     // bright so it tints with the die color instead of going muddy.
     const pearlMat = new THREE.MeshPhysicalMaterial({
       map: DIE_TEX.pearl || null, color: pearlColor, metalness: 0.1, roughness: 0.15,
-      iridescence: 1.0, iridescenceIOR: 1.8, clearcoat: 0.0, clearcoatRoughness: 0.3,
+      iridescence: 1.0, iridescenceIOR: 1.8, clearcoat: 0.6, clearcoatRoughness: 0.3,
       envMapIntensity: 1.5
     });
     return pearlMat;

@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=91">
+<link rel="stylesheet" href="styles.css?v=92">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=5"></script>
 <script type="importmap">
@@ -128,7 +128,7 @@
       <div class="home-cards">
         <div class="home-do-card">
           <p class="title">Play with an AI DM</p>
-          <p>Your DM runs the story, so nobody at the table has to.</p>
+          <p>Bring your own AI to run the story. Connect an AI you already use, and it DMs the game, so nobody at the table has to.</p>
         </div>
         <div class="home-do-card">
           <p class="title">Roll real 3D dice</p>
@@ -150,7 +150,7 @@
     </section>
     <section class="home-section">
       <h2>Starter campaigns</h2>
-      <p class="hint">Pick a starter campaign and your AI DM will run the story. Each one is ready to play.</p>
+      <p class="hint">Pick a starter campaign and the AI your group connects will run the story. Each one is ready to play.</p>
       <div class="carousel">
         <div class="carousel-track" id="carousel-track"></div>
         <button type="button" class="carousel-arrow carousel-prev" id="carousel-prev" aria-label="Previous campaign">&#8249;</button>
@@ -677,27 +677,29 @@
       <p class="hint" id="campaigns-account"></p>
       <h3>Current campaign</h3>
       <div id="campaigns-current"></div>
-      <h3>Invite</h3>
-      <p class="hint">Share this campaign with an invite link. A private campaign still needs its join code; a public campaign lets anyone with the link join.</p>
-      <div class="card">
-        <label for="campaign-invite-link">Invite link</label>
-        <input type="text" id="campaign-invite-link" readonly>
-        <div class="row">
-          <button type="button" id="campaigns-share-btn">Copy invite link</button>
-        </div>
-        <div id="campaign-invite-settings">
-          <label for="campaign-join-code">Join code</label>
-          <input type="text" id="campaign-join-code" placeholder="Join code, for example quest-123" autocomplete="off">
-          <label for="campaign-is-public">Who can join with the link</label>
-          <select id="campaign-is-public">
-            <option value="private">Private: needs the join code</option>
-            <option value="public">Public: anyone with the link can join</option>
-          </select>
+      <div id="campaign-invite-section">
+        <h3>Invite</h3>
+        <p class="hint">Share this campaign with an invite link. A private campaign still needs its join code; a public campaign lets anyone with the link join.</p>
+        <div class="card">
+          <label for="campaign-invite-link">Invite link</label>
+          <input type="text" id="campaign-invite-link" readonly>
           <div class="row">
-            <button type="button" id="campaign-invite-save">Save invite settings</button>
+            <button type="button" id="campaigns-share-btn">Copy invite link</button>
           </div>
+          <div id="campaign-invite-settings">
+            <label for="campaign-join-code">Join code</label>
+            <input type="text" id="campaign-join-code" placeholder="Join code, for example quest-123" autocomplete="off">
+            <label for="campaign-is-public">Who can join with the link</label>
+            <select id="campaign-is-public">
+              <option value="private">Private: needs the join code</option>
+              <option value="public">Public: anyone with the link can join</option>
+            </select>
+            <div class="row">
+              <button type="button" id="campaign-invite-save">Save invite settings</button>
+            </div>
+          </div>
+          <p class="hint" id="campaign-invite-note"></p>
         </div>
-        <p class="hint" id="campaign-invite-note"></p>
       </div>
       <h3>My campaigns</h3>
       <div id="campaigns-list" class="list"></div>
@@ -988,6 +990,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=47"></script>
-<script src="app.js?v=134"></script>
+<script src="app.js?v=135"></script>
 </body>
 </html>

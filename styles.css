@@ -111,6 +111,7 @@ p {
   z-index: 0;
   pointer-events: none;
   background-color: #f0dcaa;
+  opacity: 0.4;
   -webkit-mask-image: url("assets/bg-battle-mask.png");
   mask-image: url("assets/bg-battle-mask.png");
   -webkit-mask-size: cover;

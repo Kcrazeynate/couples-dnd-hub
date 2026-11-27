@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=82">
+<link rel="stylesheet" href="styles.css?v=83">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=4"></script>
 <script type="importmap">
@@ -31,7 +31,29 @@
 <div id="bg-art" aria-hidden="true"></div>
 <div id="bg-fade" aria-hidden="true"></div>
 
-<div id="gate" class="gate">
+<!-- Campaign select landing screen. Shown first on every load.
+     Pick a starter campaign from the carousel, or continue the
+     ongoing campaign (which goes to the passphrase gate, or
+     straight in on a remembered device). -->
+<div id="landing">
+  <header>
+    <h1>The Quest Table</h1>
+    <p class="subtitle">Choose your adventure</p>
+    <div class="title-flourish"><i></i></div>
+  </header>
+  <p class="landing-intro">Pick a starter campaign and your AI DM will run the story. Each one is ready to play.</p>
+  <div class="carousel">
+    <div class="carousel-track" id="carousel-track"></div>
+    <button type="button" class="carousel-arrow carousel-prev" id="carousel-prev" aria-label="Previous campaign">&#8249;</button>
+    <button type="button" class="carousel-arrow carousel-next" id="carousel-next" aria-label="Next campaign">&#8250;</button>
+  </div>
+  <div class="landing-continue">
+    <button type="button" id="landing-continue">Continue my campaign</button>
+    <p class="hint">Return to the ongoing campaign.</p>
+  </div>
+</div>
+
+<div id="gate" class="gate hidden">
   <div class="gate-box">
     <h1>The Quest Table</h1>
     <p id="gate-setup" class="hidden">This hub is not set up yet. The owner needs to set the passphrase in config.js.</p>
@@ -743,7 +765,33 @@
   <img id="lightbox-img" src="" alt="">
 </div>
 
+<!-- Campaign detail modal: opened from a carousel card. Shows the
+     full description, level range, source, and estimated sessions.
+     The Start button is a placeholder for now: it explains that
+     starting will send the campaign prompt to the group's AI DM.
+     The AI handoff itself is a separate step and is not wired yet. -->
+<div id="campaign-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="campaign-detail-title">
+  <div class="modal-box">
+    <img id="campaign-detail-img" src="" alt="">
+    <h2 id="campaign-detail-title"></h2>
+    <p id="campaign-detail-desc"></p>
+    <dl class="campaign-facts">
+      <dt>Level range</dt>
+      <dd id="campaign-detail-levels"></dd>
+      <dt>Source</dt>
+      <dd id="campaign-detail-source"></dd>
+      <dt>Estimated sessions</dt>
+      <dd id="campaign-detail-sessions"></dd>
+    </dl>
+    <p id="campaign-start-note" class="hint hidden"></p>
+    <div class="row">
+      <button type="button" id="campaign-start-btn">Start this campaign</button>
+      <button type="button" id="campaign-detail-close">Close</button>
+    </div>
+  </div>
+</div>
+
 <script type="module" src="dice3d.js?v=46"></script>
-<script src="app.js?v=121"></script>
+<script src="app.js?v=122"></script>
 </body>
 </html>

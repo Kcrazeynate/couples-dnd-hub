@@ -63,7 +63,7 @@
     alert("Setup is not finished yet. Fill in config.js first. See README.md.");
   }
 
-  // ---------- campaign select tab ----------
+  // ---------- campaign select (in the Quests tab) ----------
   //
   // Starter campaigns for the carousel, in display order. The detail
   // modal and the Start button read from this same list. The Start
@@ -226,7 +226,7 @@
     var btn = $("passphrase-btn");
     var error = $("gate-error");
 
-    // Render the campaign select carousel into its tab panel. The
+    // Render the campaign select carousel into the Quests tab. The
     // app opens directly: the gate first, unless this is a
     // remembered device, which goes straight into the board.
     initCampaigns();

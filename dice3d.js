@@ -753,7 +753,7 @@ var DIE_TEX_URLS = {
   marble: "assets/die-marble.jpg",
   glitter: "assets/die-glitter.jpg",
   brushed: "assets/die-brushed.jpg",
-  pearl: "assets/die-pearl.jpg",
+  pearl: "assets/die-pearl.jpg?v=2",
   glitterMetal: "assets/die-glitter-metal.png",
   glitterRough: "assets/die-glitter-rough.png"
 };

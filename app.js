@@ -415,13 +415,21 @@
       return;
     }
     if (myMemberships.length) {
+      // In the app first, so an invite code prompt appears over the
+      // app, not a blank page. A failed invite is a plain alert here:
+      // the join box is only for players with no campaigns.
       enterApp();
+      var invite = await tryInviteJoin();
+      if (invite === "wrong-code" || invite === "no-code" || invite === "failed") {
+        alert(inviteMessage(invite));
+      }
       return;
     }
     var pending = await tryPendingJoin();
-    if (pending === "failed") {
+    if (pending === "joined") return;
+    if (pending === "wrong-code" || pending === "no-code" || pending === "failed") {
       showJoinBox();
-      showJoinError("Could not join that campaign. Check the connection and try again.");
+      showJoinError(inviteMessage(pending));
       return;
     }
     showJoinBox();
@@ -537,6 +545,10 @@
     var gate = $("gate");
     var setupMsg = $("gate-setup");
 
+    // Read an invite link (?join=) before any routing, so the
+    // campaign it names is remembered as the join intent.
+    readJoinParam();
+
     initDb();
     // Render the campaign select carousel into the store window. The
     // app opens on the home page: the store window first, unless this
@@ -590,14 +602,22 @@
         return;
       }
       if (myMemberships.length) {
+        // In the app first, so an invite code prompt appears over the
+        // app, not a blank page. A failed invite is a plain alert here:
+        // the join box is only for players with no campaigns.
         enterApp();
+        var invite = await tryInviteJoin();
+        if (invite === "wrong-code" || invite === "no-code" || invite === "failed") {
+          alert(inviteMessage(invite));
+        }
         return;
       }
       var pending = await tryPendingJoin();
-      if (pending === "failed") {
+      if (pending === "joined") return;
+      if (pending === "wrong-code" || pending === "no-code" || pending === "failed") {
         showGate("signin");
         showJoinBox();
-        showJoinError("Could not join that campaign. Check the connection and try again.");
+        showJoinError(inviteMessage(pending));
         return;
       }
       showGate("signin");
@@ -680,27 +700,276 @@
   // Joining a public campaign. A visitor who taps Join is asked for
   // an account first; the campaign they wanted is remembered, so
   // after sign-in they join it instead of landing on the join box.
-  function requestJoinCampaign(id) {
+  async function requestJoinCampaign(id) {
     if (!id) return;
     if (!currentUser) {
       try { localStorage.setItem(JOIN_INTENT_KEY, id); } catch (e) {}
       showGate("signup");
       return;
     }
-    joinCampaign(id);
+    // A signed-in player joining from the public list still goes
+    // through the code check, so a private campaign cannot be joined
+    // without its code even when it is listed.
+    var res = await joinWithCode(id);
+    if (res === "wrong-code" || res === "no-code" || res === "failed") {
+      alert(inviteMessage(res));
+    }
   }
 
   // The campaign a visitor wanted to join, carried across sign-up
   // and sign-in. Returns "none" when there is no intent, "joined"
-  // when the join went through (the page reloads), "failed" when the
-  // join did not work, so the caller can fall back to the join box.
+  // when the join went through (the page reloads), "failed",
+  // "wrong-code", or "no-code" when it did not, so the caller can
+  // fall back to the join box. A cancelled code prompt counts as
+  // "none": the player just does not join.
   async function tryPendingJoin() {
     var id = null;
     try { id = localStorage.getItem(JOIN_INTENT_KEY); } catch (e) {}
     if (!id) return "none";
     try { localStorage.removeItem(JOIN_INTENT_KEY); } catch (e) {}
-    var ok = await joinCampaign(id);
-    return ok ? "joined" : "failed";
+    var res = await joinWithCode(id);
+    if (res === "cancelled") return "none";
+    return res;
+  }
+
+  // ---------- campaign invite ----------
+  //
+  // Sharing a campaign is an invite link: the site URL with ?join=
+  // and the campaign id. Tapping Share copies it, so the person who
+  // gets it can open it and join. The link carries the current
+  // campaign, never a hardcoded one. Joining from a link still needs
+  // the campaign's join code, unless the campaign is public.
+  //
+  // The code and the public flag live in the campaigns table
+  // (join_code, is_public; migrations/phase1-step2b-campaign-codes.sql).
+  // The app reads them when they exist. Before that migration runs,
+  // the read fails and the join goes through with no code, so nothing
+  // breaks while the columns are missing. Once it runs, the code
+  // check takes effect.
+
+  var INVITE_BASE_URL = "https://kcrazeynate.github.io/couples-dnd-hub/";
+
+  function inviteLink(id) {
+    if (!id) return null;
+    return INVITE_BASE_URL + "?join=" + encodeURIComponent(id);
+  }
+
+  function copyTextFallback(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  function copyText(text) {
+    // navigator.clipboard is the reliable path on modern browsers.
+    // The textarea fallback covers older browsers and pages served
+    // without a secure context.
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }).catch(function () { return copyTextFallback(text); });
+    }
+    return Promise.resolve(copyTextFallback(text));
+  }
+
+  // Share the current campaign: copy its invite link, and briefly
+  // confirm on the button that was tapped, so the user knows it worked.
+  async function shareCampaign(btn) {
+    if (!currentCampaign) return;
+    var link = inviteLink(currentCampaign.id);
+    var ok = false;
+    try { ok = await copyText(link); } catch (e) { ok = false; }
+    if (!btn) return;
+    var label = btn.textContent;
+    btn.textContent = ok ? "Link copied" : "Could not copy the link";
+    setTimeout(function () { btn.textContent = label; }, 2000);
+  }
+
+  // The ?join= link a player was sent. Read it once on load and store
+  // it as the join intent, so the existing carryover handles it: a
+  // signed-out visitor signs up or signs in and joins it, a signed-in
+  // player joins it directly. The param is stripped from the address
+  // bar once stored, so a reload does not re-trigger the join.
+  function readJoinParam() {
+    var id = null;
+    try {
+      var params = new URLSearchParams(window.location.search);
+      id = params.get("join");
+    } catch (e) { id = null; }
+    if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return null;
+    try { localStorage.setItem(JOIN_INTENT_KEY, id); } catch (e) {}
+    try {
+      var url = window.location.pathname + window.location.hash;
+      window.history.replaceState(null, "", url);
+    } catch (e) {}
+    return id;
+  }
+
+  // The invite columns for a campaign: whether it is public and its
+  // join code. Returns null when the columns are not there yet (the
+  // migration has not run) or the read fails, so the caller joins
+  // with no code, as before.
+  async function campaignInviteInfo(id) {
+    var res = await db.from("campaigns").select("id, name, is_public, join_code").eq("id", id).single();
+    if (res.error || !res.data) return null;
+    return {
+      name: res.data.name || "this campaign",
+      isPublic: res.data.is_public === true,
+      code: (res.data.join_code || "").trim() || null
+    };
+  }
+
+  // Ask for a campaign's join code, in a small prompt over the app.
+  // Resolves to the code the player typed, or null when they cancel.
+  // When wrong is true, the prompt says the last code did not match.
+  function askJoinCode(campaignName, wrong) {
+    return new Promise(function (resolve) {
+      var box = $("invite-code-prompt");
+      var title = $("invite-code-title");
+      var input = $("invite-code-input");
+      var err = $("invite-code-error");
+      var joinBtn = $("invite-code-join");
+      var cancelBtn = $("invite-code-cancel");
+      if (!box || !input || !joinBtn || !cancelBtn) { resolve(null); return; }
+      if (title) title.textContent = "Join " + campaignName;
+      if (err) {
+        err.textContent = wrong ? "That code did not match. Try again." : "";
+        err.classList.toggle("hidden", !wrong);
+      }
+      input.value = "";
+      box.classList.remove("hidden");
+      input.focus();
+      function done(value) {
+        box.classList.add("hidden");
+        joinBtn.removeEventListener("click", onJoin);
+        cancelBtn.removeEventListener("click", onCancel);
+        input.removeEventListener("keydown", onKey);
+        resolve(value);
+      }
+      function onJoin() { done((input.value || "").trim()); }
+      function onCancel() { done(null); }
+      function onKey(e) { if (e.key === "Enter") onJoin(); }
+      joinBtn.addEventListener("click", onJoin);
+      cancelBtn.addEventListener("click", onCancel);
+      input.addEventListener("keydown", onKey);
+    });
+  }
+
+  // Join a campaign, asking for its join code first when it is
+  // private. A public campaign joins with no code. When the invite
+  // columns are not there yet, the read fails and the join goes
+  // through with no code, as before. Returns "joined" (the page
+  // reloads), "failed", "cancelled", "wrong-code", or "no-code"
+  // (private, and the host has not set a code yet).
+  async function joinWithCode(id) {
+    var info = await campaignInviteInfo(id);
+    if (!info) {
+      var ok = await joinCampaign(id);
+      return ok ? "joined" : "failed";
+    }
+    if (info.isPublic) {
+      var ok2 = await joinCampaign(id);
+      return ok2 ? "joined" : "failed";
+    }
+    if (!info.code) return "no-code";
+    var wrong = false;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      var code = await askJoinCode(info.name, wrong);
+      if (code === null) return "cancelled";
+      if (code === info.code) {
+        var ok3 = await joinCampaign(id);
+        return ok3 ? "joined" : "failed";
+      }
+      wrong = true;
+    }
+    return "wrong-code";
+  }
+
+  // The join intent, honored for a signed-in player who already has
+  // campaigns. The existing tryPendingJoin only runs when the player
+  // has no campaigns; this one also runs when they do, so a player
+  // sent an invite link joins the new campaign instead of landing in
+  // their old one. If they are already a member of the invited
+  // campaign, it just switches to it. Returns "none", "joined" (the
+  // page reloads), "already" (the page reloads), "failed",
+  // "wrong-code", or "no-code".
+  async function tryInviteJoin() {
+    var id = null;
+    try { id = localStorage.getItem(JOIN_INTENT_KEY); } catch (e) {}
+    if (!id) return "none";
+    var already = false;
+    myMemberships.forEach(function (m) { if (m.campaign_id === id) already = true; });
+    if (already) {
+      try { localStorage.removeItem(JOIN_INTENT_KEY); } catch (e) {}
+      setActiveCampaign(id);
+      location.reload();
+      return "already";
+    }
+    return tryPendingJoin();
+  }
+
+  // The message for a failed invite join, by reason.
+  function inviteMessage(reason) {
+    if (reason === "wrong-code") return "That join code did not match. Check the code and try the link again.";
+    if (reason === "no-code") return "This campaign does not have a join code set yet. Ask the host for the code.";
+    return "Could not join that campaign. Check the connection and try again.";
+  }
+
+  // The Invite section in the Campaigns tab: the link, the code, and
+  // who can join with it. The link and the copy button are for
+  // everyone in the campaign; the code and the public setting are
+  // for the DM only.
+  async function loadInviteSection() {
+    var linkEl = $("campaign-invite-link");
+    var settings = $("campaign-invite-settings");
+    var codeEl = $("campaign-join-code");
+    var pubEl = $("campaign-is-public");
+    var note = $("campaign-invite-note");
+    var saveBtn = $("campaign-invite-save");
+    if (!linkEl || !currentCampaign) return;
+    linkEl.value = inviteLink(currentCampaign.id) || "";
+    var dm = isDm();
+    if (settings) settings.classList.toggle("hidden", !dm);
+    if (!dm) {
+      if (note) note.textContent = "Only the DM can change the invite code and who can join.";
+      return;
+    }
+    if (note) note.textContent = "";
+    var info = await campaignInviteInfo(currentCampaign.id);
+    if (!info) {
+      if (note) note.textContent = "Invite settings are not set up yet. Run migrations/phase1-step2b-campaign-codes.sql in the SQL editor first.";
+      if (codeEl) codeEl.disabled = true;
+      if (pubEl) pubEl.disabled = true;
+      if (saveBtn) saveBtn.disabled = true;
+      return;
+    }
+    if (codeEl) { codeEl.disabled = false; codeEl.value = info.code || ""; }
+    if (pubEl) { pubEl.disabled = false; pubEl.value = info.isPublic ? "public" : "private"; }
+    if (saveBtn) saveBtn.disabled = false;
+  }
+
+  // Save the invite settings for the current campaign: the join code
+  // and whether it is public. Only the DM sees these controls.
+  async function saveInviteSettings() {
+    var codeEl = $("campaign-join-code");
+    var pubEl = $("campaign-is-public");
+    var note = $("campaign-invite-note");
+    if (!codeEl || !pubEl || !currentCampaign) return;
+    var code = (codeEl.value || "").trim();
+    var isPublic = pubEl.value === "public";
+    var res = await db.from("campaigns").update({ join_code: code || null, is_public: isPublic }).eq("id", currentCampaign.id);
+    if (note) {
+      note.textContent = res.error
+        ? "Could not save the invite settings. The invite columns are not set up yet."
+        : "Invite settings saved.";
+    }
+    if (!res.error) loadCampaigns();
   }
 
   // ---------- home overview (signed-in Home tab) ----------
@@ -931,7 +1200,7 @@
     campaigns: loadCampaigns
   };
 
-  function switchTab(name) {
+  function switchTab(name, push) {
     document.querySelectorAll(".tab-btn").forEach(function (b) {
       b.classList.toggle("active", b.dataset.tab === name);
     });
@@ -943,6 +1212,17 @@
     // when the tab or app is fully closed, so a full close still
     // starts at home (Home).
     try { sessionStorage.setItem("hub-current-tab", name); } catch (e) {}
+    // A tab switch is a step in the browser history, so the back
+    // button returns to the previous tab. The initial landing and a
+    // back or forward step pass push as false, so they add no entry.
+    // Switching to the tab already in the current entry adds none.
+    if (push !== false) {
+      var current = null;
+      try { current = history.state && history.state.tab; } catch (e) {}
+      if (current !== name) {
+        try { history.pushState({ tab: name }, "", location.href); } catch (e) {}
+      }
+    }
     var loader = TAB_LOADERS[name];
     if (loader) loader();
   }
@@ -5697,6 +5977,7 @@
         ? '<div class="card"><p class="title">' + escapeHtml(currentCampaign.name) + '</p><p class="meta">Your role: ' + escapeHtml(currentRole || "player") + '</p></div>'
         : '<p class="empty">No campaign selected.</p>';
     }
+    await loadInviteSection();
     list.innerHTML = myCampaigns.map(function (c) {
       var role = "";
       myMemberships.forEach(function (m) { if (m.campaign_id === c.id) role = m.role; });
@@ -6165,6 +6446,16 @@
     if (signoutBtn) signoutBtn.addEventListener("click", signOut);
     var campaignSignoutBtn = $("campaign-signout-btn");
     if (campaignSignoutBtn) campaignSignoutBtn.addEventListener("click", signOut);
+    // Share and invite settings. The Home Share button and the
+    // Campaigns tab copy button both copy the current campaign's
+    // invite link; the save button stores the join code and the
+    // public setting for the current campaign.
+    var homeShareBtn = $("home-share-btn");
+    if (homeShareBtn) homeShareBtn.addEventListener("click", function () { shareCampaign(homeShareBtn); });
+    var campaignsShareBtn = $("campaigns-share-btn");
+    if (campaignsShareBtn) campaignsShareBtn.addEventListener("click", function () { shareCampaign(campaignsShareBtn); });
+    var inviteSaveBtn = $("campaign-invite-save");
+    if (inviteSaveBtn) inviteSaveBtn.addEventListener("click", saveInviteSettings);
     var myCharSel = $("my-character-select");
     if (myCharSel) myCharSel.addEventListener("change", function () { setMyPlayerKey(myCharSel.value || null); });
     document.querySelectorAll(".map-modes .mode-btn").forEach(function (btn) {
@@ -6376,13 +6667,29 @@
     // a fresh start still lands on Home, the overview.
     var savedTab = null;
     try { savedTab = sessionStorage.getItem("hub-current-tab"); } catch (e) {}
-    if (savedTab && document.getElementById("tab-" + savedTab)) switchTab(savedTab);
-    else switchTab("home");
+    var startTab = (savedTab && document.getElementById("tab-" + savedTab)) ? savedTab : "home";
     // A music-start push opens the Table with #music; land straight on
     // the Music tab instead of Home. The push itself never starts audio.
-    if (location.hash === "#music") switchTab("music");
+    if (location.hash === "#music") startTab = "music";
+    switchTab(startTab, false);
+    // Tag this history entry with the starting tab, so the back
+    // button can return to it. This replaces the entry, it does not
+    // add one: opening the app is not a step back, and Back from the
+    // starting tab leaves the site.
+    try { history.replaceState({ tab: startTab }, "", location.href); } catch (e) {}
     musicUpdateUI();
   }
+
+  // The browser back and forward buttons walk through the tabs.
+  // A popstate carries the tab in its state; switch to it without
+  // pushing another entry, so back and forward mirror each other.
+  // If the app is not showing (store window or gate), do nothing.
+  window.addEventListener("popstate", function (e) {
+    var app = $("app");
+    if (app && app.classList.contains("hidden")) return;
+    var tab = e.state && e.state.tab;
+    if (tab && document.getElementById("tab-" + tab)) switchTab(tab, false);
+  });
 
   initGate();
 })();

@@ -11,9 +11,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=84">
+<link rel="stylesheet" href="styles.css?v=85">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=4"></script>
+<script src="config.js?v=5"></script>
 <script type="importmap">
 {
   "imports": {
@@ -34,13 +34,37 @@
 <div id="gate" class="gate hidden">
   <div class="gate-box">
     <h1>The Quest Table</h1>
-    <p id="gate-setup" class="hidden">This hub is not set up yet. The owner needs to set the passphrase in config.js.</p>
-    <div id="gate-form">
-      <label for="passphrase-input">Campaign passphrase</label>
-      <input type="password" id="passphrase-input" placeholder="Enter the passphrase" autocomplete="off">
-      <button id="passphrase-btn" type="button">Enter</button>
-      <label class="remember"><input type="checkbox" id="remember-device" checked> Remember this device</label>
-      <p id="gate-error" class="error hidden">Wrong passphrase. Try again.</p>
+    <p id="gate-setup" class="hidden">This hub is not set up yet. The owner needs to finish the setup in config.js.</p>
+    <div id="auth-form">
+      <label for="auth-email">Email</label>
+      <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email">
+      <label for="auth-password">Password</label>
+      <input type="password" id="auth-password" placeholder="Password" autocomplete="current-password">
+      <button type="button" id="auth-signin-btn">Sign in</button>
+      <p class="hint"><button type="button" id="auth-toggle-mode" class="link-btn">Create one</button></p>
+      <p id="auth-error" class="error hidden"></p>
+      <p id="auth-note" class="hint hidden"></p>
+    </div>
+    <p class="hint">Your account signs you in to every campaign you belong to. The first time you sign in, join a campaign or start one below.</p>
+    <div id="gate-join" class="hidden">
+      <h2>Join a campaign</h2>
+      <p class="hint">You are not in a campaign yet.</p>
+      <button type="button" id="join-couples-btn">Join Nathan &amp; Angela</button>
+      <p id="gate-join-error" class="error hidden"></p>
+      <h2>Or start a new campaign</h2>
+      <div>
+        <label for="new-campaign-name">Campaign name</label>
+        <input type="text" id="new-campaign-name" placeholder="Campaign name">
+        <label for="new-campaign-visibility">Who can find it</label>
+        <select id="new-campaign-visibility">
+          <option value="public">Public: listed for anyone looking for a game</option>
+          <option value="private">Private: invite only</option>
+        </select>
+        <label for="new-campaign-password">Campaign password</label>
+        <input type="password" id="new-campaign-password" placeholder="Password for players joining" autocomplete="off">
+        <p class="hint">The campaign password is recorded as the host's intent. It is not enforced yet: anyone who can sign in can join for now, until the membership rules land.</p>
+        <button type="button" id="create-campaign-btn">Create campaign</button>
+      </div>
     </div>
   </div>
 </div>
@@ -48,7 +72,7 @@
 <div id="app" class="hidden">
   <header>
     <h1>The Quest Table</h1>
-    <p class="subtitle">Our shared campaign</p>
+    <p class="subtitle" id="campaign-subtitle">Our shared campaign</p>
     <div class="title-flourish"><i></i></div>
   </header>
 
@@ -177,8 +201,9 @@
 
     <section id="tab-characters" class="tab-panel">
       <h2>Characters</h2>
-      <p class="hint">Player characters. Tap Edit to build or change a character. More players can join with the form below.</p>
+      <p class="hint">Player characters. Tap Edit to build or change a character. More players can join with the form below; a new character waits for the DM to approve it.</p>
       <div id="characters-list" class="list"></div>
+      <div id="pending-list"></div>
       <form id="add-player-form" class="form" data-mode="interact">
         <label for="new-player-name">Add another player</label>
         <input type="text" id="new-player-name" placeholder="Player's first name">
@@ -232,11 +257,11 @@
       </div>
       <div class="card">
         <p class="title">Getting in</p>
-        <p>The DM gives you the link and the passphrase. The site remembers your device. If you can't get in, ask your player to ask the DM for the passphrase.</p>
+        <p>The DM gives you the link. Sign in with your account; the site remembers your session. If you can't get in, ask your player to ask the DM to add you to the campaign.</p>
       </div>
       <div class="card">
         <p class="title">Joining the party</p>
-        <p>New players build their character on the Characters tab, using the Add Player form if there is no slot for you yet, and join the party where it currently is. The DM will place you.</p>
+        <p>New players build their character on the Characters tab, using the Add Player form if there is no slot for you yet, and join the party where it currently is. The DM will place you. A new character waits for the DM to approve it before it can play.</p>
       </div>
       <div class="card">
         <p class="title">The campaign right now</p>
@@ -294,8 +319,8 @@
         <button type="button" class="carousel-arrow carousel-prev" id="carousel-prev" aria-label="Previous campaign">&#8249;</button>
         <button type="button" class="carousel-arrow carousel-next" id="carousel-next" aria-label="Next campaign">&#8250;</button>
       </div>
-      <button type="button" id="quests-edit-toggle" class="edit-toggle-btn" data-mode="interact">Edit list</button>
-      <form id="quest-form" class="form" data-mode="interact">
+      <button type="button" id="quests-edit-toggle" class="edit-toggle-btn" data-mode="dm">Edit list</button>
+      <form id="quest-form" class="form" data-mode="dm">
         <label for="quest-title">Title</label>
         <input type="text" id="quest-title" placeholder="Quest title">
         <label for="quest-description">Description</label>
@@ -409,7 +434,7 @@
       <h2>Battle Tracker</h2>
       <p class="hint">Highest initiative goes first. Tap Next Turn to move down the list. Type a name from the enemy reference or a character sheet and the stats fill in; initiative rolls itself for NPCs and enemies, players roll their own.</p>
       <p id="battle-round" class="hint"></p>
-      <form id="combatant-form" class="form" data-mode="interact">
+      <form id="combatant-form" class="form" data-mode="dm">
         <label for="combatant-name">Name</label>
         <input type="text" id="combatant-name" placeholder="Combatant name">
         <div class="row">
@@ -448,7 +473,7 @@
         <input type="text" id="combatant-note" placeholder="Optional note">
         <button type="submit">Add combatant</button>
       </form>
-      <div class="row" data-mode="interact">
+      <div class="row" data-mode="dm">
         <button type="button" id="next-turn-btn">Next Turn</button>
         <button type="button" id="clear-battle-btn" class="danger">Clear Battle</button>
       </div>
@@ -531,6 +556,37 @@
       <div id="music-mood-list" class="list"></div>
       <p class="hint">Tracks are royalty-free MP3s Nathan adds under assets/music/. No tracks are loaded yet.</p>
     </section>
+
+    <section id="tab-campaigns" class="tab-panel">
+      <h2>Campaigns</h2>
+      <p class="hint" id="campaigns-account"></p>
+      <h3>Current campaign</h3>
+      <div id="campaigns-current"></div>
+      <h3>My campaigns</h3>
+      <div id="campaigns-list" class="list"></div>
+      <h3>Members</h3>
+      <div id="campaign-members"></div>
+      <h3>My character</h3>
+      <p class="hint">Which character is yours in this campaign. The DM uses this to know whose sheet you may edit, and the dice roller uses it to name you.</p>
+      <select id="my-character-select"></select>
+      <h3>Start a new campaign</h3>
+      <form id="campaign-create-form" class="form">
+        <label for="campaign-create-name">Campaign name</label>
+        <input type="text" id="campaign-create-name" placeholder="Campaign name">
+        <label for="campaign-create-visibility">Who can find it</label>
+        <select id="campaign-create-visibility">
+          <option value="public">Public: listed for anyone looking for a game</option>
+          <option value="private">Private: invite only</option>
+        </select>
+        <label for="campaign-create-password">Campaign password</label>
+        <input type="password" id="campaign-create-password" placeholder="Password for players joining" autocomplete="off">
+        <p class="hint">The campaign password is recorded as the host's intent. It is not enforced yet: anyone who can sign in can join for now, until the membership rules land.</p>
+        <button type="submit">Create campaign</button>
+      </form>
+      <div class="actions">
+        <button type="button" id="campaign-signout-btn">Sign out</button>
+      </div>
+    </section>
   </main>
 
 </div>
@@ -550,8 +606,8 @@
     </div>
     <!-- Collapsing submenus: Modes, AI, More. Each group header is a
          flat row like the tabs; tapping it expands or collapses just
-         that group. The DM passphrase field lives inside Modes, with
-         the mode rows, so it shows when Modes is open. -->
+         that group. The Dungeon Master mode row only appears for the
+         DM (role owner or dm); players never see it. -->
     <div class="nav-menu-sub" data-submenu="modes">
       <button type="button" class="nav-menu-sub-toggle" aria-expanded="false">
         <span class="nav-menu-sub-label">Modes</span>
@@ -561,12 +617,6 @@
         <button type="button" data-mode-option="view" class="mode-option">View</button>
         <button type="button" data-mode-option="interact" class="mode-option">Interact</button>
         <button type="button" data-mode-option="dm" class="mode-option">Dungeon Master</button>
-        <div id="dm-unlock" class="dm-unlock hidden">
-          <label for="dm-passphrase-input">DM passphrase</label>
-          <input type="password" id="dm-passphrase-input" placeholder="Enter the DM passphrase" autocomplete="off">
-          <button type="button" id="dm-unlock-btn">Unlock</button>
-          <p id="dm-error" class="error hidden">Wrong passphrase.</p>
-        </div>
       </div>
     </div>
     <div class="nav-menu-sub" data-submenu="ai">
@@ -589,8 +639,9 @@
         <button type="button" data-tab="companions" class="tab-btn">Companions</button>
         <button type="button" data-tab="npcs" class="tab-btn">NPCs</button>
         <button type="button" data-tab="music" class="tab-btn">Music</button>
+        <button type="button" data-tab="campaigns" class="tab-btn">Campaigns</button>
         <button type="button" data-tab="howto" class="tab-btn">How to Play</button>
-        <button type="button" id="lock-btn" class="tab-btn">Lock</button>
+        <button type="button" id="signout-btn" class="tab-btn">Sign out</button>
       </div>
     </div>
   </nav>
@@ -778,6 +829,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=46"></script>
-<script src="app.js?v=124"></script>
+<script src="app.js?v=125"></script>
 </body>
 </html>

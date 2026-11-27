@@ -34,6 +34,7 @@
 <div id="gate" class="gate hidden">
   <div class="gate-box">
     <h1>The Quest Table</h1>
+    <p id="gate-preview-note" class="hint hidden">Preview: nothing here is real. No account is created, no email is sent, and no password changes.</p>
     <p id="gate-setup" class="hidden">The Table is not set up yet. The owner needs to finish the setup in config.js.</p>
     <div id="auth-form">
       <label for="auth-email">Email</label>
@@ -102,7 +103,7 @@
         <button type="button" id="create-campaign-btn">Create campaign</button>
       </div>
     </div>
-    <p class="hint"><button type="button" id="gate-back-btn" class="link-btn hidden">Back to browsing</button></p>
+    <p class="hint"><button type="button" id="gate-back-btn" class="link-btn hidden">Back to browsing</button> <button type="button" id="gate-preview-exit-btn" class="link-btn hidden">Back to my view</button></p>
   </div>
 </div>
 
@@ -119,6 +120,7 @@
     <div class="home-auth-row">
       <button type="button" id="home-signup-btn" class="home-signup-btn">Sign up free</button>
       <button type="button" id="home-signin-link" class="link-btn">Sign in</button>
+      <button type="button" id="home-preview-exit-btn" class="link-btn hidden">Back to my view</button>
     </div>
   </header>
   <main>
@@ -778,6 +780,7 @@
         <button type="button" data-tab="music" class="tab-btn">Music</button>
         <button type="button" data-tab="campaigns" class="tab-btn">Campaigns</button>
         <button type="button" data-tab="howto" class="tab-btn">How to Play</button>
+        <button type="button" id="preview-toggle-btn" class="tab-btn">Preview as visitor</button>
         <button type="button" id="signout-btn" class="tab-btn">Sign out</button>
       </div>
     </div>
@@ -983,6 +986,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=47"></script>
-<script src="app.js?v=131"></script>
+<script src="app.js?v=132"></script>
 </body>
 </html>

@@ -794,7 +794,7 @@ function makeDieMaterial() {
     // die color toward white (a pastel of it). A dark red becomes a
     // pink pearl, a dark blue a light blue pearl, and the iridescence
     // shows on every color instead of only on cream and silver.
-    const pearlColor = new THREE.Color(die.hex).lerp(new THREE.Color(0xffffff), 0.6);
+    const pearlColor = new THREE.Color(die.hex).lerp(new THREE.Color(0xffffff), 0.35);
     return new THREE.MeshPhysicalMaterial({
       color: pearlColor, metalness: 0.1, roughness: 0.1,
       iridescence: 1.0, iridescenceIOR: 1.8, clearcoat: 0.0, clearcoatRoughness: 0.3,

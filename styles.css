@@ -1,5 +1,14 @@
 /* The Quest Table: warm tavern theme, dark wood, muted stone, amber sunlight and warm cream, readable on phone and desktop. */
 
+:root {
+  /* Floating buttons anchor to the content column (#app, 720px wide,
+     centered), not the viewport edge, so on a wide screen they sit
+     next to the boards instead of far off to the side. On a phone the
+     column fills the screen and this falls back to the 18px edge. */
+  --float-right: max(18px, env(safe-area-inset-right), calc(50% - 360px + 18px));
+  --float-left: max(18px, env(safe-area-inset-left), calc(50% - 360px + 18px));
+}
+
 * {
   box-sizing: border-box;
 }
@@ -177,7 +186,7 @@ header .subtitle {
 
 .dice-btn {
   position: fixed;
-  right: max(18px, env(safe-area-inset-right));
+  right: var(--float-right);
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 56px + 12px);
   z-index: 41;
   width: 44px;
@@ -212,7 +221,7 @@ header .subtitle {
    small gap between them. Visible in all modes. */
 .aichat-btn {
   position: fixed;
-  right: calc(max(18px, env(safe-area-inset-right)) + 56px + 12px);
+  right: calc(var(--float-right) + 56px + 12px);
   bottom: max(12px, env(safe-area-inset-bottom));
   z-index: 41;
   width: 44px;
@@ -248,7 +257,7 @@ header .subtitle {
    all modes. Tapping it pops out the music controls panel. */
 .music-float-btn {
   position: fixed;
-  right: calc(max(18px, env(safe-area-inset-right)) + 56px);
+  right: calc(var(--float-right) + 56px);
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 44px + 12px);
   z-index: 41;
   width: 36px;
@@ -280,7 +289,7 @@ header .subtitle {
 
 .menu-btn {
   position: fixed;
-  right: max(18px, env(safe-area-inset-right));
+  right: var(--float-right);
   bottom: max(12px, env(safe-area-inset-bottom));
   z-index: 41;
   width: 56px;
@@ -340,7 +349,7 @@ header .subtitle {
 
 .nav-menu {
   position: fixed;
-  right: max(14px, env(safe-area-inset-right));
+  right: max(14px, env(safe-area-inset-right), calc(50% - 360px + 14px));
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 56px + 12px + 44px + 12px);
   z-index: 40;
   width: min(340px, calc(100vw - 28px));
@@ -2035,7 +2044,7 @@ header {
 /* Floating back to top button, same pattern as the ED guide */
 .back-to-top {
   position: fixed;
-  left: max(18px, env(safe-area-inset-left));
+  left: var(--float-left);
   bottom: max(18px, env(safe-area-inset-bottom));
   z-index: 20;
   width: 48px;
@@ -2176,7 +2185,7 @@ header {
 /* Ambient music player */
 .music-panel {
   position: fixed;
-  right: calc(max(18px, env(safe-area-inset-right)) + 56px);
+  right: calc(var(--float-right) + 56px);
   bottom: calc(max(12px, env(safe-area-inset-bottom)) + 44px + 12px + 36px + 12px);
   z-index: 40;
   width: min(360px, calc(100vw - 28px));

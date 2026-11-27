@@ -796,7 +796,7 @@ function makeDieMaterial() {
     // (It used to be hardcoded to one off-white, ignoring the color.)
     return new THREE.MeshPhysicalMaterial({
       color: die.hex, metalness: 0.1, roughness: 0.25,
-      iridescence: 0.8, iridescenceIOR: 1.3, clearcoat: 0.6, clearcoatRoughness: 0.3
+      iridescence: 1.0, iridescenceIOR: 1.3, clearcoat: 0.6, clearcoatRoughness: 0.3
     });
   }
   if (style.dieDesign === "marble") {

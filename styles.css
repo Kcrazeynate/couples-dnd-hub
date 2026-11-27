@@ -2539,22 +2539,8 @@ header {
   box-shadow: inset 0 0 40px rgba(217, 164, 65, 0.10), 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
-/* Campaign select landing screen. Same 720px column as the app,
-   so it sits over the battle art and fade band the same way. */
-
-#landing {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 0 1rem 3rem;
-  position: relative;
-  z-index: 1;
-}
-
-.landing-intro {
-  text-align: center;
-  color: #b3a284;
-  margin: 1rem 0 0;
-}
+/* Campaign select tab. The carousel lives in the Campaigns tab
+   panel, same 720px column as the rest of the app. */
 
 /* Carousel: a horizontal scroll track with snap, so it works by
    swipe on phones and by scroll or arrow buttons on PC. */
@@ -2659,14 +2645,6 @@ header {
 
 .carousel-next {
   right: 0.5rem;
-}
-
-.landing-continue {
-  text-align: center;
-}
-
-.landing-continue .hint {
-  margin-top: 0.5rem;
 }
 
 /* Campaign detail modal. Reuses .modal and .modal-box. */

@@ -795,8 +795,9 @@ function makeDieMaterial() {
     // a red die is a red pearl, a blue die a blue pearl, and so on.
     // (It used to be hardcoded to one off-white, ignoring the color.)
     return new THREE.MeshPhysicalMaterial({
-      color: die.hex, metalness: 0.1, roughness: 0.25,
-      iridescence: 1.0, iridescenceIOR: 1.8, clearcoat: 0.0, clearcoatRoughness: 0.3
+      color: die.hex, metalness: 0.1, roughness: 0.1,
+      iridescence: 1.0, iridescenceIOR: 1.8, clearcoat: 0.0, clearcoatRoughness: 0.3,
+      envMapIntensity: 1.5
     });
   }
   if (style.dieDesign === "marble") {

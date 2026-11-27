@@ -866,12 +866,15 @@
   function updatePreviewNote() {
     var note = $("gate-preview-note");
     if (note) note.classList.toggle("hidden", !previewMode);
-    var gateExit = $("gate-preview-exit-btn");
-    if (gateExit) gateExit.classList.toggle("hidden", !previewMode);
-    var homeExit = $("home-preview-exit-btn");
-    if (homeExit) homeExit.classList.toggle("hidden", !previewMode);
-    var toggle = $("preview-toggle-btn");
-    if (toggle) toggle.textContent = previewMode ? "Back to my view" : "Preview as visitor";
+    // The one preview toggle is a floating button. It only shows for
+    // a signed-in DM; a real visitor never sees it. Its label and
+    // pressed state follow the mode, so it reads as on or off.
+    var btn = $("preview-float-btn");
+    if (btn) {
+      btn.classList.toggle("hidden", !currentUser || !isDm());
+      btn.setAttribute("aria-label", previewMode ? "Back to my view" : "Preview as visitor");
+      btn.setAttribute("aria-pressed", previewMode ? "true" : "false");
+    }
   }
 
   function enterPreview() {
@@ -6443,8 +6446,8 @@
       if (e.key === "Escape") { closeMenu(); closeMusicPanel(); }
     });
 
-    // Buttons with no data-tab (Sign out, Preview as visitor) get
-    // their own handlers below; they are not tabs.
+    // Buttons with no data-tab (Sign out) get their own handlers
+    // below; they are not tabs.
     document.querySelectorAll(".tab-btn").forEach(function (btn) {
       if (!btn.dataset.tab) return;
       btn.addEventListener("click", function () { switchTab(btn.dataset.tab); closeMenu(); });
@@ -6685,22 +6688,21 @@
     });
     var signoutBtn = $("signout-btn");
     if (signoutBtn) signoutBtn.addEventListener("click", signOut);
-    // Preview as visitor: DM-only. It is hidden for players, like
-    // the DM mode button. Tapping it shows the store window as a
-    // visitor sees it; tapping again, or Back to my view, returns.
-    var previewToggleBtn = $("preview-toggle-btn");
-    if (previewToggleBtn) {
-      previewToggleBtn.classList.toggle("hidden", !isDm());
-      previewToggleBtn.addEventListener("click", function () {
+    // Preview as visitor: one floating toggle, DM-only. It is hidden
+    // for players and when signed out, like the DM mode button.
+    // Tapping it shows the store window as a visitor sees it; tapping
+    // again returns to your view. The button floats outside the app,
+    // so it stays visible in preview too.
+    var previewFloatBtn = $("preview-float-btn");
+    if (previewFloatBtn) {
+      previewFloatBtn.addEventListener("click", function () {
         closeMenu();
+        closeMusicPanel();
         if (previewMode) exitPreview();
         else enterPreview();
       });
+      updatePreviewNote();
     }
-    var gatePreviewExitBtn = $("gate-preview-exit-btn");
-    if (gatePreviewExitBtn) gatePreviewExitBtn.addEventListener("click", exitPreview);
-    var homePreviewExitBtn = $("home-preview-exit-btn");
-    if (homePreviewExitBtn) homePreviewExitBtn.addEventListener("click", exitPreview);
     var campaignSignoutBtn = $("campaign-signout-btn");
     if (campaignSignoutBtn) campaignSignoutBtn.addEventListener("click", signOut);
     // Share and invite settings. The Home Share button and the

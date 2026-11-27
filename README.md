@@ -33,7 +33,7 @@ Do these steps in order. Nothing here needs a paid account.
 1. Open `config.js` in this folder.
 2. Replace `PASTE_SUPABASE_URL_HERE` with the Project URL from step 3.
 3. Replace `PASTE_SUPABASE_ANON_KEY_HERE` with the anon key from step 3.
-4. Replace `CHANGE_ME_PASSPHRASE` with a passphrase both Muses will share. Pick something only Nathan and Angela know. Keep the quotes around it.
+4. There is no passphrase any more. Sign-in is by email and password (Supabase Auth); accounts are created on the sign-in screen, and the DM role comes from campaign membership, not a passphrase.
 5. Save the file.
 
 ### 5. Publish with GitHub Pages
@@ -47,17 +47,17 @@ Do these steps in order. Nothing here needs a paid account.
 ### 6. How each Muse uses the site
 
 1. Open the published link on a phone or computer.
-2. Enter the campaign passphrase from step 4. It stays unlocked in that browser session.
+2. Create an account with your email and password, or sign in. The first account to join the Nathan & Angela campaign becomes its owner; later accounts join as players. The sign-in lasts until you sign out.
 3. Use the tabs:
    - **Board**: post and read messages. The board refreshes itself every 15 seconds, or tap Refresh.
    - **Campaign Log**: add session notes.
-   - **Characters**: build each character with Edit, then use the HP plus and minus buttons during play.
-   - **Quests**: add quests, mark them Done, or delete them.
+   - **Characters**: build each character with Edit, then use the HP plus and minus buttons during play. HP, hit dice, and death saves are DM-only; a player edits only their own sheet, and a new character waits for the DM to approve it.
+   - **Quests**: add quests, mark them Done, or delete them. Quests are DM-only.
    - **NPCs & Places**: add people met and places visited.
    - **Dice**: pick a die, a modifier, and Normal, Advantage, or Disadvantage, then Roll. Every roll is saved to the roll log.
-   - **Battle**: add combatants with initiative and HP. The list sorts highest initiative first. Tap Next Turn to move the highlight down the list.
-4. To check for new messages, open the link and look at the Board. The passphrase is only asked again if the browser session closed.
+   - **Battle**: add combatants with initiative and HP. The list sorts highest initiative first. Tap Next Turn to move the highlight down the list. Combat is DM-only to change.
+4. To check for new messages, open the link and look at the Board.
 
 ## Privacy note
 
-The data is protected by the unguessable published link plus the passphrase gate, not by user accounts. Anyone with the link and the passphrase can read and change everything. Do not share either one outside the campaign, and do not store anything sensitive here.
+Sign-in is by account, but the database rules are still public until the membership rules land (Phase 1 Step 3): anyone who can reach the site and create an account can read the data for now. Do not share the link outside the campaign, and do not store anything sensitive here.

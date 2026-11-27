@@ -710,6 +710,7 @@
     $("gate").classList.add("hidden");
     var home = $("home");
     if (home) home.classList.add("hidden");
+    document.body.classList.remove("store");
     $("app").classList.remove("hidden");
     var sub = $("campaign-subtitle");
     if (sub && currentCampaign) sub.textContent = currentCampaign.name;
@@ -837,6 +838,7 @@
   function showStore() {
     $("gate").classList.add("hidden");
     $("app").classList.add("hidden");
+    document.body.classList.add("store");
     var home = $("home");
     if (home) home.classList.remove("hidden");
     updatePreviewNote();
@@ -847,6 +849,7 @@
     var home = $("home");
     if (home) home.classList.add("hidden");
     $("app").classList.add("hidden");
+    document.body.classList.remove("store");
     $("gate").classList.remove("hidden");
     setAuthMode(mode || "signin");
     showAuthForm();
@@ -889,6 +892,7 @@
     updatePreviewNote();
     $("gate").classList.add("hidden");
     $("home").classList.add("hidden");
+    document.body.classList.remove("store");
     $("app").classList.remove("hidden");
     switchTab("home", false);
   }

@@ -6711,6 +6711,8 @@
     // public setting for the current campaign.
     var homeShareBtn = $("home-share-btn");
     if (homeShareBtn) homeShareBtn.addEventListener("click", function () { shareCampaign(homeShareBtn); });
+    var homeSettingsBtn = $("home-settings-btn");
+    if (homeSettingsBtn) homeSettingsBtn.addEventListener("click", function () { switchTab("campaigns"); });
     var campaignsShareBtn = $("campaigns-share-btn");
     if (campaignsShareBtn) campaignsShareBtn.addEventListener("click", function () { shareCampaign(campaignsShareBtn); });
     var inviteSaveBtn = $("campaign-invite-save");

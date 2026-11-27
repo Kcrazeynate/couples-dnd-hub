@@ -330,6 +330,8 @@
   function showAuthForm() {
     $("auth-form").classList.remove("hidden");
     $("gate-join").classList.add("hidden");
+    var rec = $("auth-recovery");
+    if (rec) rec.classList.add("hidden");
     var err = $("auth-error");
     if (err) err.classList.add("hidden");
     var note = $("auth-note");
@@ -480,6 +482,152 @@
     if (toggle) toggle.textContent = mode === "signup" ? "Sign in instead" : "Create one";
     var pw = $("auth-password");
     if (pw) pw.setAttribute("autocomplete", mode === "signup" ? "new-password" : "current-password");
+    var forgot = $("auth-forgot-btn");
+    if (forgot) forgot.classList.toggle("hidden", mode !== "signin");
+    var rec = $("auth-recovery");
+    if (rec) rec.classList.add("hidden");
+  }
+
+  // Show or hide a password field. The eye button swaps its icon and
+  // label, so the user can check what they typed before submitting.
+  function setPasswordVisible(input, btn, visible) {
+    if (!input || !btn) return;
+    input.type = visible ? "text" : "password";
+    btn.classList.toggle("showing", visible);
+    btn.setAttribute("aria-pressed", visible ? "true" : "false");
+    btn.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+  }
+
+  function bindPasswordEye(inputId, btnId) {
+    var input = $(inputId);
+    var btn = $(btnId);
+    if (!input || !btn) return;
+    btn.addEventListener("click", function () {
+      setPasswordVisible(input, btn, input.type !== "text");
+    });
+  }
+
+  // Password recovery by email code. Supabase sends a 6 digit code
+  // (signInWithOtp) when email OTP is on for this project; the code
+  // is verified (verifyOtp, type "email"), which signs the user in,
+  // and the new password is set with updateUser. This is the native
+  // code path, not the reset link (resetPasswordForEmail only sends
+  // a link, never a code). The reply never says whether the email
+  // has an account: the same note shows either way. Three wrong
+  // codes use up the code; the user asks for a new one.
+  var RECOVERY_MAX_ATTEMPTS = 3;
+  var recoveryEmail = "";
+  var recoveryAttempts = 0;
+
+  function showRecovery() {
+    $("auth-form").classList.add("hidden");
+    $("auth-recovery").classList.remove("hidden");
+    showRecoveryEmailStep();
+    var email = $("recovery-email");
+    if (email) {
+      email.value = ($("auth-email").value || "").trim();
+      email.focus();
+    }
+  }
+
+  function hideRecovery() {
+    $("auth-recovery").classList.add("hidden");
+    $("auth-form").classList.remove("hidden");
+  }
+
+  function showRecoveryEmailStep() {
+    $("recovery-step-email").classList.remove("hidden");
+    $("recovery-step-code").classList.add("hidden");
+    var err = $("recovery-error");
+    if (err) err.classList.add("hidden");
+  }
+
+  function showRecoveryCodeStep() {
+    $("recovery-step-email").classList.add("hidden");
+    $("recovery-step-code").classList.remove("hidden");
+    var err = $("recovery-code-error");
+    if (err) err.classList.add("hidden");
+    var code = $("recovery-code");
+    if (code) { code.value = ""; code.focus(); }
+  }
+
+  function showRecoveryError(msg) {
+    var err = $("recovery-error");
+    if (!err) return;
+    err.textContent = msg;
+    err.classList.remove("hidden");
+  }
+
+  function showRecoveryCodeError(msg) {
+    var err = $("recovery-code-error");
+    if (!err) return;
+    err.textContent = msg;
+    err.classList.remove("hidden");
+  }
+
+  function showRecoveryNote(msg) {
+    var note = $("recovery-note");
+    if (!note) return;
+    note.textContent = msg;
+    note.classList.remove("hidden");
+  }
+
+  async function sendRecoveryCode() {
+    var email = ($("recovery-email").value || "").trim();
+    if (!email || email.indexOf("@") < 0) {
+      showRecoveryError("Enter your email address.");
+      return;
+    }
+    recoveryEmail = email;
+    recoveryAttempts = 0;
+    var note = $("recovery-note");
+    if (note) note.classList.add("hidden");
+    var err = $("recovery-error");
+    if (err) err.classList.add("hidden");
+    // The same note shows whether or not the email has an account,
+    // so the reply never reveals if it is on file.
+    try { await db.auth.signInWithOtp({ email: email }); } catch (e) {}
+    showRecoveryNote("If that email matches an account, a code is on its way. Check your inbox.");
+    showRecoveryCodeStep();
+  }
+
+  async function resetPasswordWithCode() {
+    var code = ($("recovery-code").value || "").replace(/[^0-9]/g, "");
+    var pw = $("recovery-password").value || "";
+    var pw2 = $("recovery-password-confirm").value || "";
+    var err = $("recovery-code-error");
+    if (err) err.classList.add("hidden");
+    if (!code) {
+      showRecoveryCodeError("Enter the code from your email.");
+      return;
+    }
+    if (pw.length < 6) {
+      showRecoveryCodeError("Password must be at least 6 characters.");
+      return;
+    }
+    if (pw !== pw2) {
+      showRecoveryCodeError("The new passwords do not match.");
+      return;
+    }
+    var ver = await db.auth.verifyOtp({ email: recoveryEmail, token: code, type: "email" });
+    if (ver.error) {
+      recoveryAttempts += 1;
+      if (recoveryAttempts >= RECOVERY_MAX_ATTEMPTS) {
+        showRecoveryEmailStep();
+        showRecoveryError("Too many tries. Ask for a new code.");
+        return;
+      }
+      showRecoveryCodeError("That code did not match. " + (RECOVERY_MAX_ATTEMPTS - recoveryAttempts) + " tries left.");
+      return;
+    }
+    var upd = await db.auth.updateUser({ password: pw });
+    if (upd.error) {
+      showRecoveryCodeError(friendlyAuthError(upd.error));
+      return;
+    }
+    currentUser = (ver.data && ver.data.user) || (upd.data && upd.data.user) || currentUser;
+    hideRecovery();
+    afterSignIn();
   }
 
   // Joining the couples campaign, the bootstrap for the first accounts.
@@ -573,6 +721,25 @@
     });
     $("auth-toggle-mode").addEventListener("click", function () {
       setAuthMode(authMode === "signup" ? "signin" : "signup");
+    });
+    bindPasswordEye("auth-password", "auth-password-eye");
+    bindPasswordEye("recovery-password", "recovery-password-eye");
+    $("auth-forgot-btn").addEventListener("click", showRecovery);
+    $("recovery-back-btn").addEventListener("click", hideRecovery);
+    $("recovery-send-btn").addEventListener("click", sendRecoveryCode);
+    $("recovery-reset-btn").addEventListener("click", resetPasswordWithCode);
+    $("recovery-resend-btn").addEventListener("click", sendRecoveryCode);
+    $("recovery-email").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") sendRecoveryCode();
+    });
+    $("recovery-code").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") resetPasswordWithCode();
+    });
+    $("recovery-password").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") resetPasswordWithCode();
+    });
+    $("recovery-password-confirm").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") resetPasswordWithCode();
     });
     $("join-couples-btn").addEventListener("click", joinCouplesCampaign);
     $("create-campaign-btn").addEventListener("click", createCampaignFromGate);

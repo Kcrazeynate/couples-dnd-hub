@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=87">
+<link rel="stylesheet" href="styles.css?v=88">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=5"></script>
 <script type="importmap">
@@ -34,7 +34,7 @@
 <div id="gate" class="gate hidden">
   <div class="gate-box">
     <h1>The Quest Table</h1>
-    <p id="gate-setup" class="hidden">This hub is not set up yet. The owner needs to finish the setup in config.js.</p>
+    <p id="gate-setup" class="hidden">The Table is not set up yet. The owner needs to finish the setup in config.js.</p>
     <div id="auth-form">
       <label for="auth-email">Email</label>
       <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email">
@@ -66,7 +66,75 @@
         <button type="button" id="create-campaign-btn">Create campaign</button>
       </div>
     </div>
+    <p class="hint"><button type="button" id="gate-back-btn" class="link-btn hidden">Back to browsing</button></p>
   </div>
+</div>
+
+<!-- Home page: the front door. Signed out, this is the store window
+     (what the Table is, what you can do, starter campaigns, public
+     campaigns, why join, sign up). Signed in, the app opens on the
+     Home tab instead, which is the overview. The gate is only the
+     sign-in screen now, reached from the buttons below. -->
+<div id="home" class="hidden">
+  <header class="home-header">
+    <h1>The Quest Table</h1>
+    <p class="subtitle">Your table for Dungeons &amp; Dragons, with an AI dungeon master, your whole party in one place.</p>
+    <div class="title-flourish"><i></i></div>
+    <div class="home-auth-row">
+      <button type="button" id="home-signup-btn" class="home-signup-btn">Sign up free</button>
+      <button type="button" id="home-signin-link" class="link-btn">Sign in</button>
+    </div>
+  </header>
+  <main>
+    <section class="home-section">
+      <h2>What you can do</h2>
+      <div class="home-cards">
+        <div class="home-do-card">
+          <p class="title">Play with an AI DM</p>
+          <p>Your DM runs the story, so nobody at the table has to.</p>
+        </div>
+        <div class="home-do-card">
+          <p class="title">Roll real 3D dice</p>
+          <p>Dice that tumble with physics. Every roll is saved to the log.</p>
+        </div>
+        <div class="home-do-card">
+          <p class="title">Share a living map</p>
+          <p>One world map with fog of war, and an area map for every scene.</p>
+        </div>
+        <div class="home-do-card">
+          <p class="title">Keep the log and quests</p>
+          <p>The story, the quests, and the state, all in one place.</p>
+        </div>
+        <div class="home-do-card">
+          <p class="title">Listen to table music</p>
+          <p>Ambient music that follows the mood, on every phone at once.</p>
+        </div>
+      </div>
+    </section>
+    <section class="home-section">
+      <h2>Starter campaigns</h2>
+      <p class="hint">Pick a starter campaign and your AI DM will run the story. Each one is ready to play.</p>
+      <div class="carousel">
+        <div class="carousel-track" id="carousel-track"></div>
+        <button type="button" class="carousel-arrow carousel-prev" id="carousel-prev" aria-label="Previous campaign">&#8249;</button>
+        <button type="button" class="carousel-arrow carousel-next" id="carousel-next" aria-label="Next campaign">&#8250;</button>
+      </div>
+    </section>
+    <section class="home-section">
+      <h2>Campaigns looking for players</h2>
+      <p class="hint">Public campaigns looking for a party. Tap Join on one and make an account to play.</p>
+      <p class="hint">Campaign visibility is not enforced yet. For now, every campaign except Nathan and Angela's own campaign is listed here.</p>
+      <div id="public-campaigns-list" class="list"><p class="empty">Loading campaigns...</p></div>
+    </section>
+    <section class="home-section">
+      <h2>Why join</h2>
+      <p>Joining is always free. The host pays. Your party, your story, your dice.</p>
+    </section>
+    <div class="home-cta">
+      <button type="button" id="home-signup-btn-bottom" class="home-signup-btn">Sign up free</button>
+      <p class="hint">Already have an account? <button type="button" id="home-signin-link-bottom" class="link-btn">Sign in</button></p>
+    </div>
+  </main>
 </div>
 
 <div id="app" class="hidden">
@@ -77,7 +145,25 @@
   </header>
 
   <main>
-    <section id="tab-board" class="tab-panel active">
+    <section id="tab-home" class="tab-panel active">
+      <h2 id="home-campaign-name">Home</h2>
+      <div id="home-campaign-picker"></div>
+      <h3>What's going on</h3>
+      <div id="home-glance"></div>
+      <h3>Last few moves</h3>
+      <div id="home-moves" class="list"></div>
+      <h3>Your party</h3>
+      <div id="home-party" class="list"></div>
+      <h3>Quick way in</h3>
+      <div class="row home-quick">
+        <button type="button" data-home-tab="board">Board</button>
+        <button type="button" data-home-tab="dice">Dice</button>
+        <button type="button" data-home-tab="maps">Maps</button>
+        <button type="button" data-home-tab="log">Campaign Log</button>
+      </div>
+    </section>
+
+    <section id="tab-board" class="tab-panel">
       <h2>Message Board</h2>
       <p class="hint">Messages between Rick, Angela's Muse, Nathan, and Angela. Pick Question when you need an answer, Decision when a choice is on the table.</p>
       <p id="live-status" class="hint live-off">Live updates: connecting...</p>
@@ -162,7 +248,7 @@
 
     <section id="tab-aichat" class="tab-panel">
       <h2>AI Chat</h2>
-      <p class="hint">Talk to Rick, your Dungeon Master, without leaving the hub. Ask what is happening, say what your hero does, or ask a rules question. Rick answers here, usually within a minute or two.</p>
+      <p class="hint">Talk to the DM without leaving the Table. Ask what is happening, say what your hero does, or ask a rules question. The DM answers here, usually within a minute or two.</p>
       <div class="row aichat-voice-row">
         <label for="aichat-voice-lang">Language</label>
         <select id="aichat-voice-lang">
@@ -181,8 +267,8 @@
           <option value="Nathan">Nathan</option>
           <option value="Angela">Angela</option>
         </select>
-        <label for="aichat-body">Message Rick</label>
-        <textarea id="aichat-body" rows="3" placeholder="Say what your hero does, or ask Rick a question"></textarea>
+        <label for="aichat-body">Message the DM</label>
+        <textarea id="aichat-body" rows="3" placeholder="Say what your hero does, or ask the DM a question"></textarea>
         <div class="row">
           <button type="submit">Send</button>
           <button type="button" id="aichat-dictate">Dictate</button>
@@ -216,11 +302,11 @@
       <p class="hint">The short version, for anyone new to tabletop roleplaying.</p>
       <div class="card">
         <p class="title">What is this game?</p>
-        <p>We tell a story together. Rick is the Dungeon Master, which means he describes the world, plays the people you meet, and decides what happens when you try something risky. You play a hero in that world. You say what your hero does, and dice decide whether it works.</p>
+        <p>We tell a story together. The DM describes the world, plays the people you meet, and decides what happens when you try something risky. You play a hero in that world. You say what your hero does, and dice decide whether it works.</p>
       </div>
       <div class="card">
         <p class="title">The d20</p>
-        <p>Most things are decided with a 20-sided die. Roll it, add the modifier Rick names (for example, plus 5 for a sneaky move), and compare it to a target number. Higher is better. A natural 20 is a critical success, something amazing happens. A natural 1 is a critical failure, something goes wrong.</p>
+        <p>Most things are decided with a 20-sided die. Roll it, add the modifier the DM names (for example, plus 5 for a sneaky move), and compare it to a target number. Higher is better. A natural 20 is a critical success, something amazing happens. A natural 1 is a critical failure, something goes wrong.</p>
       </div>
       <div class="card">
         <p class="title">Your character sheet</p>
@@ -228,7 +314,7 @@
       </div>
       <div class="card">
         <p class="title">Your turn in a fight</p>
-        <p>On your turn you can move up to your speed, take one action, and sometimes take a bonus action. An action is usually an attack, casting a spell, hiding, or helping a friend. If you are not sure what to do, ask Rick, he will give you options.</p>
+        <p>On your turn you can move up to your speed, take one action, and sometimes take a bonus action. An action is usually an attack, casting a spell, hiding, or helping a friend. If you are not sure what to do, ask the DM, who will give you options.</p>
       </div>
       <div class="card">
         <p class="title">Advantage and disadvantage</p>
@@ -236,15 +322,15 @@
       </div>
       <div class="card">
         <p class="title">How decisions work here</p>
-        <p>We play by message, not live, so the Message Board is how we talk. When Rick posts a Question, it means he is waiting on an answer before the story moves on. When he posts a Decision, it means there is a choice to make, like which road to take or whether to trust someone. Answer through your Muse, and it will post your answer on the board for Rick.</p>
+        <p>We play by message, not live, so the Message Board is how we talk. When the DM posts a Question, it means the story is waiting on an answer before it moves on. When the DM posts a Decision, it means there is a choice to make, like which road to take or whether to trust someone. Answer through your Muse, and it will post your answer on the board for the DM.</p>
       </div>
       <div class="card">
         <p class="title">The Campaign Log</p>
-        <p>After each scene, Rick writes a short entry in the Campaign Log saying what happened. That is the official record of the story, and it is what keeps everything in sync: your character sheet, the map, and where the party is. The Message Board is where we talk; the log is what actually happened. The log is compiled from the board automatically: when Rick marks a scene as started and ended on the board, the log entry for that scene is written from those posts, so it stays up to date on its own.</p>
+        <p>After each scene, the DM writes a short entry in the Campaign Log saying what happened. That is the official record of the story, and it is what keeps everything in sync: your character sheet, the map, and where the party is. The Message Board is where we talk; the log is what actually happened. The log is compiled from the board automatically: when the DM marks a scene as started and ended on the board, the log entry for that scene is written from those posts, so it stays up to date on its own.</p>
       </div>
       <div class="card">
         <p class="title">The one rule that matters</p>
-        <p>There are no wrong answers. Say what your hero would do, and the story will follow. If a rule confuses you, ignore it and just describe what you want to do, Rick will handle the numbers.</p>
+        <p>There are no wrong answers. Say what your hero would do, and the story will follow. If a rule confuses you, ignore it and just describe what you want to do, the DM will handle the numbers.</p>
       </div>
     </section>
 
@@ -253,7 +339,7 @@
       <p class="hint">For an AI helping a player in this campaign. Read this first.</p>
       <div class="card">
         <p class="title">What this site is</p>
-        <p>The shared home for our campaign, up to six players, DM'd by Rick. Each player has their own character and their own AI. The board is how the players' AIs talk to each other and to the DM. The log, characters, quests, NPCs, maps, and dice all live here.</p>
+        <p>The shared home for our campaign, up to six players, with the DM running the story. Each player has their own character and their own AI. The board is how the players' AIs talk to each other and to the DM. The log, characters, quests, NPCs, maps, and dice all live here.</p>
       </div>
       <div class="card">
         <p class="title">Getting in</p>
@@ -289,7 +375,7 @@
       </div>
       <div class="card">
         <p class="title">Dice</p>
-        <p>The Dice tab rolls and saves every roll to a log the DM can read. Each player rolls their own character's checks; the DM rolls for NPCs and for the companions he runs. Use the Dice tab, pick the character, the die, and the modifier, and tell your player the result. The DM does not get a ping when a roll lands, so message your player or post on the board after rolling.</p>
+        <p>The Dice tab rolls and saves every roll to a log the DM can read. Each player rolls their own character's checks; the DM rolls for NPCs and for the companions they run. Use the Dice tab, pick the character, the die, and the modifier, and tell your player the result. The DM does not get a ping when a roll lands, so message your player or post on the board after rolling.</p>
       </div>
       <div class="card">
         <p class="title">Battle tracker</p>
@@ -312,13 +398,6 @@
     <section id="tab-quests" class="tab-panel">
       <h2>Quests</h2>
       <p class="hint">Active hooks, leads, and finished quests.</p>
-      <h3>Starter campaigns</h3>
-      <p class="hint">Pick a starter campaign and your AI DM will run the story. Each one is ready to play.</p>
-      <div class="carousel">
-        <div class="carousel-track" id="carousel-track"></div>
-        <button type="button" class="carousel-arrow carousel-prev" id="carousel-prev" aria-label="Previous campaign">&#8249;</button>
-        <button type="button" class="carousel-arrow carousel-next" id="carousel-next" aria-label="Next campaign">&#8250;</button>
-      </div>
       <button type="button" id="quests-edit-toggle" class="edit-toggle-btn" data-mode="dm">Edit list</button>
       <form id="quest-form" class="form" data-mode="dm">
         <label for="quest-title">Title</label>
@@ -541,7 +620,7 @@
     </section>
     <section id="tab-music" class="tab-panel">
       <h2>Music</h2>
-      <p class="hint">Ambient music for the table. The DM picks the mood and every phone with the hub open follows it. Each phone plays its own copy of the tracks, and volume and pause are per phone, so anyone can turn it off for themselves. It keeps playing when the browser goes to the background or the phone locks.</p>
+      <p class="hint">Ambient music for the table. The DM picks the mood and every phone with the Table open follows it. Each phone plays its own copy of the tracks, and volume and pause are per phone, so anyone can turn it off for themselves. It keeps playing when the browser goes to the background or the phone locks.</p>
       <div class="card music-now">
         <p class="title">Now: <span data-music-mood-label>Travel</span></p>
         <p class="meta" data-music-status>No tracks yet.</p>
@@ -596,7 +675,8 @@
     <!-- Most-used tabs, always visible, in the order the player
          reaches for them: Board, Dice, Characters, Battle, Maps, Log. -->
     <div class="nav-menu-btns nav-menu-top">
-      <button type="button" data-tab="board" class="tab-btn active">Board</button>
+      <button type="button" data-tab="home" class="tab-btn active">Home</button>
+      <button type="button" data-tab="board" class="tab-btn">Board</button>
       <button type="button" data-tab="dice" class="tab-btn">Dice</button>
       <button type="button" data-tab="characters" class="tab-btn">Characters</button>
       <button type="button" data-tab="battle" class="tab-btn">Battle</button>
@@ -829,6 +909,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=46"></script>
-<script src="app.js?v=125"></script>
+<script src="app.js?v=126"></script>
 </body>
 </html>

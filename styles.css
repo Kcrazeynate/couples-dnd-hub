@@ -97,12 +97,50 @@ p {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
 }
 
+/* Page background battle art: the good-vs-evil line art as a mask,
+   showing in the design color over the dark charcoal page. The art is
+   a white-on-transparent mask (assets/bg-battle-mask.png), so the
+   design color shows through the lines and the charcoal page shows
+   through the rest. Full-bleed (cover): on a wide screen the whole
+   scene shows, on narrower screens the edges crop instead of
+   squishing. The fade band covers the middle behind the boards so
+   posts stay readable. */
+#bg-art {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: #f0dcaa;
+  -webkit-mask-image: url("assets/bg-battle-mask.png");
+  mask-image: url("assets/bg-battle-mask.png");
+  -webkit-mask-size: cover;
+  mask-size: cover;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+#bg-fade {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: min(760px, 100vw);
+  transform: translateX(-50%);
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, #211910 12%, #211910 88%, transparent);
+}
+
 /* App frame */
 
 #app {
   max-width: 720px;
   margin: 0 auto;
   padding: 0 1rem 3rem;
+  position: relative;
+  z-index: 1;
 }
 
 header {

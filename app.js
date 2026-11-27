@@ -322,7 +322,7 @@
     var m = String((err && err.message) || "");
     if (/invalid login credentials/i.test(m)) return "Wrong email or password.";
     if (/already registered/i.test(m)) return "That email already has an account. Sign in instead.";
-    if (/password.*6|6.*password/i.test(m)) return "Password must be at least 6 characters.";
+    if (/password.*8|8.*password/i.test(m)) return "Password must be at least 8 characters.";
     if (/email.*confirm/i.test(m)) return "Check your email to confirm the account, then sign in.";
     return m || "Could not sign in. Check the connection and try again.";
   }
@@ -601,8 +601,8 @@
       showRecoveryCodeError("Enter the code from your email.");
       return;
     }
-    if (pw.length < 6) {
-      showRecoveryCodeError("Password must be at least 6 characters.");
+    if (pw.length < 8) {
+      showRecoveryCodeError("Password must be at least 8 characters.");
       return;
     }
     if (pw !== pw2) {

@@ -753,6 +753,7 @@ var DIE_TEX_URLS = {
   marble: "assets/die-marble.jpg",
   glitter: "assets/die-glitter.jpg",
   brushed: "assets/die-brushed.jpg",
+  pearl: "assets/die-pearl.jpg",
   glitterMetal: "assets/die-glitter-metal.png",
   glitterRough: "assets/die-glitter-rough.png"
 };
@@ -795,11 +796,15 @@ function makeDieMaterial() {
     // pink pearl, a dark blue a light blue pearl, and the iridescence
     // shows on every color instead of only on cream and silver.
     const pearlColor = new THREE.Color(die.hex).lerp(new THREE.Color(0xffffff), 0.35);
-    return new THREE.MeshPhysicalMaterial({
-      color: pearlColor, metalness: 0.1, roughness: 0.1,
+    // The pearl texture carries the visible mother-of-pearl swirls;
+    // the iridescence adds a faint rainbow on top. The texture is
+    // bright so it tints with the die color instead of going muddy.
+    const pearlMat = new THREE.MeshPhysicalMaterial({
+      map: DIE_TEX.pearl || null, color: pearlColor, metalness: 0.1, roughness: 0.15,
       iridescence: 1.0, iridescenceIOR: 1.8, clearcoat: 0.0, clearcoatRoughness: 0.3,
       envMapIntensity: 1.5
     });
+    return pearlMat;
   }
   if (style.dieDesign === "marble") {
     if (DIE_TEX.marble) {
@@ -1377,7 +1382,7 @@ function spawnDie(sides) {
 }
 
 function isSharedDieTexture(tex) {
-  return tex === DIE_TEX.marble || tex === DIE_TEX.glitter || tex === DIE_TEX.brushed || tex === DIE_TEX.glitterMetal || tex === DIE_TEX.glitterRough;
+  return tex === DIE_TEX.marble || tex === DIE_TEX.glitter || tex === DIE_TEX.brushed || tex === DIE_TEX.pearl || tex === DIE_TEX.glitterMetal || tex === DIE_TEX.glitterRough;
 }
 
 function clearDice() {

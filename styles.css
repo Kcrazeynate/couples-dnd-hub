@@ -2825,9 +2825,26 @@ header {
   color: #f2e9d5;
 }
 
-/* Home page: the front door. The store window (#home) uses the same
-   720px centered column as the app, and sits above the background
-   art the same way, so it is never covered by the fade band. */
+/* Home page: the front door. The store window (#home) is a light
+   parchment page with dark ink text and gold accents, so the landing
+   page reads as a modern web page, not a message board. The dark
+   tavern look stays inside the app and the gate. The body class is
+   set in showStore() and cleared in showGate(), enterApp(), and
+   exitPreview(), so the whole viewport goes light with the store
+   window and the background battle art is hidden there. */
+
+body.store {
+  color: #2b2113;
+  background-color: #f3ead3;
+  background-image:
+    radial-gradient(ellipse 90% 360px at 50% -60px, rgba(217, 164, 65, 0.18), rgba(217, 164, 65, 0) 70%),
+    linear-gradient(#f7f0dd 0%, #f3ead3 220px);
+}
+
+body.store #bg-art,
+body.store #bg-fade {
+  display: none;
+}
 
 #home {
   max-width: 720px;
@@ -2835,6 +2852,26 @@ header {
   padding: 0 1rem 3rem;
   position: relative;
   z-index: 1;
+}
+
+/* Hero: the landing page top. The title keeps the blackletter brand
+   font, now in deep ink on the parchment, with the tagline, a
+   prominent sign-up button, and a wide scene image as the banner. */
+.home-hero {
+  padding: 2.5rem 0 0;
+  text-align: center;
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.home-hero-img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+  border-radius: 16px;
+  margin-top: 1.5rem;
+  box-shadow: 0 8px 32px rgba(60, 40, 10, 0.18);
 }
 
 /* The home page main title uses the brand font, same as the in-app
@@ -2862,9 +2899,79 @@ header {
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.65), 0 0 24px rgba(217, 164, 65, 0.3);
 }
 
+/* Light theme overrides for the store window: dark ink headings,
+   muted warm text, and clean white cards with soft shadows. */
+body.store #home h1 {
+  color: #2e2010;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6), 0 0 24px rgba(217, 164, 65, 0.25);
+}
+
+body.store #home h2 {
+  color: #4a3413;
+  text-shadow: none;
+}
+
+body.store #home .subtitle {
+  color: #6b5a3a;
+}
+
+body.store #home .hint,
+body.store #home .empty {
+  color: #6b5a3a;
+}
+
+body.store #home .link-btn {
+  color: #7a5c1e;
+}
+
+body.store #home .link-btn:hover {
+  color: #5a4312;
+}
+
+/* Feature cards on the store window read as product cards: white,
+   soft shadow, deep gold titles, dark ink text. */
+body.store #home .home-do-card {
+  background: #fffdf6;
+  border: 1px solid #e3d6b8;
+  box-shadow: 0 2px 12px rgba(60, 40, 10, 0.08);
+}
+
+body.store #home .home-do-card .title {
+  color: #7a5c1e;
+}
+
+body.store #home .campaign-card {
+  background: #fffdf6;
+  border: 1px solid #e3d6b8;
+  box-shadow: 0 2px 12px rgba(60, 40, 10, 0.08);
+}
+
+body.store #home .campaign-card-body h3 {
+  color: #4a3413;
+}
+
+body.store #home .campaign-card .meta {
+  color: #6b5a3a;
+}
+
+body.store #home .card {
+  background: #fffdf6;
+  border: 1px solid #e3d6b8;
+  box-shadow: 0 2px 12px rgba(60, 40, 10, 0.08);
+}
+
+body.store #home .card .title {
+  color: #7a5c1e;
+}
+
+body.store #home .card .meta {
+  color: #6b5a3a;
+}
+
 /* The Share button sits beside the campaign name on the Home overview. */
 .home-title-row {
   align-items: center;
+  margin-bottom: 0.5rem;
 }
 .home-title-row h2 {
   margin: 0;
@@ -2887,13 +2994,13 @@ header {
 }
 
 .home-section {
-  margin-top: 2rem;
+  margin-top: 2.5rem;
 }
 
 .home-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .home-do-card {
@@ -2916,6 +3023,26 @@ header {
 .home-cta {
   text-align: center;
   margin-top: 2.5rem;
+}
+
+/* Overview (signed in): keep the dark app theme, but read as a
+   dashboard, not a message board. More whitespace between sections,
+   softer cards with a lighter fill and a less heavy border, and
+   clearer section labels. */
+#tab-home h3 {
+  margin-top: 2rem;
+  letter-spacing: 0.04em;
+}
+
+#tab-home .list {
+  gap: 1rem;
+}
+
+#tab-home .card {
+  background: #2f2a22;
+  border-color: #4a4232;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  padding: 1.25rem;
 }
 
 /* Overview: a move is one board post, with who went, what they did,

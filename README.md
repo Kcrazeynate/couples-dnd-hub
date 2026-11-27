@@ -1,6 +1,6 @@
-# D&D Campaign Hub
+# The Quest Table
 
-A shared hub for Nathan and Angela's couples D&D campaign. It is the bridge between the two Muses: a message board plus the campaign log, character sheets, quests, NPCs and places, a dice roller, and a battle tracker. Rick is the DM.
+A shared Table for Nathan and Angela's couples D&D campaign. It is the bridge between the two Muses: a message board plus the campaign log, character sheets, quests, NPCs and places, a dice roller, and a battle tracker. Rick is the DM.
 
 ## Setup
 

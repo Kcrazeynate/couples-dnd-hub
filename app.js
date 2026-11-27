@@ -1215,6 +1215,57 @@
     if (note) note.textContent = "Invite settings saved.";
   }
 
+  // The campaign name editor in the Campaign Settings tab. Owner
+  // only: a DM who is not the owner, and a player, never see it.
+  // No migration is needed: name is already a column on campaigns,
+  // and the public update policy already covers it, the same as the
+  // invite settings above.
+  function loadRenameSection() {
+    var section = $("campaign-rename-section");
+    var input = $("campaign-name-input");
+    var saveBtn = $("campaign-name-save");
+    var note = $("campaign-name-note");
+    if (!section || !currentCampaign) return;
+    var owner = currentRole === "owner";
+    section.classList.toggle("hidden", !owner);
+    if (!owner) return;
+    if (input) { input.disabled = false; input.value = currentCampaign.name; }
+    if (saveBtn) saveBtn.disabled = false;
+    if (note) note.textContent = "";
+  }
+
+  // Save the new campaign name for the current campaign. The
+  // in-memory copies are updated first, because loadCampaigns
+  // re-renders from them and does not re-fetch; the confirmation is
+  // set after that reload, because reloading the tab clears the
+  // note first. Home picks the new name up on its next load.
+  async function saveCampaignName() {
+    var input = $("campaign-name-input");
+    var note = $("campaign-name-note");
+    if (!input || !currentCampaign) return;
+    if (currentRole !== "owner") return;
+    var name = (input.value || "").trim();
+    if (!name) {
+      if (note) note.textContent = "Give the campaign a name.";
+      return;
+    }
+    if (name === currentCampaign.name) {
+      if (note) note.textContent = "That is already the campaign name.";
+      return;
+    }
+    var res = await db.from("campaigns").update({ name: name }).eq("id", currentCampaign.id);
+    if (res.error) {
+      if (note) note.textContent = "Could not save the campaign name. Check the connection and try again.";
+      return;
+    }
+    currentCampaign.name = name;
+    myCampaigns.forEach(function (c) { if (c.id === currentCampaign.id) c.name = name; });
+    await loadCampaigns();
+    var homeName = $("home-campaign-name");
+    if (homeName) homeName.textContent = name;
+    if (note) note.textContent = "Campaign name saved.";
+  }
+
   // ---------- home overview (signed-in Home tab) ----------
 
   async function loadHomeOverview() {
@@ -6225,6 +6276,7 @@
         : '<p class="empty">No campaign selected.</p>';
     }
     await loadInviteSection();
+    loadRenameSection();
     list.innerHTML = myCampaigns.map(function (c) {
       var role = "";
       myMemberships.forEach(function (m) { if (m.campaign_id === c.id) role = m.role; });
@@ -6723,6 +6775,8 @@
     if (campaignsShareBtn) campaignsShareBtn.addEventListener("click", function () { shareCampaign(campaignsShareBtn); });
     var inviteSaveBtn = $("campaign-invite-save");
     if (inviteSaveBtn) inviteSaveBtn.addEventListener("click", saveInviteSettings);
+    var renameSaveBtn = $("campaign-name-save");
+    if (renameSaveBtn) renameSaveBtn.addEventListener("click", saveCampaignName);
     var myCharSel = $("my-character-select");
     if (myCharSel) myCharSel.addEventListener("change", function () { setMyPlayerKey(myCharSel.value || null); });
     document.querySelectorAll(".map-modes .mode-btn").forEach(function (btn) {

@@ -82,6 +82,19 @@ Caveats:
 - Moderation: basic moderation (abuse reporting). Adult-only campaigns with adult content are allowed; nothing illegal.
 - Pricing model: joining someone's game is always free. How many players can join depends on whether the host paid. The price takes BYOK into account (each group pays for their own AI, so the subscription only covers hosting and infrastructure). Exact price still to be set.
 
+## Player usability — modes and live play (Nathan, 2026-11-26)
+
+- Modes: remote first, in-person second. Remote is the mode where the app carries the whole game; in person the app is a helper, not the table.
+- Voice/video: Discord integration, not built in. Each campaign links to a Discord voice channel; the hub has a join-voice button that drops the player straight into it. Hybrid table (five in person, one phoning in): the remote player sees the same map, board, and initiative as the table, and their rolls and messages show up on the table display.
+- Table view: a player-facing display mode for a shared screen (TV or laptop on the table) showing just the map and the story, no menus. The DM runs two screens by opening the hub twice: table display (player view) plus their laptop (DM tools view), kept in sync live.
+- DM-to-player signals: sent over the live channel (Supabase Realtime), NOT Bluetooth. iPhones cannot do Bluetooth from a web page, Bluetooth only works in the same room (breaks the remote player), and pairing is friction. Realtime does the same job and works for the phoning-in player too. The DM (or AI DM) sends turn, damage, conditions, and story beats to players' phones.
+- Turn/effect signals: in-app green highlight around the screen plus a sound; phone vibrate on Android (iOS web pages cannot vibrate the phone); push notification when the app is closed (push already built for board posts; extend it to turn signals).
+- Manual dice entry: DM-controlled, per player or whole party. The DM flips it on (for example, in-person night, everyone rolls physical dice; or one player with real dice). Entries show in the log as manual with the player's name. Players cannot enable it themselves.
+- Photo-to-map: the DM photographs a hand-drawn physical map and the app straightens it into a digital area map. The fiddly part is grid alignment so tokens sit right; the DM drags the corners to align it.
+- AI DM as the DM for small groups: a lot of people struggle to play because groups are small and no one wants to DM. The AI DM runs the game and sends turn/effect signals to players' phones. This is a core value of the product.
+- DM/player view split: yes. The DM sees enemy health, hidden map areas, and secret notes; the player view does not. The AI DM also needs its own control surface (strictness dial, tone, pacing, per the DM Code).
+- Live session view: a compact "at the table" screen with hit points, initiative order, current map, last few story posts, and one-tap dice, all on one screen with no menu digging mid-combat. Hit points, spell slots, and conditions tappable and quick, visible to the DM live.
+
 ## Decisions still needed (Nathan's calls)
 
 - Exact paid tier price and player limits.

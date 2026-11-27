@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=88">
+<link rel="stylesheet" href="styles.css?v=89">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=5"></script>
 <script type="importmap">
@@ -146,7 +146,10 @@
 
   <main>
     <section id="tab-home" class="tab-panel active">
-      <h2 id="home-campaign-name">Home</h2>
+      <div class="row home-title-row">
+        <h2 id="home-campaign-name">Home</h2>
+        <button type="button" id="home-share-btn">Share this campaign</button>
+      </div>
       <div id="home-campaign-picker"></div>
       <h3>Your party</h3>
       <div id="home-party" class="list"></div>
@@ -634,6 +637,28 @@
       <p class="hint" id="campaigns-account"></p>
       <h3>Current campaign</h3>
       <div id="campaigns-current"></div>
+      <h3>Invite</h3>
+      <p class="hint">Share this campaign with an invite link. A private campaign still needs its join code; a public campaign lets anyone with the link join.</p>
+      <div class="card">
+        <label for="campaign-invite-link">Invite link</label>
+        <input type="text" id="campaign-invite-link" readonly>
+        <div class="row">
+          <button type="button" id="campaigns-share-btn">Copy invite link</button>
+        </div>
+        <div id="campaign-invite-settings">
+          <label for="campaign-join-code">Join code</label>
+          <input type="text" id="campaign-join-code" placeholder="Join code, for example quest-123" autocomplete="off">
+          <label for="campaign-is-public">Who can join with the link</label>
+          <select id="campaign-is-public">
+            <option value="private">Private: needs the join code</option>
+            <option value="public">Public: anyone with the link can join</option>
+          </select>
+          <div class="row">
+            <button type="button" id="campaign-invite-save">Save invite settings</button>
+          </div>
+        </div>
+        <p class="hint" id="campaign-invite-note"></p>
+      </div>
       <h3>My campaigns</h3>
       <div id="campaigns-list" class="list"></div>
       <h3>Members</h3>
@@ -902,7 +927,24 @@
   </div>
 </div>
 
+<!-- Join code prompt: opened when an invite link points at a private
+     campaign. The player types the campaign's join code; a public
+     campaign never opens this. -->
+<div id="invite-code-prompt" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="invite-code-title">
+  <div class="modal-box">
+    <h2 id="invite-code-title">Join this campaign</h2>
+    <p class="hint">This campaign is private. Enter its join code to get in.</p>
+    <label for="invite-code-input">Join code</label>
+    <input type="text" id="invite-code-input" placeholder="Join code" autocomplete="off">
+    <p id="invite-code-error" class="error hidden"></p>
+    <div class="row">
+      <button type="button" id="invite-code-join">Join</button>
+      <button type="button" id="invite-code-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script type="module" src="dice3d.js?v=46"></script>
-<script src="app.js?v=126"></script>
+<script src="app.js?v=127"></script>
 </body>
 </html>

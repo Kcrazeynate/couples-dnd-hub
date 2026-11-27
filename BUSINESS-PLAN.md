@@ -1,15 +1,15 @@
-# The Quest Table — Business Plan (Hosted Service)
+# The Quest Table: Business Plan (Hosted Service)
 
 Planned for the business way: one hosted service where any group can run their own campaign with their own AI as DM. Launch on the free tiers; move to a paid server only when usage grows.
 
 ## The idea
 
-A hosted campaign hub where any group can run their own tabletop RPG campaign with their own AI as DM. Sign up, create a campaign, invite your players, pick your AI DM, and play. No setup, no server, no code.
+The Quest Table is a hosted service where any group can run their own tabletop RPG campaign with their own AI as DM. Sign up, create a campaign, invite your players, pick your AI DM, and play. No setup, no server, no code.
 
 ## Who it is for
 
 - Groups who want to play D&D and tabletop RPGs with an AI DM.
-- Groups who want a shared hub (board, log, characters, battle, maps, music) without setting up their own server.
+- Groups who want a shared Table (board, log, characters, battle, maps, music) without setting up their own server.
 - People who already use ChatGPT, Perplexity, Gemini, Claude, or another AI and want that AI to run their game.
 
 ## What it is (the product)
@@ -31,7 +31,7 @@ Voice: dictate to the AI (speech-to-text) and hear the narration read aloud (tex
 
 ## Architecture
 
-- Frontend: the existing hub (HTML, CSS, JS). For the business, host it on Cloudflare Pages (free, unlimited static requests and bandwidth). Do NOT use GitHub Pages for the business (GitHub's terms do not allow using Pages as free hosting for a commercial business) and do NOT use Vercel Hobby (non-commercial personal use only).
+- Frontend: the existing Table (HTML, CSS, JS). For the business, host it on Cloudflare Pages (free, unlimited static requests and bandwidth). Do NOT use GitHub Pages for the business (GitHub's terms do not allow using Pages as free hosting for a commercial business) and do NOT use Vercel Hobby (non-commercial personal use only).
 - Backend: Supabase (Postgres, Auth, Realtime, Edge Functions, Storage).
   - Multi-tenant: every row carries a campaign_id. Row Level Security (RLS) ensures a user only sees their own campaigns' data.
   - Auth: Supabase Auth (email and password, or magic link). Each user belongs to one or more campaigns with a role (DM, player).
@@ -68,7 +68,7 @@ Caveats:
 
 ## Phases
 
-- Phase 1, Multi-campaign (foundation): add campaign_id to all tables, RLS policies, Supabase Auth, campaign switching in the hub, campaign creation. Test with a second campaign to prove isolation.
+- Phase 1, Multi-campaign (foundation): add campaign_id to all tables, RLS policies, Supabase Auth, campaign switching in the Table, campaign creation. Test with a second campaign to prove isolation.
 - Phase 2, AI DM provider picker and BYOK: provider picker in the AI chat box, secure API key storage (encrypted), campaign context sent to the AI, DM instructions. Test with ChatGPT and Gemini.
 - Phase 3, Onboarding: sign-up, create campaign, invite players (link or email), pick AI DM, guided setup. A new group goes from sign-up to playing in 10 minutes.
 - Phase 4, Launch (free): deploy the frontend to Cloudflare Pages, backend on the Supabase free tier. Invite a few friendly groups to try it. Gather feedback.
@@ -78,15 +78,15 @@ Caveats:
 
 - The "Rick" DM: only for Nathan's campaign (BYOK only for others).
 - Name and branding: the hosted service keeps the name "The Quest Table".
-- Content: user campaigns are their own; the hub uses SRD content for rules. Avoid D&D trademarks in branding (already done).
+- Content: user campaigns are their own; the Table uses SRD content for rules. Avoid D&D trademarks in branding (already done).
 - Moderation: basic moderation (abuse reporting). Adult-only campaigns with adult content are allowed; nothing illegal.
 - Pricing model: joining someone's game is always free. How many players can join depends on whether the host paid. The price takes BYOK into account (each group pays for their own AI, so the subscription only covers hosting and infrastructure). Exact price still to be set.
 
 ## Player usability — modes and live play (Nathan, 2026-11-26)
 
 - Modes: remote first, in-person second. Remote is the mode where the app carries the whole game; in person the app is a helper, not the table.
-- Voice/video: Discord integration, not built in. Each campaign links to a Discord voice channel; the hub has a join-voice button that drops the player straight into it. Hybrid table (five in person, one phoning in): the remote player sees the same map, board, and initiative as the table, and their rolls and messages show up on the table display.
-- Table view: a player-facing display mode for a shared screen (TV or laptop on the table) showing just the map and the story, no menus. The DM runs two screens by opening the hub twice: table display (player view) plus their laptop (DM tools view), kept in sync live.
+- Voice/video: Discord integration, not built in. Each campaign links to a Discord voice channel; the Table has a join-voice button that drops the player straight into it. Hybrid table (five in person, one phoning in): the remote player sees the same map, board, and initiative as the table, and their rolls and messages show up on the table display.
+- Table view: a player-facing display mode for a shared screen (TV or laptop on the table) showing just the map and the story, no menus. The DM runs two screens by opening the Table twice: table display (player view) plus their laptop (DM tools view), kept in sync live.
 - DM-to-player signals: sent over the live channel (Supabase Realtime), NOT Bluetooth. iPhones cannot do Bluetooth from a web page, Bluetooth only works in the same room (breaks the remote player), and pairing is friction. Realtime does the same job and works for the phoning-in player too. The DM (or AI DM) sends turn, damage, conditions, and story beats to players' phones.
 - Turn/effect signals: in-app green highlight around the screen plus a sound; phone vibrate on Android (iOS web pages cannot vibrate the phone); push notification when the app is closed (push already built for board posts; extend it to turn signals).
 - Manual dice entry: DM-controlled, per player or whole party. The DM flips it on (for example, in-person night, everyone rolls physical dice; or one player with real dice). Entries show in the log as manual with the player's name. Players cannot enable it themselves.

@@ -1160,11 +1160,11 @@
     return "Could not join that campaign. Check the connection and try again.";
   }
 
-  // The Invite section in the Campaigns tab: the link, the code, and
-  // who can join with it. The link and the copy button are for
-  // everyone in the campaign; the code and the public setting are
-  // for the DM only.
+  // The Invite section in the Campaign Settings tab: the link, the
+  // code, and who can join with it. The whole section is DM only;
+  // a player sees only their own settings on this tab.
   async function loadInviteSection() {
+    var section = $("campaign-invite-section");
     var linkEl = $("campaign-invite-link");
     var settings = $("campaign-invite-settings");
     var codeEl = $("campaign-join-code");
@@ -1172,13 +1172,11 @@
     var note = $("campaign-invite-note");
     var saveBtn = $("campaign-invite-save");
     if (!linkEl || !currentCampaign) return;
-    linkEl.value = inviteLink(currentCampaign.id) || "";
     var dm = isDm();
+    if (section) section.classList.toggle("hidden", !dm);
+    if (!dm) return;
+    linkEl.value = inviteLink(currentCampaign.id) || "";
     if (settings) settings.classList.toggle("hidden", !dm);
-    if (!dm) {
-      if (note) note.textContent = "Only the DM can change the invite code and who can join.";
-      return;
-    }
     if (note) note.textContent = "";
     var info = await campaignInviteInfo(currentCampaign.id);
     if (!info) {
@@ -1225,6 +1223,10 @@
       return;
     }
     if (nameEl) nameEl.textContent = currentCampaign ? currentCampaign.name : "Home";
+    // The Share button hands out the invite link, so it is DM only.
+    // The Campaign settings button stays visible to everyone.
+    var shareBtn = $("home-share-btn");
+    if (shareBtn) shareBtn.classList.toggle("hidden", !isDm());
     if (picker) {
       if (myCampaigns.length > 1) {
         picker.innerHTML = '<label for="home-campaign-select">Campaign</label><select id="home-campaign-select">' +

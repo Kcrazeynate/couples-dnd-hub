@@ -2756,6 +2756,15 @@ header {
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.65), 0 0 24px rgba(217, 164, 65, 0.3);
 }
 
+/* The Share button sits beside the campaign name on the Home overview. */
+.home-title-row {
+  align-items: center;
+}
+.home-title-row h2 {
+  margin: 0;
+  flex: 1;
+}
+
 .home-auth-row {
   display: flex;
   gap: 1rem;

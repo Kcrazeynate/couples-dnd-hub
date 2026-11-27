@@ -6,7 +6,6 @@
 
   var PLACEHOLDER_URL = "PASTE_SUPABASE_URL_HERE";
   var PLACEHOLDER_KEY = "PASTE_SUPABASE_ANON_KEY_HERE";
-  var PLACEHOLDER_PASS = "CHANGE_ME_PASSPHRASE";
 
   var db = null;
   var configured = false;
@@ -16,6 +15,79 @@
   var currentTurn = 0;
   var battleState = { round: 1, current_combatant_id: null };
   var battleStateReady = false;
+
+  // ---------- multi-campaign + auth (Phase 1, Step 2) ----------
+  //
+  // Every row in every table carries a campaign_id, and every query
+  // filters on the active campaign (see campaignId()). The active
+  // campaign is stored per device; switching campaigns reloads the
+  // page so no stale per-campaign state survives the switch.
+  // Sign-in is Supabase Auth (email/password). The old shared
+  // passphrase gate is gone, and the DM passphrase is gone too: DM
+  // powers come from the member role in campaign_members.
+
+  var COUPLES_CAMPAIGN_ID = "a752cf4c-cbac-4ae2-bdb2-eba9e86cbb3d";
+  var ACTIVE_CAMPAIGN_KEY = "hub-active-campaign";
+  var MY_PLAYER_KEY_PREFIX = "hub-my-player-";
+
+  var currentUser = null;       // supabase auth user, once signed in
+  var myMemberships = [];       // campaign_members rows for currentUser
+  var myCampaigns = [];         // campaigns rows for myMemberships
+  var currentCampaign = null;   // the active campaign row { id, name }
+  var currentRole = null;       // 'owner' | 'dm' | 'player' | null
+
+  function campaignId() {
+    return currentCampaign ? currentCampaign.id : COUPLES_CAMPAIGN_ID;
+  }
+
+  function isDm() {
+    return currentRole === "owner" || currentRole === "dm";
+  }
+
+  // The battle_state and music_state tables have integer primary keys
+  // with one row per campaign (music has two: the main row and the
+  // skip-votes row). The couples campaign keeps the historic ids 1 and
+  // 2. Any other campaign gets a deterministic hashed id, so the same
+  // campaign always maps to the same rows and two campaigns never share
+  // one. A later migration may give these tables uuid ids instead.
+  function campaignIntId(kind) {
+    if (campaignId() === COUPLES_CAMPAIGN_ID) {
+      return kind === "skip" ? 2 : 1;
+    }
+    var s = campaignId() + ":" + kind;
+    var h = 0;
+    for (var i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+    return 1000000 + (Math.abs(h) % 1000000000);
+  }
+  function musicMainRowId() { return campaignIntId("music"); }
+  function musicSkipRowId() { return campaignIntId("skip"); }
+  function battleRowId() { return campaignIntId("battle"); }
+
+  // Which player character belongs to the signed-in user on this device.
+  // Guessed from the email address when the account first signs in
+  // (nathan@... plays the "nathan" character), and changeable in the
+  // Campaigns tab. The DM approval flow sets it when a character is
+  // created. Until it is set, the user has no "own" character.
+  function myPlayerKey() {
+    try { return localStorage.getItem(MY_PLAYER_KEY_PREFIX + campaignId()) || null; } catch (e) { return null; }
+  }
+  function setMyPlayerKey(key) {
+    try {
+      if (key) localStorage.setItem(MY_PLAYER_KEY_PREFIX + campaignId(), key);
+      else localStorage.removeItem(MY_PLAYER_KEY_PREFIX + campaignId());
+    } catch (e) {}
+  }
+  function guessMyPlayerKey(rows) {
+    if (!currentUser || !currentUser.email) return null;
+    var local = String(currentUser.email).split("@")[0].toLowerCase();
+    var cands = [local.replace(/[^a-z0-9_-]/g, "-").replace(/^-+|-+$/g, ""), local.split(/[._-]/)[0]];
+    var keys = {};
+    (rows || []).forEach(function (r) { if (r.player) keys[String(r.player).toLowerCase()] = r.player; });
+    for (var i = 0; i < cands.length; i++) {
+      if (cands[i] && keys[cands[i]]) return keys[cands[i]];
+    }
+    return null;
+  }
 
   // ---------- helpers ----------
 
@@ -215,85 +287,295 @@
     }
   }
 
-  // ---------- passphrase gate ----------
+  // ---------- sign-in gate (replaces the passphrase gate) ----------
+  //
+  // No session: the sign-in screen. Session: load the user's campaign
+  // memberships. No memberships yet: the join-or-create screen (the
+  // couples campaign bootstrap, see joinCouplesCampaign). Memberships:
+  // straight into the app on the active campaign.
 
-  function initGate() {
+  var authMode = "signin"; // or "signup"
+
+  function showAuthError(msg) {
+    var err = $("auth-error");
+    if (!err) return;
+    err.textContent = msg;
+    err.classList.remove("hidden");
+  }
+
+  function showAuthNote(msg) {
+    var note = $("auth-note");
+    if (!note) return;
+    note.textContent = msg;
+    note.classList.remove("hidden");
+  }
+
+  function friendlyAuthError(err) {
+    var m = String((err && err.message) || "");
+    if (/invalid login credentials/i.test(m)) return "Wrong email or password.";
+    if (/already registered/i.test(m)) return "That email already has an account. Sign in instead.";
+    if (/password.*6|6.*password/i.test(m)) return "Password must be at least 6 characters.";
+    if (/email.*confirm/i.test(m)) return "Check your email to confirm the account, then sign in.";
+    return m || "Could not sign in. Check the connection and try again.";
+  }
+
+  function showAuthForm() {
+    $("auth-form").classList.remove("hidden");
+    $("gate-join").classList.add("hidden");
+    var err = $("auth-error");
+    if (err) err.classList.add("hidden");
+    var note = $("auth-note");
+    if (note) note.classList.add("hidden");
+    var email = $("auth-email");
+    if (email) email.focus();
+  }
+
+  function showJoinBox() {
+    $("auth-form").classList.add("hidden");
+    $("gate-join").classList.remove("hidden");
+    var err = $("gate-join-error");
+    if (err) err.classList.add("hidden");
+    var btn = $("join-couples-btn");
+    if (btn) btn.focus();
+  }
+
+  function showJoinError(msg) {
+    var err = $("gate-join-error");
+    if (!err) return;
+    err.textContent = msg;
+    err.classList.remove("hidden");
+  }
+
+  async function loadMyMemberships() {
+    myMemberships = [];
+    myCampaigns = [];
+    currentCampaign = null;
+    currentRole = null;
+    if (!currentUser) return false;
+    var mRes = await db.from("campaign_members").select("campaign_id, role").eq("user_id", currentUser.id);
+    if (mRes.error) return false;
+    myMemberships = mRes.data || [];
+    if (!myMemberships.length) return true;
+    var ids = myMemberships.map(function (m) { return m.campaign_id; });
+    var cRes = await db.from("campaigns").select("id, name").in("id", ids);
+    if (cRes.error) return false;
+    myCampaigns = cRes.data || [];
+    var activeId = resolveActiveCampaignId();
+    var found = null;
+    myCampaigns.forEach(function (c) { if (c.id === activeId) found = c; });
+    currentCampaign = found || myCampaigns[0] || null;
+    var mem = null;
+    myMemberships.forEach(function (m) { if (currentCampaign && m.campaign_id === currentCampaign.id) mem = m; });
+    currentRole = mem ? mem.role : null;
+    return true;
+  }
+
+  function resolveActiveCampaignId() {
+    var saved = null;
+    try { saved = localStorage.getItem(ACTIVE_CAMPAIGN_KEY); } catch (e) {}
+    if (saved) {
+      for (var i = 0; i < myMemberships.length; i++) {
+        if (myMemberships[i].campaign_id === saved) return saved;
+      }
+    }
+    for (var j = 0; j < myMemberships.length; j++) {
+      if (myMemberships[j].campaign_id === COUPLES_CAMPAIGN_ID) return COUPLES_CAMPAIGN_ID;
+    }
+    return myMemberships.length ? myMemberships[0].campaign_id : null;
+  }
+
+  function setActiveCampaign(id) {
+    try { localStorage.setItem(ACTIVE_CAMPAIGN_KEY, id); } catch (e) {}
+  }
+
+  async function switchCampaign(id) {
+    if (!id || id === campaignId()) return;
+    setActiveCampaign(id);
+    location.reload();
+  }
+
+  async function signOut() {
+    try { await db.auth.signOut(); } catch (e) {}
+    try { localStorage.removeItem(ACTIVE_CAMPAIGN_KEY); } catch (e) {}
+    location.reload();
+  }
+
+  async function afterSignIn() {
+    var ok = await loadMyMemberships();
+    if (!ok) {
+      showAuthError("Could not load your campaigns. Check the connection and try again.");
+      return;
+    }
+    if (myMemberships.length) {
+      enterApp();
+      return;
+    }
+    showJoinBox();
+  }
+
+  async function tryAuth() {
+    var email = ($("auth-email").value || "").trim();
+    var password = $("auth-password").value || "";
+    if (!email || !password) {
+      showAuthError("Enter your email and password.");
+      return;
+    }
+    var err = $("auth-error");
+    if (err) err.classList.add("hidden");
+    var note = $("auth-note");
+    if (note) note.classList.add("hidden");
+    if (authMode === "signup") {
+      var res = await db.auth.signUp({ email: email, password: password });
+      if (res.error) {
+        showAuthError(friendlyAuthError(res.error));
+        return;
+      }
+      if (res.data && res.data.session) {
+        currentUser = res.data.session.user;
+        afterSignIn();
+      } else {
+        // Email confirmation is on: the account exists but there is no
+        // session until the user clicks the link in the email.
+        showAuthNote("Account created. Check your email to confirm it, then sign in.");
+        setAuthMode("signin");
+      }
+      return;
+    }
+    var res2 = await db.auth.signInWithPassword({ email: email, password: password });
+    if (res2.error) {
+      showAuthError(friendlyAuthError(res2.error));
+      return;
+    }
+    currentUser = res2.data.user;
+    afterSignIn();
+  }
+
+  function setAuthMode(mode) {
+    authMode = mode;
+    var btn = $("auth-signin-btn");
+    if (btn) btn.textContent = mode === "signup" ? "Create account" : "Sign in";
+    var toggle = $("auth-toggle-mode");
+    if (toggle) toggle.textContent = mode === "signup" ? "Sign in instead" : "Create one";
+    var pw = $("auth-password");
+    if (pw) pw.setAttribute("autocomplete", mode === "signup" ? "new-password" : "current-password");
+  }
+
+  // Joining the couples campaign, the bootstrap for the first accounts.
+  // The first member becomes the owner; later joiners are players. This
+  // is temporary: after the RLS flip, joining goes through owner invites
+  // (Phase 3). Whoever signs in first and joins claims the owner seat,
+  // so Nathan should be the first to join.
+  async function joinCouplesCampaign() {
+    var existing = await db.from("campaign_members").select("user_id").eq("campaign_id", COUPLES_CAMPAIGN_ID).limit(1);
+    if (existing.error) {
+      showJoinError("Could not join. Check the connection and try again.");
+      return;
+    }
+    var role = (existing.data && existing.data.length) ? "player" : "owner";
+    var ins = await db.from("campaign_members").insert({ campaign_id: COUPLES_CAMPAIGN_ID, user_id: currentUser.id, role: role });
+    if (ins.error) {
+      showJoinError("Could not join. Check the connection and try again.");
+      return;
+    }
+    location.reload();
+  }
+
+  async function createCampaign(name, visibility, password) {
+    var res = await db.from("campaigns").insert({ name: name, owner_id: currentUser.id }).select("id").single();
+    if (res.error || !res.data) return null;
+    var ins = await db.from("campaign_members").insert({ campaign_id: res.data.id, user_id: currentUser.id, role: "owner" });
+    if (ins.error) return null;
+    // Visibility and the campaign password have no columns yet (they
+    // land with the campaign-password migration). Record them on this
+    // device as the host's intent until then; they are not enforced.
+    try { localStorage.setItem("hub-campaign-settings-" + res.data.id, JSON.stringify({ visibility: visibility, password: password })); } catch (e) {}
+    return res.data.id;
+  }
+
+  async function createCampaignFromGate() {
+    var name = ($("new-campaign-name").value || "").trim();
+    if (!name) {
+      showJoinError("Give the campaign a name.");
+      return;
+    }
+    var id = await createCampaign(name, $("new-campaign-visibility").value || "private", $("new-campaign-password").value || "");
+    if (!id) {
+      showJoinError("Could not create the campaign. Check the connection and try again.");
+      return;
+    }
+    setActiveCampaign(id);
+    location.reload();
+  }
+
+  function enterApp() {
+    $("gate").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    var sub = $("campaign-subtitle");
+    if (sub && currentCampaign) sub.textContent = currentCampaign.name;
+    initApp();
+  }
+
+  async function initGate() {
     var gate = $("gate");
-    var app = $("app");
     var setupMsg = $("gate-setup");
-    var gateForm = $("gate-form");
-    var input = $("passphrase-input");
-    var btn = $("passphrase-btn");
-    var error = $("gate-error");
 
+    initDb();
     // Render the campaign select carousel into the Quests tab. The
-    // app opens directly: the gate first, unless this is a
-    // remembered device, which goes straight into the board.
+    // app opens directly: the sign-in screen first, unless this is a
+    // remembered session, which goes straight into the board.
     initCampaigns();
 
-    function storedUnlocked() {
-      try { if (localStorage.getItem("dnd_hub_unlocked") === "1") return true; } catch (e) {}
-      try { if (sessionStorage.getItem("dnd_hub_unlocked") === "1") return true; } catch (e) {}
-      return false;
-    }
-
-    function enterApp() {
-      gate.classList.add("hidden");
-      app.classList.remove("hidden");
-      var lockBtn = $("lock-btn");
-      if (lockBtn) {
-        lockBtn.addEventListener("click", function () {
-          try { localStorage.removeItem("dnd_hub_unlocked"); } catch (e) {}
-          try { sessionStorage.removeItem("dnd_hub_unlocked"); } catch (e) {}
-          location.reload();
-        });
-      }
-      initApp();
-    }
-
-    if (CONFIG.CAMPAIGN_PASSPHRASE === PLACEHOLDER_PASS) {
+    if (!configured) {
       setupMsg.classList.remove("hidden");
-      gateForm.classList.add("hidden");
+      $("auth-form").classList.add("hidden");
+      $("gate-join").classList.add("hidden");
       gate.classList.remove("hidden");
       return;
     }
 
-    if (storedUnlocked()) {
-      enterApp();
+    gate.classList.remove("hidden");
+    setAuthMode("signin");
+    $("auth-signin-btn").addEventListener("click", tryAuth);
+    $("auth-password").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") tryAuth();
+    });
+    $("auth-email").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") tryAuth();
+    });
+    $("auth-toggle-mode").addEventListener("click", function () {
+      setAuthMode(authMode === "signup" ? "signin" : "signup");
+    });
+    $("join-couples-btn").addEventListener("click", joinCouplesCampaign);
+    $("create-campaign-btn").addEventListener("click", createCampaignFromGate);
+
+    var session = null;
+    try {
+      var sRes = await db.auth.getSession();
+      session = sRes && sRes.data ? sRes.data.session : null;
+    } catch (e) { session = null; }
+
+    if (session && session.user) {
+      currentUser = session.user;
+      var ok = await loadMyMemberships();
+      if (!ok) {
+        showAuthError("Could not load your campaigns. Check the connection and try again.");
+        return;
+      }
+      if (myMemberships.length) {
+        enterApp();
+        return;
+      }
+      showJoinBox();
       return;
     }
 
-    gate.classList.remove("hidden");
-    input.focus();
-
-    function tryUnlock() {
-      if (input.value === CONFIG.CAMPAIGN_PASSPHRASE) {
-        if ($("remember-device") && $("remember-device").checked) {
-          try { localStorage.setItem("dnd_hub_unlocked", "1"); } catch (e) {}
-        } else {
-          sessionStorage.setItem("dnd_hub_unlocked", "1");
-        }
-        unlock();
-      } else {
-        error.classList.remove("hidden");
-        input.value = "";
-        input.focus();
-      }
-    }
-
-    btn.addEventListener("click", tryUnlock);
-    input.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") tryUnlock();
-    });
-
-    function unlock() {
-      enterApp();
-    }
+    showAuthForm();
   }
 
   // ---------- Supabase ----------
 
   function initDb() {
+    if (db) return; // already created (initGate calls this before initApp)
     if (CONFIG.SUPABASE_URL === PLACEHOLDER_URL ||
         CONFIG.SUPABASE_ANON_KEY === PLACEHOLDER_KEY) {
       configured = false;
@@ -317,7 +599,8 @@
     dice: loadRolls,
     battle: loadCombatants,
     maps: loadMaps,
-    music: renderMusicTab
+    music: renderMusicTab,
+    campaigns: loadCampaigns
   };
 
   function switchTab(name) {
@@ -353,7 +636,7 @@
       list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
       return;
     }
-    var res = await db.from("messages").select("*").not("body", "like", "[AI chat]%").order("created_at", { ascending: false });
+    var res = await db.from("messages").select("*").eq("campaign_id", campaignId()).not("body", "like", "[AI chat]%").order("created_at", { ascending: false });
     if (res.error) {
       list.innerHTML = '<p class="error">Could not load messages.</p>';
       return;
@@ -384,7 +667,7 @@
     if (type === "decision") body = "[Decision] " + body;
     if (type === "scene-start") body = "[start of scene] " + body;
     if (type === "scene-end") body = "[end of scene] " + body;
-    var res = await db.from("messages").insert({ author: author, body: body });
+    var res = await db.from("messages").insert({ campaign_id: campaignId(),  author: author, body: body });
     if (res.error) {
       alert("Could not post the message. Check the connection and try again.");
       return;
@@ -415,7 +698,7 @@
       list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
       return;
     }
-    var res = await db.from("messages").select("*").like("body", "[AI chat]%").order("created_at", { ascending: true });
+    var res = await db.from("messages").select("*").eq("campaign_id", campaignId()).like("body", "[AI chat]%").order("created_at", { ascending: true });
     if (res.error) {
       list.innerHTML = '<p class="error">Could not load the chat.</p>';
       return;
@@ -444,7 +727,7 @@
     var author = $("aichat-author").value;
     var text = $("aichat-body").value.trim();
     if (!text) return;
-    var res = await db.from("messages").insert({ author: author, body: AI_CHAT_PREFIX + text });
+    var res = await db.from("messages").insert({ campaign_id: campaignId(),  author: author, body: AI_CHAT_PREFIX + text });
     if (res.error) {
       alert("Could not send the message. Check the connection and try again.");
       return;
@@ -757,7 +1040,7 @@
       btn.textContent = "Turn on notifications";
       return;
     }
-    var res = await db.from("push_subscriptions").select("label").eq("endpoint", sub.endpoint).limit(1);
+    var res = await db.from("push_subscriptions").select("label").eq("campaign_id", campaignId()).eq("endpoint", sub.endpoint).limit(1);
     var label = res.data && res.data.length ? res.data[0].label : "this phone";
     status.textContent = "Notifications are on for " + label + " on this phone.";
     btn.textContent = "Turn off notifications";
@@ -769,7 +1052,7 @@
     var sub = await pushRegistration.pushManager.getSubscription();
     if (sub) {
       await sub.unsubscribe();
-      await db.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+      await db.from("push_subscriptions").delete().eq("campaign_id", campaignId()).eq("endpoint", sub.endpoint);
       await refreshPushStatus();
       return;
     }
@@ -793,12 +1076,15 @@
         applicationServerKey: urlBase64ToUint8Array(CONFIG.VAPID_PUBLIC_KEY)
       });
       var json = newSub.toJSON();
-      var res = await db.from("push_subscriptions").insert({
+      // Upsert on the endpoint: a device has one subscription, and
+      // switching campaigns moves it to the campaign in view, so push
+      // routing follows the campaign, not the device's first campaign.
+      var res = await db.from("push_subscriptions").upsert({ campaign_id: campaignId(),
         label: label,
         endpoint: json.endpoint,
         p256dh: json.keys.p256dh,
         auth: json.keys.auth
-      });
+      }, { onConflict: "endpoint" });
       if (res.error) throw new Error(res.error.message);
       await refreshPushStatus();
     } catch (e) {
@@ -814,7 +1100,7 @@
       list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
       return;
     }
-    var res = await db.from("log_entries").select("*").order("created_at", { ascending: false });
+    var res = await db.from("log_entries").select("*").eq("campaign_id", campaignId()).order("created_at", { ascending: false });
     if (res.error) {
       list.innerHTML = '<p class="error">Could not load the log.</p>';
       return;
@@ -824,7 +1110,7 @@
       return;
     }
     var effectsByLog = {};
-    var effRes = await db.from("log_effects").select("*").order("created_at", { ascending: true });
+    var effRes = await db.from("log_effects").select("*").eq("campaign_id", campaignId()).order("created_at", { ascending: true });
     if (!effRes.error && effRes.data) {
       effRes.data.forEach(function (fx) {
         (effectsByLog[fx.log_id] = effectsByLog[fx.log_id] || []).push(fx);
@@ -850,6 +1136,14 @@
     var wrap = $("state-current");
     var arch = $("state-archive");
     if (!wrap) return;
+    // campaign-state.json is a repo file for the Nathan & Angela
+    // campaign only. Another campaign gets a notice instead of their
+    // state; per-campaign state files are a later step.
+    if (campaignId() !== COUPLES_CAMPAIGN_ID) {
+      wrap.innerHTML = '<p class="empty">Campaign State is not set up for this campaign yet. The state files on this hub still belong to the Nathan &amp; Angela campaign.</p>';
+      if (arch) arch.innerHTML = '<p class="empty">No archive for this campaign yet.</p>';
+      return;
+    }
     wrap.innerHTML = '<p class="empty">Loading state...</p>';
     try {
       var res = await fetch("campaign-state.json?t=" + Date.now());
@@ -939,7 +1233,8 @@
   async function setupLogEffects() {
     var box = $("log-effects");
     if (!box) return;
-    var res = await db.from("log_effects").select("id").limit(1);
+    if (!isDm()) return; // log effects change character stats: DM-only
+    var res = await db.from("log_effects").select("id").eq("campaign_id", campaignId()).limit(1);
     if (res.error) return; // table not there yet (SQL not run): leave the section hidden
     logEffectsReady = true;
     box.classList.remove("hidden");
@@ -999,11 +1294,12 @@
   }
 
   async function applyLogEffect(fx) {
+    if (!isDm()) return; // log effects change character stats: DM-only
     var targets = fx.target === "party"
       ? (charPlayers.length ? charPlayers.map(function (p) { return p.player; }) : PLAYERS.map(function (p) { return p.player; }))
       : [fx.target];
     for (var i = 0; i < targets.length; i++) {
-      var res = await db.from("characters").select("xp, gold, hp, max_hp, temp_hp, inventory, level").eq("player", targets[i]).single();
+      var res = await db.from("characters").select("xp, gold, hp, max_hp, temp_hp, inventory, level").eq("campaign_id", campaignId()).eq("player", targets[i]).single();
       if (res.error || !res.data) continue;
       var c = res.data, patch = {};
       if (isNpcPlayer(targets[i]) && (fx.kind === "xp" || fx.kind === "gold" || fx.kind === "level")) continue;
@@ -1025,18 +1321,19 @@
         patch.inventory = lines.join("\n");
       }
       patch.updated_at = new Date().toISOString();
-      await db.from("characters").update(patch).eq("player", targets[i]);
+      await db.from("characters").update(patch).eq("campaign_id", campaignId()).eq("player", targets[i]);
     }
   }
 
   async function addLogEntry(e) {
     e.preventDefault();
     if (!configured) return setupNeeded();
+    if (!isDm()) return; // the campaign log is written by the DM
     var title = $("log-title").value.trim();
     var body = $("log-body").value.trim();
     if (!title || !body) return;
     var isMechanics = $("log-mechanics") ? $("log-mechanics").checked : false;
-    var entryData = { title: title, body: body, is_mechanics: isMechanics };
+    var entryData = { campaign_id: campaignId(), title: title, body: body, is_mechanics: isMechanics };
     if (logAreaMapReady) {
       var areaMapSel = $("log-area-map");
       if (areaMapSel && areaMapSel.value) entryData.area_map_url = areaMapSel.value;
@@ -1052,6 +1349,7 @@
       for (var i = 0; i < effects.length; i++) {
         var fx = effects[i];
         fx.log_id = res.data.id;
+        fx.campaign_id = campaignId();
         var ins = await db.from("log_effects").insert(fx);
         if (ins.error) { ok = false; break; }
         await applyLogEffect(fx);
@@ -1062,14 +1360,15 @@
     if (locations.length) {
       for (var j = 0; j < locations.length; j++) {
         locations[j].log_id = res.data.id;
+        locations[j].campaign_id = campaignId();
         await db.from("party_locations").insert(locations[j]);
-        await db.from("map_markers").update({ visited: true }).eq("id", locations[j].marker_id);
-        var mkRes = await db.from("map_markers").select("label").eq("id", locations[j].marker_id).single();
+        await db.from("map_markers").update({ visited: true }).eq("campaign_id", campaignId()).eq("id", locations[j].marker_id);
+        var mkRes = await db.from("map_markers").select("label").eq("campaign_id", campaignId()).eq("id", locations[j].marker_id).single();
         if (!mkRes.error && mkRes.data) {
-          var npcRes = await db.from("npcs").select("id, name").eq("kind", "Place");
+          var npcRes = await db.from("npcs").select("id, name").eq("campaign_id", campaignId()).eq("kind", "Place");
           if (!npcRes.error && npcRes.data) {
             var match = npcRes.data.find(function (n) { return normName(n.name) === normName(mkRes.data.label); });
-            if (match) await db.from("npcs").update({ visited: true }).eq("id", match.id);
+            if (match) await db.from("npcs").update({ visited: true }).eq("campaign_id", campaignId()).eq("id", match.id);
           }
         }
       }
@@ -1091,7 +1390,7 @@
   var locationOptionsHtml = '<option value="">Where?</option>';
 
   async function setupPartyLocations() {
-    var res = await db.from("party_locations").select("id").limit(1);
+    var res = await db.from("party_locations").select("id").eq("campaign_id", campaignId()).limit(1);
     if (res.error) return; // table not there yet (SQL not run): leave the section hidden
     partyLocationsReady = true;
     var box = $("log-locations");
@@ -1147,7 +1446,7 @@
     sel.innerHTML = '<option value="">None</option>' + AREA_MAP_OPTIONS.map(function (o) {
       return '<option value="' + o.url + '">' + escapeHtml(o.label) + '</option>';
     }).join("");
-    var res = await db.from("log_entries").select("area_map_url").limit(1);
+    var res = await db.from("log_entries").select("area_map_url").eq("campaign_id", campaignId()).limit(1);
     if (res.error) return; // column not there yet (SQL not run): leave the section hidden
     logAreaMapReady = true;
     var box = $("log-area-map-wrap");
@@ -1261,7 +1560,7 @@
 
   async function loadAreaMarkers() {
     if (!configured || !currentAreaMapUrl) { areaMarkers = []; renderAreaTokens(); return; }
-    var res = await db.from("area_markers").select("*").eq("area_map_url", currentAreaMapUrl).order("created_at", { ascending: true });
+    var res = await db.from("area_markers").select("*").eq("campaign_id", campaignId()).eq("area_map_url", currentAreaMapUrl).order("created_at", { ascending: true });
     if (res.error || !res.data) { areaMarkers = []; renderAreaTokens(); return; }
     areaMarkers = res.data;
     renderAreaTokens();
@@ -1582,7 +1881,7 @@
       var ok = window.confirm(problems.join("\n\n") + "\n\nMove anyway?");
       if (!ok) { renderAreaTokens(); return; }
     }
-    var res = await db.from("combatants").update({ grid_x: toFX, grid_y: toFY }).eq("id", c.id);
+    var res = await db.from("combatants").update({ grid_x: toFX, grid_y: toFY }).eq("campaign_id", campaignId()).eq("id", c.id);
     if (res.error) {
       alert("Could not move the token. Check the connection and try again.");
       renderAreaTokens();
@@ -1677,8 +1976,8 @@
     var entryTitle = null;
     var entryDate = null;
     // A battle's area map wins while the battle is on.
-    var battleRes = await db.from("battle_state").select("area_map_url").eq("id", 1).single();
-    var combatRes = await db.from("combatants").select("id").limit(1);
+    var battleRes = await db.from("battle_state").select("area_map_url").eq("campaign_id", campaignId()).single();
+    var combatRes = await db.from("combatants").select("id").eq("campaign_id", campaignId()).limit(1);
     var inBattle = !combatRes.error && combatRes.data && combatRes.data.length > 0;
     battleActive = inBattle;
     if (inBattle && !battleRes.error && battleRes.data && battleRes.data.area_map_url) {
@@ -1686,13 +1985,13 @@
       placeName = areaMapLabel(mapUrl) || "Battle";
     }
     // Otherwise fall back to the latest log entry.
-    var res = await db.from("log_entries").select("id, title, created_at, area_map_url").order("created_at", { ascending: false }).limit(20);
+    var res = await db.from("log_entries").select("id, title, created_at, area_map_url").eq("campaign_id", campaignId()).order("created_at", { ascending: false }).limit(20);
     if (res.error) {
       // column not there yet (SQL not run): retry without it, location maps still work
-      res = await db.from("log_entries").select("id, title, created_at").order("created_at", { ascending: false }).limit(20);
+      res = await db.from("log_entries").select("id, title, created_at").eq("campaign_id", campaignId()).order("created_at", { ascending: false }).limit(20);
     }
     if (!mapUrl && !res.error && res.data && res.data.length) {
-      var locRes = await db.from("party_locations").select("log_id, marker_id").order("created_at", { ascending: false }).limit(50);
+      var locRes = await db.from("party_locations").select("log_id, marker_id").eq("campaign_id", campaignId()).order("created_at", { ascending: false }).limit(50);
       var locByLog = {};
       (locRes.data || []).forEach(function (pl) {
         (locByLog[pl.log_id] = locByLog[pl.log_id] || []).push(pl.marker_id);
@@ -1744,7 +2043,7 @@
   }
 
   async function loadLocationOptions() {
-    var res = await db.from("map_markers").select("id, label").order("label", { ascending: true });
+    var res = await db.from("map_markers").select("id, label").eq("campaign_id", campaignId()).order("label", { ascending: true });
     if (res.error || !res.data) return;
     locationOptionsHtml = '<option value="">Where?</option>' + res.data.map(function (m) {
       return '<option value="' + m.id + '">' + escapeHtml(m.label) + '</option>';
@@ -1818,11 +2117,11 @@
     layer.innerHTML = "";
     partyLocations = [];
     if (!configured) return;
-    var res = await db.from("party_locations").select("*").order("created_at", { ascending: false });
+    var res = await db.from("party_locations").select("*").eq("campaign_id", campaignId()).order("created_at", { ascending: false });
     if (res.error || !res.data || !res.data.length) return;
     var latestLogId = res.data[0].log_id;
     var rows = res.data.filter(function (r) { return r.log_id === latestLogId; });
-    var entryRes = await db.from("log_entries").select("title, created_at").eq("id", latestLogId).single();
+    var entryRes = await db.from("log_entries").select("title, created_at").eq("campaign_id", campaignId()).eq("id", latestLogId).single();
     partyEntryTitle = (!entryRes.error && entryRes.data) ? entryRes.data.title : "";
     partyEntryDate = (!entryRes.error && entryRes.data) ? entryRes.data.created_at : "";
     partyLocations = rows;
@@ -1919,35 +2218,136 @@
       list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
       return;
     }
-    var res = await db.from("characters").select("*");
+    var res = await db.from("characters").select("*").eq("campaign_id", campaignId());
     if (res.error) {
       list.innerHTML = '<p class="error">Could not load characters.</p>';
       return;
     }
     await syncNpcLevels(res.data);
+    var rows = res.data || [];
+    // Pending characters (join_mode "pending") are not in the party yet:
+    // they live in the approval section below, not in charByPlayer, so
+    // nothing else in the hub (tokens, rolls, effects) can see them.
+    var pending = rows.filter(function (c) { return !isNpcPlayer(c.player) && c.join_mode === "pending" && !c.dismissed; });
+    var pendingKeys = {};
+    pending.forEach(function (c) { pendingKeys[c.player] = true; });
     var byPlayer = {};
-    res.data.forEach(function (c) { byPlayer[c.player] = c; });
+    rows.forEach(function (c) {
+      if (c.join_mode === "pending") return;
+      byPlayer[c.player] = c;
+    });
     charByPlayer = byPlayer;
     // Portraits may have just arrived after the area tokens first rendered
     // (the Maps tab can open before Characters loads), so refresh the
     // tokens now that the faces are known.
     renderAreaTokens();
-    var players = PLAYERS.slice();
+    // The player list comes from this campaign's characters. The
+    // nathan/angela slots are only for the couples campaign, so a new
+    // campaign does not start with their empty cards.
+    var players = campaignId() === COUPLES_CAMPAIGN_ID
+      ? PLAYERS.filter(function (p) { return !pendingKeys[p.player]; })
+      : [];
     var seen = {};
     players.forEach(function (p) { seen[p.player] = true; });
-    res.data.forEach(function (c) {
-      if (c.player && !seen[c.player] && !(isNpcPlayer(c.player) && c.dismissed)) {
+    rows.forEach(function (c) {
+      if (c.player && !seen[c.player] && c.join_mode !== "pending" && !(isNpcPlayer(c.player) && c.dismissed)) {
         seen[c.player] = true;
         players.push({ player: c.player, label: labelFromPlayer(c.player) });
       }
     });
     charPlayers = players;
+    // Guess which character is mine, once, from the email address.
+    if (!myPlayerKey()) {
+      var guessed = guessMyPlayerKey(rows);
+      if (guessed) setMyPlayerKey(guessed);
+    }
     list.innerHTML = players.map(function (p) {
       var c = byPlayer[p.player];
       if (!c) return emptyCharCard(p);
       return charCard(p, c);
     }).join("");
     bindCharCards();
+    renderPendingCharacters(pending);
+  }
+
+  // ---------- Character approval (DM approves new characters) ----------
+  //
+  // A new player character starts with join_mode "pending" and cannot
+  // roll, act, or appear in the party until the DM approves it. The
+  // pending marker rides on join_mode because there is no
+  // characters.status column yet (see PHASE-1-DESIGN.md, Character
+  // creation and joining). When that column lands, the migration moves
+  // join_mode "pending" rows to status "pending" and this code switches
+  // to reading status.
+
+  var SRD_RACES = ["human", "elf", "dwarf", "halfling", "gnome", "half-elf", "half-orc", "tiefling", "dragonborn"];
+  var SRD_CLASSES = ["barbarian", "bard", "cleric", "druid", "fighter", "monk", "paladin", "ranger", "rogue", "sorcerer", "warlock", "wizard"];
+
+  function pendingCharFlags(c) {
+    var flags = [];
+    var race = String(c.race || "").toLowerCase().trim();
+    if (race && SRD_RACES.indexOf(race) === -1) flags.push('Race "' + c.race + '" is outside the SRD/PHB.');
+    var cls = classKey(c.class);
+    if (cls && SRD_CLASSES.indexOf(cls) === -1) flags.push('Class "' + c.class + '" is outside the SRD/PHB.');
+    ["str", "dex", "con", "int", "wis", "cha"].forEach(function (ab) {
+      if (typeof c[ab] === "number" && c[ab] > 20) flags.push(ab.toUpperCase() + " " + c[ab] + " is above 20, impossible without magic.");
+      else if (typeof c[ab] === "number" && c[ab] > 18) flags.push(ab.toUpperCase() + " " + c[ab] + " is above 18, only possible with a racial bonus.");
+    });
+    return flags;
+  }
+
+  function pendingCharCard(c) {
+    var scores = ["str", "dex", "con", "int", "wis", "cha"].map(function (ab) {
+      return '<div class="sheet-score"><span class="score-name">' + ab.toUpperCase() + '</span><span class="score-val">' + (c[ab] === null || c[ab] === undefined ? "-" : c[ab]) + '</span></div>';
+    }).join("");
+    var flags = pendingCharFlags(c);
+    var flagsHtml = flags.length
+      ? '<p><strong>For the DM to check</strong></p><ul class="inventory">' + flags.map(function (f) { return "<li>" + escapeHtml(f) + "</li>"; }).join("") + '</ul>'
+      : '<p class="meta">Nothing non-standard spotted. Check the Dice tab for this player\'s stat rolls.</p>';
+    var actions = isDm()
+      ? '<div class="actions"><button type="button" data-pending-approve="' + c.player + '">Approve</button>' +
+        '<button type="button" class="small-danger" data-pending-reject="' + c.player + '">Reject</button></div>'
+      : '<p class="meta">Waiting for the DM to approve this character.</p>';
+    return '<div class="card sheet pending-card">' +
+      '<div class="char-head"><span class="name">' + escapeHtml(c.name || "Unnamed") + '</span>' +
+      '<span class="level">' + escapeHtml(labelFromPlayer(c.player)) + '</span></div>' +
+      '<p class="meta">' + escapeHtml(c.race || "") + (c.race && c.class ? " " : "") + escapeHtml(c.class || "") + ' - Level ' + (c.level === null || c.level === undefined ? "-" : c.level) + '</p>' +
+      '<div class="sheet-scores">' + scores + '</div>' +
+      (c.inventory ? '<p><strong>Inventory</strong></p>' + listHtml(textLines(c.inventory)) : '') +
+      flagsHtml + actions + '</div>';
+  }
+
+  function renderPendingCharacters(pending) {
+    var wrap = $("pending-list");
+    if (!wrap) return;
+    var visible = pending.filter(function (c) { return isDm() || c.player === myPlayerKey(); });
+    if (!visible.length) { wrap.innerHTML = ""; return; }
+    wrap.innerHTML = '<h3>Waiting for DM approval</h3>' +
+      '<p class="hint">New characters cannot roll, act, or appear in the party until the DM approves them.</p>' +
+      visible.map(pendingCharCard).join("");
+    wrap.querySelectorAll("[data-pending-approve]").forEach(function (btn) {
+      btn.addEventListener("click", function () { approvePendingCharacter(btn.dataset.pendingApprove); });
+    });
+    wrap.querySelectorAll("[data-pending-reject]").forEach(function (btn) {
+      btn.addEventListener("click", function () { rejectPendingCharacter(btn.dataset.pendingReject); });
+    });
+  }
+
+  async function approvePendingCharacter(player) {
+    if (!isDm()) return;
+    var res = await db.from("characters").update({ join_mode: null }).eq("campaign_id", campaignId()).eq("player", player);
+    if (res.error) {
+      alert("Could not approve. Check the connection and try again.");
+      return;
+    }
+    loadCharacters();
+  }
+
+  async function rejectPendingCharacter(player) {
+    if (!isDm()) return;
+    if (!confirm("Reject this character? It will be deleted.")) return;
+    await db.from("characters").delete().eq("campaign_id", campaignId()).eq("player", player);
+    loadCharacters();
   }
 
   async function loadCompanions() {
@@ -1958,7 +2358,7 @@
       list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
       return;
     }
-    var res = await db.from("characters").select("*");
+    var res = await db.from("characters").select("*").eq("campaign_id", campaignId());
     if (res.error) {
       list.innerHTML = '<p class="error">Could not load companions.</p>';
       return;
@@ -2037,7 +2437,9 @@
       ? '<img class="npc-pic" src="' + escapeHtml(entry.image) + '" alt="">'
       : '<div class="npc-pic npc-pic-fallback">' + escapeHtml(entry.class.charAt(0)) + '</div>';
     var action = "";
-    if (dismissed) {
+    if (!isDm()) {
+      action = '<p class="meta">Only the DM can recruit or dismiss companions.</p>';
+    } else if (dismissed) {
       action = '<p class="meta">Dismissed. Gone for this campaign.</p>';
     } else if (recruited) {
       action = '<p class="meta">In the party · ' + escapeHtml(joinModeLabel(row.join_mode)) + '</p>' +
@@ -2083,9 +2485,10 @@
   async function recruitNpc(key) {
     var entry = npcRosterByKey(key);
     if (!entry) return;
+    if (!isDm()) return; // companions are recruited by the DM
     var sel = document.querySelector('[data-join-mode="' + key + '"]');
     var mode = sel ? sel.value : "story";
-    var res = await db.from("characters").select("*");
+    var res = await db.from("characters").select("*").eq("campaign_id", campaignId());
     var rows = (res.data || []);
     var counts = partyCounts(rows);
     if (counts.real + counts.npcs >= 6) { alert("The party is full (6)."); return; }
@@ -2093,6 +2496,7 @@
     var targetLevel = npcTargetLevel(rows);
     var maxHp = npcMaxHp(entry, targetLevel);
     var insert = {
+      campaign_id: campaignId(),
       player: "npc_" + key,
       name: entry.name, race: entry.race, class: entry.class, background: entry.background,
       level: targetLevel, hp: maxHp, max_hp: maxHp, temp_hp: 0, ac: entry.ac,
@@ -2111,8 +2515,9 @@
   async function dismissNpc(key) {
     var entry = npcRosterByKey(key);
     if (!entry) return;
+    if (!isDm()) return; // companions are dismissed by the DM
     if (!window.confirm("Dismiss " + entry.name + "? They leave the party and cannot come back until a new campaign.")) return;
-    await db.from("characters").update({ dismissed: true, updated_at: new Date().toISOString() }).eq("player", "npc_" + key);
+    await db.from("characters").update({ dismissed: true, updated_at: new Date().toISOString() }).eq("campaign_id", campaignId()).eq("player", "npc_" + key);
     loadCompanions();
     loadCharacters();
   }
@@ -2243,7 +2648,13 @@
     var count = kind === "success" ? (c.death_save_successes || 0) : (c.death_save_failures || 0);
     var dots = "";
     for (var i = 1; i <= 3; i++) {
-      dots += '<button type="button" class="ds-dot' + (i <= count ? ' filled' : '') + '" data-mode="interact" data-death-save="' + kind + '" data-death-n="' + i + '" data-player="' + player + '" title="' + kind + ' ' + i + '">' + (i <= count ? "●" : "○") + '</button>';
+      // Death saves are DM-only to change (see the Security section of
+      // PHASE-1-DESIGN.md): players see static dots, the DM gets buttons.
+      if (isDm()) {
+        dots += '<button type="button" class="ds-dot' + (i <= count ? ' filled' : '') + '" data-mode="interact" data-death-save="' + kind + '" data-death-n="' + i + '" data-player="' + player + '" title="' + kind + ' ' + i + '">' + (i <= count ? "●" : "○") + '</button>';
+      } else {
+        dots += '<span class="ds-dot' + (i <= count ? ' filled' : '') + '">' + (i <= count ? "●" : "○") + '</span>';
+      }
     }
     return dots;
   }
@@ -2277,7 +2688,7 @@
   }
 
   function npcTargetLevel(rows) {
-    var levels = rows.filter(function (r) { return !isNpcPlayer(r.player) && !r.dismissed; }).map(function (r) { return r.level || 1; });
+    var levels = rows.filter(function (r) { return !isNpcPlayer(r.player) && !r.dismissed && r.join_mode !== "pending"; }).map(function (r) { return r.level || 1; });
     if (!levels.length) return 1;
     var sum = levels.reduce(function (a, b) { return a + b; }, 0);
     return Math.ceil(sum / levels.length);
@@ -2302,7 +2713,7 @@
       var newHp = (r.hp || 0) + (newMax - (r.max_hp || 0));
       if (newHp < 0) newHp = 0;
       if (newHp > newMax) newHp = newMax;
-      await db.from("characters").update({ level: target, max_hp: newMax, hp: newHp, updated_at: new Date().toISOString() }).eq("player", r.player);
+      await db.from("characters").update({ level: target, max_hp: newMax, hp: newHp, updated_at: new Date().toISOString() }).eq("campaign_id", campaignId()).eq("player", r.player);
       r.level = target;
       r.max_hp = newMax;
       r.hp = newHp;
@@ -2313,6 +2724,7 @@
     var real = 0, npcs = 0;
     rows.forEach(function (r) {
       if (r.dismissed) return;
+      if (r.join_mode === "pending") return;
       if (isNpcPlayer(r.player)) npcs++;
       else real++;
     });
@@ -2320,7 +2732,7 @@
   }
 
   async function recruitmentLocked() {
-    var res = await db.from("log_entries").select("id").or("is_mechanics.is.null,is_mechanics.eq.false").limit(1);
+    var res = await db.from("log_entries").select("id").eq("campaign_id", campaignId()).or("is_mechanics.is.null,is_mechanics.eq.false").limit(1);
     if (res.error) return true;
     return !!(res.data && res.data.length);
   }
@@ -2381,6 +2793,18 @@
     if (c.background) subMeta.push(c.background);
     if (c.alignment) subMeta.push(c.alignment);
     if (c.xp !== null && c.xp !== undefined) subMeta.push(c.xp + " XP");
+    // HP, hit dice, and death saves are DM-only to change (see the
+    // Security section of PHASE-1-DESIGN.md): players see the numbers,
+    // the DM gets the buttons. A player may edit only their own sheet.
+    var hpBtns = isDm()
+      ? '<button type="button" class="hp-btn" data-mode="interact" data-hp-delta="-1" data-player="' + p.player + '">-</button>' +
+        '<button type="button" class="hp-btn" data-mode="interact" data-hp-delta="1" data-player="' + p.player + '">+</button>'
+      : '';
+    var hdBtns = isDm()
+      ? '<button type="button" class="hp-btn" data-mode="interact" data-hit-dice-delta="-1" data-player="' + p.player + '">-</button>' +
+        '<button type="button" class="hp-btn" data-mode="interact" data-hit-dice-delta="1" data-player="' + p.player + '">+</button>'
+      : '';
+    var canEdit = isDm() || p.player === myPlayerKey();
     var inner =
       (c.image_url ? '<img class="char-img" src="' + escapeHtml(c.image_url) + '" alt="">' : '') +
       '<div class="char-head"><span class="name">' + escapeHtml(c.name || "Unnamed") + '</span>' +
@@ -2396,11 +2820,9 @@
       '<div class="combat-stat"><span>Prof. Bonus</span><strong>' + fmtMod(pb) + '</strong></div>' +
       '</div>' +
       '<div class="hp-row"><span>HP</span><span class="hp">' + hpText + (tempHp > 0 ? ' <span class="temp-hp">+ ' + tempHp + ' temp</span>' : '') + '</span>' +
-      '<button type="button" class="hp-btn" data-mode="interact" data-hp-delta="-1" data-player="' + p.player + '">-</button>' +
-      '<button type="button" class="hp-btn" data-mode="interact" data-hp-delta="1" data-player="' + p.player + '">+</button></div>' +
+      hpBtns + '</div>' +
       '<div class="hp-row"><span>Hit Dice</span><span class="hp">' + hitDiceTotal(c) + 'd' + hitDieFor(c) + ' · ' + hitDiceLeft(c) + ' left</span>' +
-      '<button type="button" class="hp-btn" data-mode="interact" data-hit-dice-delta="-1" data-player="' + p.player + '">-</button>' +
-      '<button type="button" class="hp-btn" data-mode="interact" data-hit-dice-delta="1" data-player="' + p.player + '">+</button></div>' +
+      hdBtns + '</div>' +
       '<div class="death-saves"><span>Death Saves</span><span class="ds-group"><span class="ds-label">Success</span>' + deathSaveDots(c, "success", p.player) + '</span><span class="ds-group"><span class="ds-label">Failure</span>' + deathSaveDots(c, "failure", p.player) + '</span></div>' +
       (isNpc ? '<div class="sheet-scores">' + scoresHtml + '</div>' : '') +
       '<p><strong>Saving Throws</strong></p><div class="sheet-list">' + savesHtml + '</div>' +
@@ -2410,7 +2832,7 @@
       (isNpc ? '' : '<p>Gold: ' + (c.gold === null || c.gold === undefined ? "-" : c.gold) + '</p>') +
       '<p><strong>Inventory</strong></p>' + invHtml +
       (c.notes ? '<p><strong>Notes</strong></p><p>' + escapeHtml(c.notes) + '</p>' : '') +
-      '<div class="actions"><button type="button" data-mode="interact" data-edit="' + p.player + '">Edit</button></div>';
+      (canEdit ? '<div class="actions"><button type="button" data-mode="interact" data-edit="' + p.player + '">Edit</button></div>' : '');
     if (!isNpc) {
       var picHtml = c.image_url
         ? '<img class="npc-pic" src="' + escapeHtml(c.image_url) + '" alt="">'
@@ -2421,8 +2843,7 @@
         '<span class="meta">' + escapeHtml(c.race || "") + (c.race && c.class ? " " : "") + escapeHtml(c.class || "") + ' - Level ' + (c.level === null || c.level === undefined ? "-" : c.level) + '</span>' +
         '<span class="meta">HP ' + hpText + (tempHp > 0 ? ' + ' + tempHp + ' temp' : '') + ' · AC ' + (c.ac === null || c.ac === undefined ? "-" : c.ac) + '</span>' +
         '</div>' +
-        '<button type="button" class="hp-btn" data-mode="interact" data-hp-delta="-1" data-player="' + p.player + '">-</button>' +
-        '<button type="button" class="hp-btn" data-mode="interact" data-hp-delta="1" data-player="' + p.player + '">+</button>' +
+        hpBtns +
         '<button type="button" class="npc-toggle" data-npc-toggle="' + p.player + '">Full sheet</button>' +
         '</div>' +
         '<div class="sheet-scores">' + scoresHtml + '</div>' +
@@ -2439,8 +2860,7 @@
       '<span class="meta">' + escapeHtml(c.race || "") + (c.race && c.class ? " " : "") + escapeHtml(c.class || "") + ' - Level ' + (c.level === null || c.level === undefined ? "-" : c.level) + '</span>' +
       '<span class="meta">HP ' + hpText + (tempHp > 0 ? ' + ' + tempHp + ' temp' : '') + ' · AC ' + (c.ac === null || c.ac === undefined ? "-" : c.ac) + '</span>' +
       joinHtml + '</div>' +
-      '<button type="button" class="hp-btn" data-mode="interact" data-hp-delta="-1" data-player="' + p.player + '">-</button>' +
-      '<button type="button" class="hp-btn" data-mode="interact" data-hp-delta="1" data-player="' + p.player + '">+</button>' +
+      hpBtns +
       '<button type="button" class="npc-toggle" data-npc-toggle="' + p.player + '">Full sheet</button>' +
       '</div>' +
       '<div class="npc-details hidden" data-npc-details="' + p.player + '">' + inner + '</div>' +
@@ -2481,7 +2901,8 @@
 
   async function changeCharHp(player, delta) {
     if (!configured) return setupNeeded();
-    var res = await db.from("characters").select("hp, max_hp, temp_hp").eq("player", player).single();
+    if (!isDm()) return; // HP is DM-only (see PHASE-1-DESIGN.md, Security)
+    var res = await db.from("characters").select("hp, max_hp, temp_hp").eq("campaign_id", campaignId()).eq("player", player).single();
     if (res.error || !res.data) return;
     var hp = (res.data.hp === null || res.data.hp === undefined) ? 0 : res.data.hp;
     var tempHp = res.data.temp_hp || 0;
@@ -2501,43 +2922,55 @@
       patch.hp = hp;
     }
     patch.updated_at = new Date().toISOString();
-    await db.from("characters").update(patch).eq("player", player);
+    await db.from("characters").update(patch).eq("campaign_id", campaignId()).eq("player", player);
     loadCharacters();
   }
 
   async function changeHitDice(player, delta) {
     if (!configured) return setupNeeded();
-    var res = await db.from("characters").select("level, hit_dice_used").eq("player", player).single();
+    if (!isDm()) return; // hit dice are DM-only (see PHASE-1-DESIGN.md, Security)
+    var res = await db.from("characters").select("level, hit_dice_used").eq("campaign_id", campaignId()).eq("player", player).single();
     if (res.error || !res.data) return;
     var total = res.data.level || 1;
     var used = res.data.hit_dice_used || 0;
     var left = total - used + delta;
     if (left < 0) left = 0;
     if (left > total) left = total;
-    await db.from("characters").update({ hit_dice_used: total - left, updated_at: new Date().toISOString() }).eq("player", player);
+    await db.from("characters").update({ hit_dice_used: total - left, updated_at: new Date().toISOString() }).eq("campaign_id", campaignId()).eq("player", player);
     loadCharacters();
   }
 
   async function setDeathSave(player, kind, n) {
     if (!configured) return setupNeeded();
+    if (!isDm()) return; // death saves are DM-only (see PHASE-1-DESIGN.md, Security)
     var col = kind === "success" ? "death_save_successes" : "death_save_failures";
-    var res = await db.from("characters").select(col).eq("player", player).single();
+    var res = await db.from("characters").select(col).eq("campaign_id", campaignId()).eq("player", player).single();
     if (res.error || !res.data) return;
     var current = res.data[col] || 0;
     var next = current === n ? n - 1 : n;
     var patch = { updated_at: new Date().toISOString() };
     patch[col] = next;
-    await db.from("characters").update(patch).eq("player", player);
+    await db.from("characters").update(patch).eq("campaign_id", campaignId()).eq("player", player);
     loadCharacters();
   }
+
+  // Whether the character open in the modal is brand new (no row yet).
+  // A new character goes through DM approval; an existing one edited by
+  // a player keeps its stat fields locked (see saveChar).
+  var charModalIsNew = false;
 
   async function openCharModal(player, existing) {
     if (!configured) return setupNeeded();
     var c = existing;
     if (!c) {
-      var res = await db.from("characters").select("*").eq("player", player).single();
+      var res = await db.from("characters").select("*").eq("campaign_id", campaignId()).eq("player", player).single();
       if (!res.error && res.data) c = res.data;
     }
+    // Players may open only their own sheet (the DM may open any).
+    // A character that does not exist yet is a new build, open to anyone:
+    // saving it starts the DM approval flow.
+    if (c && !isDm() && player !== myPlayerKey()) return;
+    charModalIsNew = !c;
     $("char-player").value = player;
     $("char-modal-title").textContent = playerLabel(player);
     $("char-name").value = c ? (c.name || "") : "";
@@ -2573,6 +3006,19 @@
     $("char-flaws").value = c ? (c.flaws || "") : "";
     $("char-xp").value = c && c.xp !== null && c.xp !== undefined ? c.xp : "";
     $("char-alignment").value = c ? (c.alignment || "") : "";
+    // A player editing their own existing sheet cannot change stat
+    // fields (level, HP, AC, gold, XP, abilities, hit dice, death
+    // saves): those are DM-only. The fields are disabled here and
+    // stripped again in saveChar, so a tampered form cannot smuggle
+    // them through. A new character (DM approval pending) fills them in.
+    var lockStats = !isDm() && !!c;
+    ["char-level", "char-hp", "char-max-hp", "char-ac", "char-gold", "char-temp-hp",
+     "char-hit-dice-used", "char-death-successes", "char-death-failures",
+     "char-str", "char-dex", "char-con", "char-int", "char-wis", "char-cha",
+     "char-xp"].forEach(function (id) {
+      var el = $(id);
+      if (el) el.disabled = lockStats;
+    });
     $("char-modal").classList.remove("hidden");
   }
 
@@ -2583,8 +3029,10 @@
   async function saveChar(e) {
     e.preventDefault();
     if (!configured) return setupNeeded();
+    var playerKey = $("char-player").value;
     var row = {
-      player: $("char-player").value,
+      campaign_id: campaignId(),
+      player: playerKey,
       name: $("char-name").value.trim() || null,
       image_url: $("char-image").value.trim() || null,
       race: $("char-race").value.trim() || null,
@@ -2619,10 +3067,30 @@
       alignment: $("char-alignment").value.trim() || null,
       updated_at: new Date().toISOString()
     };
-    var res = await db.from("characters").upsert(row, { onConflict: "player" });
+    var isNew = charModalIsNew;
+    if (!isDm() && !isNew) {
+      // A player editing their own sheet may change story fields only.
+      // Omit the stat fields so the upsert leaves them exactly as they
+      // are; a tampered form cannot raise HP, XP, gold, or abilities.
+      delete row.level; delete row.hp; delete row.max_hp; delete row.ac;
+      delete row.str; delete row.dex; delete row.con; delete row.int; delete row.wis; delete row.cha;
+      delete row.gold; delete row.temp_hp; delete row.hit_dice_used;
+      delete row.death_save_successes; delete row.death_save_failures; delete row.xp;
+    }
+    if (isNew && !isNpcPlayer(playerKey)) {
+      // A new player character starts pending DM approval (see the
+      // Character approval section). The DM sees it in the Characters
+      // tab and approves or rejects it.
+      row.join_mode = "pending";
+    }
+    var res = await db.from("characters").upsert(row, { onConflict: "campaign_id,player" });
     if (res.error) {
       alert("Could not save the character. Check the connection and try again.");
       return;
+    }
+    if (isNew && !isNpcPlayer(playerKey)) {
+      setMyPlayerKey(playerKey);
+      alert("Character submitted. The DM needs to approve it before it can play.");
     }
     closeCharModal();
     loadCharacters();
@@ -2636,7 +3104,7 @@
       list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
       return;
     }
-    var res = await db.from("quests").select("*").order("created_at", { ascending: false });
+    var res = await db.from("quests").select("*").eq("campaign_id", campaignId()).order("created_at", { ascending: false });
     if (res.error) {
       list.innerHTML = '<p class="error">Could not load quests.</p>';
       return;
@@ -2651,10 +3119,12 @@
         '<p class="title">' + escapeHtml(q.title) + ' <span class="badge' + (done ? " done" : "") + '">' + escapeHtml(q.status) + '</span></p>' +
         '<p>' + escapeHtml(q.description || "") + '</p>' +
         '<p class="meta">' + escapeHtml(fmtTime(q.created_at)) + '</p>' +
-        '<div class="actions">' +
+        // Quests are DM-only to change (see the Security section of
+        // PHASE-1-DESIGN.md): players see the list, the DM gets the buttons.
+        (isDm() ? '<div class="actions">' +
         '<button type="button" data-mode="interact" data-quest-toggle="' + q.id + '" data-status="' + q.status + '">' + (done ? "Mark Active" : "Mark Done") + '</button>' +
         '<button type="button" class="small-danger" data-mode="interact" data-quest-delete="' + q.id + '">Delete</button>' +
-        '</div></div>';
+        '</div>' : '') + '</div>';
     }).join("");
     bindQuestButtons();
   }
@@ -2662,15 +3132,17 @@
   function bindQuestButtons() {
     document.querySelectorAll("[data-quest-toggle]").forEach(function (btn) {
       btn.addEventListener("click", async function () {
+        if (!isDm()) return; // quests are DM-only
         var next = btn.dataset.status === "Done" ? "Active" : "Done";
-        await db.from("quests").update({ status: next }).eq("id", btn.dataset.questToggle);
+        await db.from("quests").update({ status: next }).eq("campaign_id", campaignId()).eq("id", btn.dataset.questToggle);
         loadQuests();
       });
     });
     document.querySelectorAll("[data-quest-delete]").forEach(function (btn) {
       btn.addEventListener("click", async function () {
+        if (!isDm()) return; // quests are DM-only
         if (!confirm("Delete this quest?")) return;
-        await db.from("quests").delete().eq("id", btn.dataset.questDelete);
+        await db.from("quests").delete().eq("campaign_id", campaignId()).eq("id", btn.dataset.questDelete);
         loadQuests();
       });
     });
@@ -2679,10 +3151,11 @@
   async function addQuest(e) {
     e.preventDefault();
     if (!configured) return setupNeeded();
+    if (!isDm()) return; // quests are DM-only
     var title = $("quest-title").value.trim();
     var description = $("quest-description").value.trim();
     if (!title) return;
-    var res = await db.from("quests").insert({ title: title, description: description, status: "Active" });
+    var res = await db.from("quests").insert({ campaign_id: campaignId(),  title: title, description: description, status: "Active" });
     if (res.error) {
       alert("Could not add the quest. Check the connection and try again.");
       return;
@@ -2700,7 +3173,7 @@
       list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
       return;
     }
-    var res = await db.from("npcs").select("*").order("created_at", { ascending: false });
+    var res = await db.from("npcs").select("*").eq("campaign_id", campaignId()).order("created_at", { ascending: false });
     if (res.error) {
       list.innerHTML = '<p class="error">Could not load NPCs.</p>';
       return;
@@ -2724,7 +3197,7 @@
     document.querySelectorAll("[data-npc-delete]").forEach(function (btn) {
       btn.addEventListener("click", async function () {
         if (!confirm("Delete this entry?")) return;
-        await db.from("npcs").delete().eq("id", btn.dataset.npcDelete);
+        await db.from("npcs").delete().eq("campaign_id", campaignId()).eq("id", btn.dataset.npcDelete);
         loadNpcs();
       });
     });
@@ -2733,16 +3206,17 @@
   async function addNpc(e) {
     e.preventDefault();
     if (!configured) return setupNeeded();
+    if (!isDm()) return; // NPC entries are DM-only
     var name = $("npc-name").value.trim();
     var kind = $("npc-kind").value;
     var notes = $("npc-notes").value.trim();
     var imageUrl = $("npc-image").value.trim() || null;
     if (!name) return;
-    var row = { name: name, kind: kind, notes: notes };
+    var row = { campaign_id: campaignId(), name: name, kind: kind, notes: notes };
     if (imageUrl) row.image_url = imageUrl;
     var res = await db.from("npcs").insert(row);
     if (res.error && imageUrl) {
-      var retry = await db.from("npcs").insert({ name: name, kind: kind, notes: notes });
+      var retry = await db.from("npcs").insert({ campaign_id: campaignId(),  name: name, kind: kind, notes: notes });
       if (retry.error) {
         alert("Could not add the entry. Check the connection and try again.");
         return;
@@ -2773,7 +3247,7 @@
   async function refreshRollsList() {
     var list = $("rolls-list");
     if (!list || !configured) return;
-    var res = await db.from("rolls").select("*").order("created_at", { ascending: false }).limit(50);
+    var res = await db.from("rolls").select("*").eq("campaign_id", campaignId()).order("created_at", { ascending: false }).limit(50);
     if (res.error) {
       list.innerHTML = '<p class="error">Could not load rolls.</p>';
       return;
@@ -2819,13 +3293,14 @@
       if (typeof pushRegistration === "undefined" || !pushRegistration) return null;
       var sub = await pushRegistration.pushManager.getSubscription();
       if (!sub) return null;
-      var res = await db.from("push_subscriptions").select("label").eq("endpoint", sub.endpoint).limit(1);
+      var res = await db.from("push_subscriptions").select("label").eq("campaign_id", campaignId()).eq("endpoint", sub.endpoint).limit(1);
       if (!res.data || !res.data.length) return null;
       var label = String(res.data[0].label || "").toLowerCase();
       if (!label) return null;
-      var chars = await db.from("characters").select("player, name");
+      var chars = await db.from("characters").select("player, name, join_mode").eq("campaign_id", campaignId());
       if (chars.error || !chars.data) return null;
       for (var i = 0; i < chars.data.length; i++) {
+        if (chars.data[i].join_mode === "pending") continue;
         var player = String(chars.data[i].player || "").toLowerCase();
         if (player && label.indexOf(player) !== -1) {
           var short = shortCharName(chars.data[i].name);
@@ -2842,9 +3317,10 @@
     var sel = $("dice-roller");
     if (!sel || !configured) return;
     var names = [];
-    var res = await db.from("characters").select("name").eq("dismissed", false);
+    var res = await db.from("characters").select("name, join_mode").eq("campaign_id", campaignId()).eq("dismissed", false);
     if (!res.error && res.data) {
       res.data.forEach(function (c) {
+        if (c.join_mode === "pending") return;
         var short = shortCharName(c.name);
         if (names.indexOf(short) === -1) names.push(short);
       });
@@ -2925,8 +3401,8 @@
     if (!sel) return;
     var rows = Object.keys(charByPlayer).map(function (k) { return charByPlayer[k]; });
     if (!rows.length) {
-      var res = await db.from("characters").select("*").eq("dismissed", false);
-      if (!res.error && res.data) rows = res.data;
+      var res = await db.from("characters").select("*").eq("campaign_id", campaignId()).eq("dismissed", false);
+      if (!res.error && res.data) rows = res.data.filter(function (r) { return r.join_mode !== "pending"; });
     }
     var roller = $("dice-roller") ? $("dice-roller").value : "";
     var c = charForRoller(roller, rows);
@@ -2977,8 +3453,8 @@
     var roller = $("dice-roller") ? $("dice-roller").value : "";
     var rows = Object.keys(charByPlayer).map(function (k) { return charByPlayer[k]; });
     if (!rows.length) {
-      var res = await db.from("characters").select("*").eq("dismissed", false);
-      if (!res.error && res.data) rows = res.data;
+      var res = await db.from("characters").select("*").eq("campaign_id", campaignId()).eq("dismissed", false);
+      if (!res.error && res.data) rows = res.data.filter(function (r) { return r.join_mode !== "pending"; });
     }
     var c = charForRoller(roller, rows);
     var bonus = modSourceBonus(c, source);
@@ -3023,7 +3499,7 @@
   }
 
   function saveRoll(roller, label, result, detail) {
-    db.from("rolls").insert({
+    db.from("rolls").insert({ campaign_id: campaignId(), 
       roller: roller,
       label: label,
       result: result,
@@ -3135,8 +3611,18 @@
   // from the board narration as the DM resolves actions, and the tracker
   // reloads live. The DM only corrects HP by hand when the tracker gets one wrong.
   async function loadBattleState() {
-    var res = await db.from("battle_state").select("current_combatant_id, round, area_map_url").eq("id", 1).single();
-    if (res.error || !res.data) return; // table not there yet (SQL not run): local turn only
+    var res = await db.from("battle_state").select("current_combatant_id, round, area_map_url").eq("campaign_id", campaignId()).single();
+    if (res.error || !res.data) {
+      // No row for this campaign yet (a new campaign has none): create
+      // it, so the turn and round have somewhere to live. The id is a
+      // per-campaign integer (see campaignIntId): the couples campaign
+      // keeps the historic id 1, other campaigns get a hashed id.
+      var ins = await db.from("battle_state").insert({ id: battleRowId(), campaign_id: campaignId(), current_combatant_id: null, round: 1, area_map_url: null }).select("current_combatant_id, round, area_map_url").single();
+      if (ins.error || !ins.data) return; // table not there yet (SQL not run): local turn only
+      battleState = ins.data;
+      battleStateReady = true;
+      return;
+    }
     battleState = res.data;
     battleStateReady = true;
   }
@@ -3147,7 +3633,7 @@
       current_combatant_id: battleState.current_combatant_id,
       round: battleState.round,
       updated_at: new Date().toISOString()
-    }).eq("id", 1);
+    }).eq("campaign_id", campaignId());
   }
 
   async function loadCombatants() {
@@ -3157,7 +3643,7 @@
       return;
     }
     loadEnemyRef();
-    var res = await db.from("combatants").select("*").order("initiative", { ascending: false });
+    var res = await db.from("combatants").select("*").eq("campaign_id", campaignId()).order("initiative", { ascending: false });
     if (res.error) {
       list.innerHTML = '<p class="error">Could not load combatants.</p>';
       return;
@@ -3199,22 +3685,32 @@
     }
     list.innerHTML = combatants.map(function (c, i) {
       var isCurrent = i === currentTurn;
+      // Combat state is DM-only to change (see the Security section of
+      // PHASE-1-DESIGN.md): players see HP and the turn, the DM gets
+      // the Damage, Heal, Place, and Remove buttons.
+      var dm = isDm();
+      var hpBtns = dm
+        ? '<button type="button" class="hp-btn" data-mode="interact" data-combat-hp="-1" data-id="' + c.id + '">-</button>' +
+          '<button type="button" class="hp-btn" data-mode="interact" data-combat-hp="1" data-id="' + c.id + '">+</button>' +
+          '<input type="number" class="hp-amount" data-mode="interact" data-amount-id="' + c.id + '" placeholder="Amount" min="1" step="1">' +
+          '<button type="button" class="hp-btn" data-mode="interact" data-combat-damage="' + c.id + '">Damage</button>' +
+          '<button type="button" class="hp-btn" data-mode="interact" data-combat-heal="' + c.id + '">Heal</button>'
+        : '';
+      var actions = dm
+        ? '<div class="actions">' +
+          ((typeof c.grid_x !== "number" || typeof c.grid_y !== "number") && currentAreaMapUrl ? '<button type="button" class="small" data-mode="interact" data-combat-place="' + c.id + '">Place on map</button>' : '') +
+          '<button type="button" class="small-danger" data-mode="interact" data-combat-delete="' + c.id + '">Remove</button>' +
+          '</div>'
+        : '';
       return '<div class="card combatant' + (isCurrent ? " current" : "") + '">' +
         '<p class="title">' + escapeHtml(c.name) + ' ' +
         '<span class="init">(Init ' + c.initiative + ')</span> ' +
         '<span class="init">Speed ' + combatantSpeed(c) + ' ft</span>' +
         (isCurrent ? ' <span class="turn-tag">Current turn</span>' : '') + '</p>' +
         '<div class="hp-row"><span>HP</span><span class="hp">' + c.hp + ' / ' + c.max_hp + '</span>' +
-        '<button type="button" class="hp-btn" data-mode="interact" data-combat-hp="-1" data-id="' + c.id + '">-</button>' +
-        '<button type="button" class="hp-btn" data-mode="interact" data-combat-hp="1" data-id="' + c.id + '">+</button>' +
-        '<input type="number" class="hp-amount" data-mode="interact" data-amount-id="' + c.id + '" placeholder="Amount" min="1" step="1">' +
-        '<button type="button" class="hp-btn" data-mode="interact" data-combat-damage="' + c.id + '">Damage</button>' +
-        '<button type="button" class="hp-btn" data-mode="interact" data-combat-heal="' + c.id + '">Heal</button></div>' +
+        hpBtns + '</div>' +
         (c.note ? '<p>' + escapeHtml(c.note) + '</p>' : '') +
-        '<div class="actions">' +
-        ((typeof c.grid_x !== "number" || typeof c.grid_y !== "number") && currentAreaMapUrl ? '<button type="button" class="small" data-mode="interact" data-combat-place="' + c.id + '">Place on map</button>' : '') +
-        '<button type="button" class="small-danger" data-mode="interact" data-combat-delete="' + c.id + '">Remove</button>' +
-        '</div></div>';
+        actions + '</div>';
     }).join("");
     document.querySelectorAll("[data-combat-hp]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -3239,7 +3735,7 @@
     });
     document.querySelectorAll("[data-combat-delete]").forEach(function (btn) {
       btn.addEventListener("click", async function () {
-        await db.from("combatants").delete().eq("id", btn.dataset.combatDelete);
+        await db.from("combatants").delete().eq("campaign_id", campaignId()).eq("id", btn.dataset.combatDelete);
         loadCombatants();
       });
     });
@@ -3255,6 +3751,7 @@
   // empty square. The DM then drags the token to the exact spot.
   async function placeCombatantOnMap(id) {
     if (!configured) return setupNeeded();
+    if (!isDm()) return; // combat state is DM-only
     var c = combatants.find(function (cc) { return cc.id === id; });
     if (!c || !currentAreaMapUrl) return;
     var grid = areaGridFor(currentAreaMapUrl);
@@ -3273,7 +3770,7 @@
     }
     var fx = sx * TOKEN_FINE + Math.floor(TOKEN_FINE / 2);
     var fy = sy * TOKEN_FINE + Math.floor(TOKEN_FINE / 2);
-    var res = await db.from("combatants").update({ grid_x: fx, grid_y: fy }).eq("id", id);
+    var res = await db.from("combatants").update({ grid_x: fx, grid_y: fy }).eq("campaign_id", campaignId()).eq("id", id);
     if (res.error) {
       alert("Could not place the token. Check the connection and try again.");
       return;
@@ -3282,12 +3779,13 @@
   }
 
   async function changeCombatantHp(id, delta) {
+    if (!isDm()) return; // combat state is DM-only
     var c = combatants.find(function (x) { return x.id === id; });
     if (!c) return;
     var hp = c.hp + delta;
     if (hp < 0) hp = 0;
     if (hp > c.max_hp) hp = c.max_hp;
-    await db.from("combatants").update({ hp: hp }).eq("id", id);
+    await db.from("combatants").update({ hp: hp }).eq("campaign_id", campaignId()).eq("id", id);
     loadCombatants();
   }
 
@@ -3404,11 +3902,13 @@
   async function addCombatant(e) {
     e.preventDefault();
     if (!configured) return setupNeeded();
+    if (!isDm()) return; // combat state is DM-only
     var name = $("combatant-name").value.trim();
     if (!name) return;
     await autofillCombatant();
     var initVal = numOrNull($("combatant-initiative").value);
     var row = {
+      campaign_id: campaignId(),
       name: name,
       initiative: (initVal === null ? 10 : initVal),
       hp: numOrNull($("combatant-hp").value) || 0,
@@ -3429,6 +3929,7 @@
   }
 
   async function nextTurn() {
+    if (!isDm()) return; // combat state is DM-only
     if (!combatants.length) return;
     var next = (currentTurn + 1) % combatants.length;
     if (next === 0) battleState.round += 1;
@@ -3440,9 +3941,10 @@
 
   async function clearBattle() {
     if (!configured) return setupNeeded();
+    if (!isDm()) return; // combat state is DM-only
     if (!combatants.length) return;
     if (!confirm("Clear the whole battle?")) return;
-    await db.from("combatants").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await db.from("combatants").delete().eq("campaign_id", campaignId()).neq("id", "00000000-0000-0000-0000-000000000000");
     currentTurn = 0;
     battleState = { round: 1, current_combatant_id: null };
     await saveBattleState();
@@ -3881,7 +4383,7 @@
     musicSharedTrack = track.file;
     musicSharedStartedAt = Date.parse(now);
     try {
-      await db.from("music_state").update({ track: track.file, started_at: now, updated_at: now }).eq("id", 1);
+      await db.from("music_state").update({ track: track.file, started_at: now, updated_at: now }).eq("campaign_id", campaignId()).eq("id", musicMainRowId());
     } catch (e) { /* offline: the other phone just picks its own track */ }
   }
   // Which phone this is, for the music-start notification (Milo is
@@ -3907,7 +4409,7 @@
     try {
       var patch = { playing: !!playing, updated_at: new Date().toISOString() };
       if (playing) patch.started_by = musicDeviceName();
-      await db.from("music_state").update(patch).eq("id", 1);
+      await db.from("music_state").update(patch).eq("campaign_id", campaignId()).eq("id", musicMainRowId());
     } catch (e) { /* columns not added yet, or offline: ignore */ }
   }
   // Join the track the other phone already started, at the right offset
@@ -3940,8 +4442,18 @@
   // to, and started_by holds the voter names as a JSON list. A vote
   // for a song that already ended is ignored, so votes reset whenever
   // the track changes. Tapping again removes your vote.
-  var MUSIC_SKIP_VOTERS = ["Milo", "Sylvie"];
-  var MUSIC_SKIP_ROW_ID = 2;
+  // The skip voting pool is this campaign's real players (their
+  // character short names). The couples campaign keeps Milo and
+  // Sylvie; a new campaign uses its own players' names. The DM-run
+  // companions do not vote.
+  function musicSkipVoters() {
+    if (campaignId() === COUPLES_CAMPAIGN_ID) return ["Milo", "Sylvie"];
+    var names = (charPlayers || []).filter(function (p) { return !isNpcPlayer(p.player); }).map(function (p) {
+      var c = charByPlayer[p.player];
+      return shortCharName(c && c.name ? c.name : p.label);
+    });
+    return names.length ? names : ["Milo", "Sylvie"];
+  }
   var musicSkipVotes = [];
   var musicSkipTrack = null;
   var musicSkipVoter = null;
@@ -3953,19 +4465,26 @@
   async function musicVoterName() {
     if (musicSkipVoter) return musicSkipVoter;
     var voter = null;
-    try {
-      if (typeof pushRegistration !== "undefined" && pushRegistration) {
-        var sub = await pushRegistration.pushManager.getSubscription();
-        if (sub) {
-          var res = await db.from("push_subscriptions").select("label").eq("endpoint", sub.endpoint).limit(1);
-          if (res.data && res.data.length) {
-            var label = String(res.data[0].label || "").toLowerCase();
-            if (label.indexOf("nathan") !== -1) voter = "Milo";
-            else if (label.indexOf("angela") !== -1) voter = "Sylvie";
+    // My own character's name is the most reliable vote label.
+    var myChar = charByPlayer[myPlayerKey()];
+    if (myChar) voter = shortCharName(myChar.name);
+    if (!voter) {
+      try {
+        if (typeof pushRegistration !== "undefined" && pushRegistration) {
+          var sub = await pushRegistration.pushManager.getSubscription();
+          if (sub) {
+            var res = await db.from("push_subscriptions").select("label").eq("campaign_id", campaignId()).eq("endpoint", sub.endpoint).limit(1);
+            if (res.data && res.data.length) {
+              var label = String(res.data[0].label || "").toLowerCase();
+              if (campaignId() === COUPLES_CAMPAIGN_ID) {
+                if (label.indexOf("nathan") !== -1) voter = "Milo";
+                else if (label.indexOf("angela") !== -1) voter = "Sylvie";
+              }
+            }
           }
         }
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }
     if (!voter) {
       var roller = musicDeviceName();
       if (roller) voter = roller;
@@ -3977,8 +4496,9 @@
   function musicSkipCount() {
     var seen = {};
     var n = 0;
+    var voters = musicSkipVoters();
     musicSkipVotes.forEach(function (v) {
-      if (MUSIC_SKIP_VOTERS.indexOf(v) !== -1 && !seen[v]) { seen[v] = true; n++; }
+      if (voters.indexOf(v) !== -1 && !seen[v]) { seen[v] = true; n++; }
     });
     return n;
   }
@@ -3988,14 +4508,14 @@
     if (!btn) return;
     var n = musicSkipCount();
     var voted = musicSkipVoter && musicSkipVotes.indexOf(musicSkipVoter) !== -1;
-    btn.textContent = (voted ? "Voted" : "Vote to skip") + " (" + n + "/" + MUSIC_SKIP_VOTERS.length + ")";
+    btn.textContent = (voted ? "Voted" : "Vote to skip") + " (" + n + "/" + musicSkipVoters().length + ")";
     btn.classList.toggle("voted", !!voted);
   }
 
   async function musicLoadSkipVotes() {
     await musicVoterName();
     try {
-      var res = await db.from("music_state").select("track, started_by").eq("id", MUSIC_SKIP_ROW_ID).single();
+      var res = await db.from("music_state").select("track, started_by").eq("campaign_id", campaignId()).eq("id", musicSkipRowId()).single();
       if (res.error || !res.data) { musicSkipVotes = []; musicSkipTrack = null; }
       else {
         var track = res.data.track || null;
@@ -4019,7 +4539,7 @@
     try {
       var now = new Date().toISOString();
       await db.from("music_state").upsert(
-        { id: MUSIC_SKIP_ROW_ID, mood: "skip-votes", track: track, started_by: JSON.stringify(voters), playing: false, updated_at: now },
+        { id: musicSkipRowId(), campaign_id: campaignId(), mood: "skip-votes", track: track, started_by: JSON.stringify(voters), playing: false, updated_at: now },
         { onConflict: "id" }
       );
     } catch (e) { /* offline: the vote is lost until the next refresh */ }
@@ -4049,7 +4569,7 @@
     var track = musicCurrentFile || musicSharedTrack;
     if (!track) return;
     if (musicSkipTrack !== track) return;
-    if (musicSkipCount() < MUSIC_SKIP_VOTERS.length) return;
+    if (musicSkipCount() < musicSkipVoters().length) return;
     // Majority voted: clear the votes first, then advance. Clearing
     // first stops the other phone from skipping again on the same
     // votes. The advance picks the next track from the shuffle, which
@@ -4163,7 +4683,7 @@
   // reshuffles the queue if the mood changed.
   async function musicRefreshShared() {
     try {
-      var res = await db.from("music_state").select("mood, track, started_at").eq("id", 1).single();
+      var res = await db.from("music_state").select("mood, track, started_at").eq("campaign_id", campaignId()).eq("id", musicMainRowId()).single();
       if (res.error || !res.data) return;
       var mood = res.data.mood;
       if (!MUSIC_TRACKS.hasOwnProperty(mood)) return;
@@ -4232,8 +4752,15 @@
     musicUpdateUI();
   }
   async function loadMusicState() {
-    var res = await db.from("music_state").select("mood, track, started_at").eq("id", 1).single();
-    if (res.error || !res.data) return; // table not there yet (SQL not run): local mood only
+    var res = await db.from("music_state").select("mood, track, started_at").eq("campaign_id", campaignId()).eq("id", musicMainRowId()).single();
+    if (res.error || !res.data) {
+      // No row for this campaign yet (a new campaign has none): create
+      // it with the Opening mood, so the shared mood has somewhere to
+      // live. The id is a per-campaign integer (see campaignIntId).
+      var ins = await db.from("music_state").insert({ id: musicMainRowId(), campaign_id: campaignId(), mood: "opening", track: null, started_at: null, started_by: null, playing: false, updated_at: new Date().toISOString() }).select("mood, track, started_at").single();
+      if (ins.error || !ins.data) return; // table not there yet (SQL not run): local mood only
+      res = ins;
+    }
     var mood = res.data.mood;
     if (!MUSIC_TRACKS.hasOwnProperty(mood)) return;
     var changed = mood !== musicMood;
@@ -4261,7 +4788,7 @@
     if (changed) musicShuffleQueue(mood);
     musicUpdateUI();
     if (musicReady) {
-      await db.from("music_state").update({ mood: mood, updated_at: new Date().toISOString() }).eq("id", 1);
+      await db.from("music_state").update({ mood: mood, updated_at: new Date().toISOString() }).eq("campaign_id", campaignId()).eq("id", musicMainRowId());
     }
     if (changed && musicPlaying) {
       musicAdvance();
@@ -4382,7 +4909,7 @@
     // Faces for the area tokens come from the characters table, so make
     // sure it is loaded even if the Maps tab opens first.
     loadCharacters();
-    var res = await db.from("maps").select("*").order("created_at", { ascending: true });
+    var res = await db.from("maps").select("*").eq("campaign_id", campaignId()).order("created_at", { ascending: true });
     if (res.error) {
       tabs.innerHTML = '<p class="error">Could not load maps.</p>';
       return;
@@ -4427,16 +4954,16 @@
     mapCells = {};
     renderMapGrid();
     $("map-markers").innerHTML = "";
-    var cellsRes = await db.from("map_cells").select("*").eq("map_id", map.id);
+    var cellsRes = await db.from("map_cells").select("*").eq("campaign_id", campaignId()).eq("map_id", map.id);
     mapCells = {};
     if (!cellsRes.error && cellsRes.data) {
       cellsRes.data.forEach(function (c) {
         if (c.revealed) mapCells[c.x + "," + c.y] = true;
       });
     }
-    var markersRes = await db.from("map_markers").select("*").eq("map_id", map.id).order("created_at", { ascending: true });
+    var markersRes = await db.from("map_markers").select("*").eq("campaign_id", campaignId()).eq("map_id", map.id).order("created_at", { ascending: true });
     mapMarkers = markersRes.error ? [] : (markersRes.data || []);
-    var npcsRes = await db.from("npcs").select("*");
+    var npcsRes = await db.from("npcs").select("*").eq("campaign_id", campaignId());
     npcsByName = {};
     if (!npcsRes.error && npcsRes.data) {
       npcsRes.data.forEach(function (n) {
@@ -4644,7 +5171,7 @@
       btn.addEventListener("click", async function (e) {
         e.stopPropagation();
         if (!confirm("Delete this place?")) return;
-        await db.from("map_markers").delete().eq("id", btn.dataset.markerDelete);
+        await db.from("map_markers").delete().eq("campaign_id", campaignId()).eq("id", btn.dataset.markerDelete);
         loadMapView();
       });
     });
@@ -4699,7 +5226,7 @@
     list.querySelectorAll("[data-place-delete]").forEach(function (btn) {
       btn.addEventListener("click", async function () {
         if (!confirm("Delete this place?")) return;
-        await db.from("npcs").delete().eq("id", btn.dataset.placeDelete);
+        await db.from("npcs").delete().eq("campaign_id", campaignId()).eq("id", btn.dataset.placeDelete);
         loadMapView();
       });
     });
@@ -4723,7 +5250,7 @@
     }
     if (mapMode === "reveal") {
       if (mapCells[key]) return;
-      var res = await db.from("map_cells").upsert({ map_id: currentMapId, x: x, y: y, revealed: true }, { onConflict: "map_id,x,y" });
+      var res = await db.from("map_cells").upsert({ campaign_id: campaignId(), map_id: currentMapId, x: x, y: y, revealed: true }, { onConflict: "map_id,x,y" });
       if (res.error) {
         alert("Could not reveal that square. Check the connection and try again.");
         return;
@@ -4732,7 +5259,7 @@
       renderMapGrid();
     } else if (mapMode === "hide") {
       if (!mapCells[key]) return;
-      var resHide = await db.from("map_cells").upsert({ map_id: currentMapId, x: x, y: y, revealed: false }, { onConflict: "map_id,x,y" });
+      var resHide = await db.from("map_cells").upsert({ campaign_id: campaignId(), map_id: currentMapId, x: x, y: y, revealed: false }, { onConflict: "map_id,x,y" });
       if (resHide.error) {
         alert("Could not hide that square. Check the connection and try again.");
         return;
@@ -4748,7 +5275,7 @@
       if (!label || !label.trim()) return;
       var kindInput = prompt("Kind (" + MAP_KINDS.join(", ") + "). Leave blank for a plain dot:", "Place");
       var kind = normMapKind(kindInput);
-      var resMark = await db.from("map_markers").insert({ map_id: currentMapId, x: x, y: y, label: label.trim(), kind: kind });
+      var resMark = await db.from("map_markers").insert({ campaign_id: campaignId(),  map_id: currentMapId, x: x, y: y, label: label.trim(), kind: kind });
       if (resMark.error) {
         alert("Could not add the place. Check the connection and try again.");
         return;
@@ -4813,10 +5340,11 @@
   async function addMap(e) {
     e.preventDefault();
     if (!configured) return setupNeeded();
+    if (!isDm()) return; // maps are DM-only
     var name = $("new-map-name").value.trim();
     if (!name) return;
     var imageUrl = $("new-map-image").value.trim() || null;
-    var res = await db.from("maps").insert({ name: name, image_url: imageUrl }).select().single();
+    var res = await db.from("maps").insert({ campaign_id: campaignId(),  name: name, image_url: imageUrl }).select().single();
     if (res.error || !res.data) {
       alert("Could not add the map. Check the connection and try again.");
       return;
@@ -4825,6 +5353,86 @@
     $("new-map-image").value = "";
     currentMapId = res.data.id;
     loadMaps();
+  }
+
+  // ---------- Campaigns ----------
+
+  async function loadCampaigns() {
+    var current = $("campaigns-current");
+    var list = $("campaigns-list");
+    var membersBox = $("campaign-members");
+    var account = $("campaigns-account");
+    if (!list) return;
+    if (account) account.textContent = currentUser ? ("Signed in as " + currentUser.email) : "";
+    if (current) {
+      current.innerHTML = currentCampaign
+        ? '<div class="card"><p class="title">' + escapeHtml(currentCampaign.name) + '</p><p class="meta">Your role: ' + escapeHtml(currentRole || "player") + '</p></div>'
+        : '<p class="empty">No campaign selected.</p>';
+    }
+    list.innerHTML = myCampaigns.map(function (c) {
+      var role = "";
+      myMemberships.forEach(function (m) { if (m.campaign_id === c.id) role = m.role; });
+      var active = currentCampaign && c.id === currentCampaign.id;
+      return '<div class="card"><p class="title">' + escapeHtml(c.name) + '</p>' +
+        '<p class="meta">Your role: ' + escapeHtml(role || "player") + (active ? ' · Current campaign' : '') + '</p>' +
+        (active ? '' : '<div class="actions"><button type="button" data-switch-campaign="' + c.id + '">Switch to this campaign</button></div>') +
+        '</div>';
+    }).join("") || '<p class="empty">No campaigns yet.</p>';
+    list.querySelectorAll("[data-switch-campaign]").forEach(function (btn) {
+      btn.addEventListener("click", function () { switchCampaign(btn.dataset.switchCampaign); });
+    });
+    // Members of this campaign, for the DM to manage. Emails are not
+    // visible to the app (auth users are not queryable), so members show
+    // as a short user id, with "you" for the signed-in user. Your own
+    // role cannot be changed here, so the owner seat cannot be given
+    // away by accident; handing it over needs a database edit for now.
+    if (membersBox) {
+      if (!isDm()) {
+        membersBox.innerHTML = '<p class="hint">Only the DM can see and change members.</p>';
+      } else {
+        var mRes = await db.from("campaign_members").select("user_id, role").eq("campaign_id", campaignId());
+        var rows = (!mRes.error && mRes.data) ? mRes.data : [];
+        membersBox.innerHTML = rows.map(function (m) {
+          var you = currentUser && m.user_id === currentUser.id;
+          var label = you ? "You" : ("Member " + String(m.user_id).slice(0, 8));
+          var sel = '<select data-member-role="' + m.user_id + '"' + (you ? ' disabled' : '') + '>' +
+            ["owner", "dm", "player"].map(function (r) {
+              return '<option value="' + r + '"' + (m.role === r ? " selected" : "") + '>' + r + '</option>';
+            }).join("") + '</select>';
+          return '<div class="card"><p class="title">' + escapeHtml(label) + '</p><p class="meta">Role: ' + sel + '</p></div>';
+        }).join("") || '<p class="empty">No members yet.</p>';
+        membersBox.querySelectorAll("[data-member-role]").forEach(function (sel) {
+          sel.addEventListener("change", async function () {
+            var uid = sel.dataset.memberRole;
+            var res = await db.from("campaign_members").update({ role: sel.value }).eq("campaign_id", campaignId()).eq("user_id", uid);
+            if (res.error) {
+              alert("Could not change that role. Check the connection and try again.");
+              loadCampaigns();
+            }
+          });
+        });
+      }
+    }
+    // Which character is mine in this campaign. The DM uses this to know
+    // whose sheet you may edit, and the dice roller uses it to name you.
+    var mySel = $("my-character-select");
+    if (mySel) {
+      var players = charPlayers.slice();
+      if (!players.length) {
+        var cRes = await db.from("characters").select("player, name, join_mode").eq("campaign_id", campaignId()).eq("dismissed", false);
+        if (!cRes.error && cRes.data) {
+          players = cRes.data.filter(function (c) { return !isNpcPlayer(c.player) && c.join_mode !== "pending"; }).map(function (c) { return { player: c.player, label: c.name || c.player }; });
+        }
+      }
+      mySel.innerHTML = '<option value="">No character yet</option>' + players.map(function (p) {
+        var c = charByPlayer[p.player];
+        var name = c && c.name ? c.name : p.label;
+        return '<option value="' + escapeHtml(p.player) + '">' + escapeHtml(name) + '</option>';
+      }).join("");
+      var mine = myPlayerKey() || "";
+      mySel.value = mine;
+      if (mySel.value !== mine) mySel.value = "";
+    }
   }
 
   // ---------- live updates ----------
@@ -4863,7 +5471,9 @@
     liveChannel = db.channel("hub-live");
     Object.keys(tables).forEach(function (table) {
       ["INSERT", "UPDATE", "DELETE"].forEach(function (event) {
-        liveChannel.on("postgres_changes", { event: event, schema: "public", table: table }, function () {
+        // Only this campaign's rows: another campaign's changes must
+        // not reload our data (see PHASE-1-DESIGN.md, Step 2).
+        liveChannel.on("postgres_changes", { event: event, schema: "public", table: table, filter: "campaign_id=eq." + campaignId() }, function () {
           tables[table]();
         });
       });
@@ -4918,6 +5528,7 @@
   }
 
   function setQuestsEdit(on) {
+    if (on && !isDm()) return; // quests are DM-only
     questsEdit = on;
     var tab = $("tab-quests");
     if (tab) tab.classList.toggle("editing", on);
@@ -5069,95 +5680,40 @@
     // ---------- hub modes: View / Interact / Dungeon Master ----------
     // View hides every input (anything tagged data-mode). Interact shows
     // the player inputs. Dungeon Master adds the Map and NPC management
-    // and is locked behind the DM passphrase in config.js. The mode
-    // persists in localStorage; leaving DM mode locks it again, so
-    // re-entering DM mode asks for the passphrase again.
+    // and is open to members whose role is owner or dm (see isDm()).
+    // Players never see the DM mode button. The mode persists in
+    // localStorage; a saved DM mode only comes back for a DM.
     var hubMode = "view";
-    function dmUnlocked() {
-      try { return localStorage.getItem("hub-dm-unlocked") === "1"; } catch (e) { return false; }
-    }
-    function setDmUnlocked(on) {
-      try {
-        if (on) localStorage.setItem("hub-dm-unlocked", "1");
-        else localStorage.removeItem("hub-dm-unlocked");
-      } catch (e) {}
-    }
     function applyHubMode(mode) {
       hubMode = mode;
       document.body.classList.remove("mode-view", "mode-interact", "mode-dm");
       document.body.classList.add("mode-" + mode);
       try { localStorage.setItem("hub-mode", mode); } catch (e) {}
-      // Leaving DM mode locks it again.
-      if (mode !== "dm") setDmUnlocked(false);
       document.querySelectorAll("[data-mode-option]").forEach(function (b) {
         b.classList.toggle("active", b.dataset.modeOption === mode);
       });
-      var dmUnlock = $("dm-unlock");
-      if (dmUnlock) {
-        dmUnlock.classList.add("hidden");
-        var err = $("dm-error");
-        if (err) err.classList.add("hidden");
-      }
       // A character sheet being edited must not stay open in View mode.
       if (mode === "view") closeCharModal();
     }
-    function showDmUnlock() {
-      var dmUnlock = $("dm-unlock");
-      if (!dmUnlock) return;
-      dmUnlock.classList.remove("hidden");
-      var input = $("dm-passphrase-input");
-      if (input) { input.value = ""; input.focus(); }
-      var err = $("dm-error");
-      if (err) err.classList.add("hidden");
-    }
-    function tryDmUnlock() {
-      var input = $("dm-passphrase-input");
-      if (!input) return;
-      if (!CONFIG.DM_PASSPHRASE) {
-        var err0 = $("dm-error");
-        if (err0) { err0.textContent = "DM passphrase is not set yet."; err0.classList.remove("hidden"); }
-        return;
-      }
-      if (input.value === CONFIG.DM_PASSPHRASE) {
-        setDmUnlocked(true);
-        input.value = "";
-        applyHubMode("dm");
-        closeMenu();
-      } else {
-        var err = $("dm-error");
-        if (err) { err.textContent = "Wrong passphrase."; err.classList.remove("hidden"); }
-        input.value = "";
-        input.focus();
-      }
-    }
     function setHubMode(mode) {
-      if (mode === "dm") {
-        if (dmUnlocked()) {
-          applyHubMode("dm");
-          closeMenu();
-        } else {
-          showDmUnlock();
-        }
-        return;
-      }
+      if (mode === "dm" && !isDm()) return;
       applyHubMode(mode);
       closeMenu();
     }
     document.querySelectorAll("[data-mode-option]").forEach(function (btn) {
       btn.addEventListener("click", function () { setHubMode(btn.dataset.modeOption); });
     });
-    var dmUnlockBtn = $("dm-unlock-btn");
-    if (dmUnlockBtn) dmUnlockBtn.addEventListener("click", tryDmUnlock);
-    var dmPassInput = $("dm-passphrase-input");
-    if (dmPassInput) dmPassInput.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") tryDmUnlock();
-    });
+    // Players do not get the DM mode button at all.
+    if (!isDm()) {
+      var dmOpt = document.querySelector('[data-mode-option="dm"]');
+      if (dmOpt) dmOpt.classList.add("hidden");
+    }
     // Restore the saved mode (default View). A saved DM mode only comes
-    // back if this device is still unlocked.
+    // back for a DM.
     (function restoreHubMode() {
       var saved = null;
       try { saved = localStorage.getItem("hub-mode"); } catch (e) {}
-      if (saved === "dm" && dmUnlocked()) applyHubMode("dm");
+      if (saved === "dm" && isDm()) applyHubMode("dm");
       else if (saved === "interact") applyHubMode("interact");
       else applyHubMode("view");
     })();
@@ -5259,6 +5815,25 @@
       setMapView("area");
     });
     $("add-map-form").addEventListener("submit", addMap);
+    var campaignCreateForm = $("campaign-create-form");
+    if (campaignCreateForm) campaignCreateForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      if (!configured) return setupNeeded();
+      var name = ($("campaign-create-name").value || "").trim();
+      if (!name) return;
+      var id = await createCampaign(name, $("campaign-create-visibility").value || "private", $("campaign-create-password").value || "");
+      if (!id) {
+        alert("Could not create the campaign. Check the connection and try again.");
+        return;
+      }
+      switchCampaign(id);
+    });
+    var signoutBtn = $("signout-btn");
+    if (signoutBtn) signoutBtn.addEventListener("click", signOut);
+    var campaignSignoutBtn = $("campaign-signout-btn");
+    if (campaignSignoutBtn) campaignSignoutBtn.addEventListener("click", signOut);
+    var myCharSel = $("my-character-select");
+    if (myCharSel) myCharSel.addEventListener("change", function () { setMyPlayerKey(myCharSel.value || null); });
     document.querySelectorAll(".map-modes .mode-btn").forEach(function (btn) {
       btn.addEventListener("click", function () {
         document.querySelectorAll(".map-modes .mode-btn").forEach(function (b) {

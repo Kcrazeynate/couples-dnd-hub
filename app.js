@@ -507,7 +507,7 @@
     });
   }
 
-  // Password recovery by email code. Supabase sends a 6 digit code
+  // Password recovery by email code. Supabase sends a code
   // (signInWithOtp) when email OTP is on for this project; the code
   // is verified (verifyOtp, type "email"), which signs the user in,
   // and the new password is set with updateUser. This is the native

@@ -63,22 +63,177 @@
     alert("Setup is not finished yet. Fill in config.js first. See README.md.");
   }
 
+  // ---------- campaign select landing screen ----------
+  //
+  // Starter campaigns for the carousel, in display order. The detail
+  // modal and the Start button read from this same list. The Start
+  // button is a placeholder for now: it explains that starting will
+  // send the campaign prompt to the group's AI DM. The AI handoff
+  // itself is a separate step and is not wired yet.
+
+  var STARTER_CAMPAIGNS = [
+    {
+      id: "frozen-sick",
+      title: "Frozen Sick",
+      levels: "Levels 1-3",
+      source: "Free on D&D Beyond",
+      author: "by Matt Mercer",
+      sessions: "1-2 sessions",
+      image: "assets/campaign-frozen-sick.webp",
+      synopsis: "A deadly illness plagues a small mountain community. A mystery to solve, not just a dungeon to clear.",
+      description: "A deadly illness called the Frigid Woe is spreading through the remote village of Palebank. The party must find where it came from, help the sick, and stop it before the whole village freezes from the inside out. A short mystery campaign with investigation, social play, and danger in the wilds beyond the village."
+    },
+    {
+      id: "potent-brew",
+      title: "A Most Potent Brew",
+      levels: "Level 1",
+      source: "Winghorn Press, free",
+      sessions: "1 session",
+      image: "assets/campaign-potent-brew.webp",
+      synopsis: "A brewery cellar has a problem, and the party is asked to deal with it. Simple, funny, and the easiest free adventure to run. A perfect first dungeon.",
+      description: "The local brewery's cellar has a problem, and the brewers need brave souls to sort it out. A short, funny first dungeon with a surprise waiting below the barrels. The easiest free adventure to run, and a perfect first taste of D&D."
+    },
+    {
+      id: "icespire-peak",
+      title: "Dragon of Icespire Peak",
+      levels: "Levels 1-6",
+      source: "Essentials Kit, paid",
+      sessions: "A full campaign",
+      image: "assets/campaign-icespire-peak.webp",
+      synopsis: "A white dragon named Cryovain terrorizes the frontier town of Phandalin. A sprawling adventure of quests, danger, and a dragon to face. Requires the Essentials Kit.",
+      description: "The frontier town of Phandalin needs heroes. A white dragon named Cryovain has claimed Icespire Peak and terrorizes the region, while quests pile up: a missing prospector, orc raiders, a haunted lighthouse, and more. A sprawling campaign of linked quests that takes a party from level 1 to 6. Requires the D&D Essentials Kit."
+    }
+  ];
+
+  function findCampaign(id) {
+    var found = null;
+    STARTER_CAMPAIGNS.forEach(function (c) {
+      if (c.id === id) found = c;
+    });
+    return found;
+  }
+
+  function initLanding() {
+    var track = $("carousel-track");
+    if (!track) return;
+
+    // Render one card per starter campaign.
+    STARTER_CAMPAIGNS.forEach(function (c) {
+      var card = document.createElement("article");
+      card.className = "campaign-card";
+      card.tabIndex = 0;
+      card.setAttribute("role", "button");
+      card.setAttribute("aria-label", c.title + ", " + c.levels + ". View details.");
+      card.innerHTML =
+        '<img src="' + c.image + '" alt="' + c.title + ' artwork">' +
+        '<div class="campaign-card-body">' +
+        '<h3>' + c.title + '</h3>' +
+        '<p class="meta">' + c.levels + ' | ' + c.source + '</p>' +
+        '<p>' + c.synopsis + '</p>' +
+        '</div>';
+      card.addEventListener("click", function () { openCampaignDetail(c.id); });
+      card.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openCampaignDetail(c.id);
+        }
+      });
+      track.appendChild(card);
+    });
+
+    // Arrow buttons scroll the track by one card.
+    function cardStep() {
+      var first = track.querySelector(".campaign-card");
+      if (!first) return 320;
+      return first.offsetWidth + 16;
+    }
+    var prev = $("carousel-prev");
+    var next = $("carousel-next");
+    if (prev) {
+      prev.addEventListener("click", function () {
+        track.scrollBy({ left: -cardStep(), behavior: "smooth" });
+      });
+    }
+    if (next) {
+      next.addEventListener("click", function () {
+        track.scrollBy({ left: cardStep(), behavior: "smooth" });
+      });
+    }
+
+    // Detail modal.
+    var modal = $("campaign-modal");
+    var closeBtn = $("campaign-detail-close");
+    var startBtn = $("campaign-start-btn");
+    var startNote = $("campaign-start-note");
+    var currentId = null;
+
+    function openCampaignDetail(id) {
+      var c = findCampaign(id);
+      if (!c || !modal) return;
+      currentId = id;
+      var img = $("campaign-detail-img");
+      img.src = c.image;
+      img.alt = c.title + " artwork";
+      $("campaign-detail-title").textContent = c.title;
+      $("campaign-detail-desc").textContent = c.description;
+      $("campaign-detail-levels").textContent = c.levels + (c.author ? " (" + c.author + ")" : "");
+      $("campaign-detail-source").textContent = c.source;
+      $("campaign-detail-sessions").textContent = c.sessions;
+      startNote.classList.add("hidden");
+      startNote.textContent = "";
+      startBtn.disabled = false;
+      startBtn.textContent = "Start this campaign";
+      modal.classList.remove("hidden");
+    }
+
+    function closeCampaignDetail() {
+      if (!modal) return;
+      modal.classList.add("hidden");
+      currentId = null;
+    }
+
+    if (closeBtn) closeBtn.addEventListener("click", closeCampaignDetail);
+    if (modal) {
+      modal.addEventListener("click", function (e) {
+        if (e.target === modal) closeCampaignDetail();
+      });
+    }
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && modal && !modal.classList.contains("hidden")) {
+        closeCampaignDetail();
+      }
+    });
+    if (startBtn) {
+      startBtn.addEventListener("click", function () {
+        var c = findCampaign(currentId);
+        if (!c) return;
+        startNote.textContent = "Starting " + c.title + " will send its campaign prompt to your group's AI DM so the AI can run the story. The AI handoff is not wired up yet, so nothing has been sent.";
+        startNote.classList.remove("hidden");
+        startBtn.disabled = true;
+        startBtn.textContent = "Start coming soon";
+      });
+    }
+  }
+
   // ---------- passphrase gate ----------
 
   function initGate() {
     var gate = $("gate");
     var app = $("app");
+    var landing = $("landing");
     var setupMsg = $("gate-setup");
     var gateForm = $("gate-form");
     var input = $("passphrase-input");
     var btn = $("passphrase-btn");
     var error = $("gate-error");
 
-    if (CONFIG.CAMPAIGN_PASSPHRASE === PLACEHOLDER_PASS) {
-      setupMsg.classList.remove("hidden");
-      gateForm.classList.add("hidden");
-      return;
-    }
+    // The campaign select landing screen is the first thing on every
+    // load. The gate and the app stay hidden until the player chooses
+    // to continue into the ongoing campaign.
+    initLanding();
+    if (landing) landing.classList.remove("hidden");
+    gate.classList.add("hidden");
+    app.classList.add("hidden");
 
     function storedUnlocked() {
       try { if (localStorage.getItem("dnd_hub_unlocked") === "1") return true; } catch (e) {}
@@ -86,8 +241,39 @@
       return false;
     }
 
-    if (storedUnlocked()) {
-      unlock();
+    function enterApp() {
+      if (landing) landing.classList.add("hidden");
+      gate.classList.add("hidden");
+      app.classList.remove("hidden");
+      var lockBtn = $("lock-btn");
+      if (lockBtn) {
+        lockBtn.addEventListener("click", function () {
+          try { localStorage.removeItem("dnd_hub_unlocked"); } catch (e) {}
+          try { sessionStorage.removeItem("dnd_hub_unlocked"); } catch (e) {}
+          location.reload();
+        });
+      }
+      initApp();
+    }
+
+    // Continue my campaign: a remembered device goes straight into
+    // the app, otherwise the passphrase gate appears.
+    var continueBtn = $("landing-continue");
+    if (continueBtn) {
+      continueBtn.addEventListener("click", function () {
+        if (storedUnlocked()) {
+          enterApp();
+        } else {
+          if (landing) landing.classList.add("hidden");
+          gate.classList.remove("hidden");
+          input.focus();
+        }
+      });
+    }
+
+    if (CONFIG.CAMPAIGN_PASSPHRASE === PLACEHOLDER_PASS) {
+      setupMsg.classList.remove("hidden");
+      gateForm.classList.add("hidden");
       return;
     }
 
@@ -112,17 +298,7 @@
     });
 
     function unlock() {
-      gate.classList.add("hidden");
-      app.classList.remove("hidden");
-      var lockBtn = $("lock-btn");
-      if (lockBtn) {
-        lockBtn.addEventListener("click", function () {
-          try { localStorage.removeItem("dnd_hub_unlocked"); } catch (e) {}
-          try { sessionStorage.removeItem("dnd_hub_unlocked"); } catch (e) {}
-          location.reload();
-        });
-      }
-      initApp();
+      enterApp();
     }
   }
 

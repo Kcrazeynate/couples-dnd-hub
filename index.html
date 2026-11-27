@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="The Quest Table">
-<link rel="stylesheet" href="styles.css?v=90">
+<link rel="stylesheet" href="styles.css?v=91">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=5"></script>
 <script type="importmap">
@@ -103,7 +103,7 @@
         <button type="button" id="create-campaign-btn">Create campaign</button>
       </div>
     </div>
-    <p class="hint"><button type="button" id="gate-back-btn" class="link-btn hidden">Back to browsing</button> <button type="button" id="gate-preview-exit-btn" class="link-btn hidden">Back to my view</button></p>
+    <p class="hint"><button type="button" id="gate-back-btn" class="link-btn hidden">Back to browsing</button></p>
   </div>
 </div>
 
@@ -120,7 +120,6 @@
     <div class="home-auth-row">
       <button type="button" id="home-signup-btn" class="home-signup-btn">Sign up free</button>
       <button type="button" id="home-signin-link" class="link-btn">Sign in</button>
-      <button type="button" id="home-preview-exit-btn" class="link-btn hidden">Back to my view</button>
     </div>
   </header>
   <main>
@@ -780,7 +779,6 @@
         <button type="button" data-tab="music" class="tab-btn">Music</button>
         <button type="button" data-tab="campaigns" class="tab-btn">Campaigns</button>
         <button type="button" data-tab="howto" class="tab-btn">How to Play</button>
-        <button type="button" id="preview-toggle-btn" class="tab-btn">Preview as visitor</button>
         <button type="button" id="signout-btn" class="tab-btn">Sign out</button>
       </div>
     </div>
@@ -800,6 +798,9 @@
   </button>
   <button type="button" id="aichat-btn" class="aichat-btn" aria-label="Go to AI Chat">
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-8l-4 4v-4H6a2 2 0 0 1-2-2V5z" fill="none" stroke="#f0c96a" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8.5" cy="9.5" r="1.4" fill="#f0c96a"/><circle cx="12" cy="9.5" r="1.4" fill="#f0c96a"/><circle cx="15.5" cy="9.5" r="1.4" fill="#f0c96a"/></svg>
+  </button>
+  <button type="button" id="preview-float-btn" class="preview-float-btn hidden" aria-label="Preview as visitor" aria-pressed="false">
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z" fill="none" stroke="#f0c96a" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.6" fill="none" stroke="#f0c96a" stroke-width="1.8"/></svg>
   </button>
   <button type="button" id="dice-btn" class="dice-btn" aria-label="Go to Dice">
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="#f0c96a" stroke-width="1.8"/><circle cx="8" cy="8" r="1.8" fill="#f0c96a"/><circle cx="16" cy="8" r="1.8" fill="#f0c96a"/><circle cx="12" cy="12" r="1.8" fill="#f0c96a"/><circle cx="8" cy="16" r="1.8" fill="#f0c96a"/><circle cx="16" cy="16" r="1.8" fill="#f0c96a"/></svg>
@@ -986,6 +987,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=47"></script>
-<script src="app.js?v=132"></script>
+<script src="app.js?v=133"></script>
 </body>
 </html>

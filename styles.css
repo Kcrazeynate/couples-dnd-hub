@@ -1,12 +1,14 @@
 /* The Quest Table: warm tavern theme, dark wood, muted stone, amber sunlight and warm cream, readable on phone and desktop. */
 
 :root {
-  /* Floating buttons anchor to the content column (#app, 720px wide,
-     centered), not the viewport edge, so on a wide screen they sit
-     next to the boards instead of far off to the side. On a phone the
-     column fills the screen and this falls back to the 18px edge. */
-  --float-right: max(18px, env(safe-area-inset-right), calc(50% - 360px + 18px));
-  --float-left: max(18px, env(safe-area-inset-left), calc(50% - 360px + 18px));
+  /* Floating buttons sit in the margin beside the content column
+     (#app, 720px wide, centered), close to the boards but never on
+     top of them. The cluster is 112px wide (menu 56 + gap 12 + chat
+     44), so the right edge sits 124px out from the column's edge,
+     leaving a 12px gap. On a phone the column fills the screen and
+     this falls back to the 18px edge. */
+  --float-right: max(18px, env(safe-area-inset-right), calc(50% - 484px));
+  --float-left: max(18px, env(safe-area-inset-left), calc(50% - 420px));
 }
 
 * {

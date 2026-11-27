@@ -99,7 +99,7 @@ const WOOD_TONES = {
   mahogany: { base: "#4a1a12", dark: "rgba(20,5,2,0.6)", light: "rgba(170,90,50,0.35)" }
 };
 
-const DEFAULT_STYLE = { feltColor: "charcoal", feltDesign: "plain", dieColor: "cream", dieDesign: "classic", tray: "gold", designColor: "gold", designZoom: 1 };
+const DEFAULT_STYLE = { feltColor: "charcoal", feltDesign: "plain", dieColor: "cream", dieDesign: "classic", tray: "gold", designColor: "gold", designZoom: 1, trayShape: "rectangle" };
 
 // Wood grain for the tray rim: long wavy grain lines running along
 // the length, a few darker streaks, and a few knots. Drawn on a
@@ -215,7 +215,7 @@ function designInk(alpha) {
 // face lands at the felt centre instead of the image centre.
 // ---------- style persistence (per device, like the roller pick) ----------
 function loadStyle() {
-  var s = { feltColor: DEFAULT_STYLE.feltColor, feltDesign: DEFAULT_STYLE.feltDesign, dieColor: DEFAULT_STYLE.dieColor, dieDesign: DEFAULT_STYLE.dieDesign, tray: DEFAULT_STYLE.tray, designColor: DEFAULT_STYLE.designColor, designZoom: DEFAULT_STYLE.designZoom };
+  var s = { feltColor: DEFAULT_STYLE.feltColor, feltDesign: DEFAULT_STYLE.feltDesign, dieColor: DEFAULT_STYLE.dieColor, dieDesign: DEFAULT_STYLE.dieDesign, tray: DEFAULT_STYLE.tray, designColor: DEFAULT_STYLE.designColor, designZoom: DEFAULT_STYLE.designZoom, trayShape: DEFAULT_STYLE.trayShape };
   try {
     var raw = window.localStorage.getItem("hub-dice3d-style");
     if (raw) {
@@ -227,6 +227,7 @@ function loadStyle() {
       if (saved.tray) s.tray = saved.tray;
       if (saved.designColor) s.designColor = saved.designColor;
       if (typeof saved.designZoom === "number" && saved.designZoom >= 0.5 && saved.designZoom <= 2) s.designZoom = saved.designZoom;
+      if (saved.trayShape === "rectangle" || saved.trayShape === "square" || saved.trayShape === "hexagon") s.trayShape = saved.trayShape;
     }
   } catch (e) {}
   return s;
@@ -1172,12 +1173,171 @@ function readDieValue(die) {
 // ---------- scene ----------
 // Tray inner size 9 x 6. Dice are about 1 unit across.
 var TRAY_W = 9, TRAY_D = 6, WALL_H = 0.9, WALL_T = 0.45, WALL_PHYS_H = 6;
+// Tray shapes: the rectangle is the original 9x6 tray and the default.
+// The square is 7x7. The hexagon is a regular hexagon with flat top
+// and bottom edges (pointy left and right), circumradius 3.6, so it
+// is 7.2 wide and about 6.2 deep, close to the square in area.
+var TRAY_SHAPES = [
+  { id: "rectangle", name: "Rectangle" },
+  { id: "square", name: "Square" },
+  { id: "hexagon", name: "Hexagon" }
+];
+var SQUARE_SIZE = 7, HEX_RADIUS = 3.6;
 var renderer = null, scene = null, camera = null, world = null;
 var trayFloor = null, containerEl = null, initialized = false, rolling = false;
-var rimMeshes = []; // the four tray rim boxes, so the tray style can change them
+var rimMeshes = []; // the tray rim boxes, so the tray style can change them
+var wallBodies = []; // the physics wall bodies, so the tray can be rebuilt
 var dice = []; // live dice: {group, body, sides, faces, readDown, bodyMesh, facePlanes}
 var rollState = null; // {resolve, reject, dice, deadline, stillFrames, nudges}
 var dieContactMat = null;
+
+// The current tray's floor size and half extents, by shape. The
+// rectangle is 9x6, the square is 7x7, and the hexagon is 7.2 wide
+// (vertex to vertex) by about 6.2 deep (flat edge to flat edge).
+function trayBounds() {
+  if (style.trayShape === "square") return { w: SQUARE_SIZE, d: SQUARE_SIZE, halfW: SQUARE_SIZE / 2, halfD: SQUARE_SIZE / 2 };
+  if (style.trayShape === "hexagon") {
+    var hw = HEX_RADIUS, hd = HEX_RADIUS * Math.sqrt(3) / 2;
+    return { w: hw * 2, d: hd * 2, halfW: hw, halfD: hd };
+  }
+  return { w: TRAY_W, d: TRAY_D, halfW: TRAY_W / 2, halfD: TRAY_D / 2 };
+}
+
+// The felt texture is one 1200x800 image (3:2), the same aspect as
+// the rectangle floor, so it maps onto the rectangle with no change.
+// The square and hexagon floors are taller in aspect, so the texture
+// is cropped at the sides (a centered band) instead of stretched, so
+// the d20 outline, moon, and other designs keep their true shape.
+function feltMapTransform() {
+  var b = trayBounds();
+  var fa = b.w / b.d, ta = 3 / 2;
+  if (fa >= ta) {
+    var ry = ta / fa;
+    return { rx: 1, ry: ry, ox: 0, oy: (1 - ry) / 2 };
+  }
+  var rx = fa / ta;
+  return { rx: rx, ry: 1, ox: (1 - rx) / 2, oy: 0 };
+}
+function applyFeltMap(tex) {
+  if (!tex) return;
+  var t = feltMapTransform();
+  tex.repeat.set(t.rx, t.ry);
+  tex.offset.set(t.ox, t.oy);
+  tex.needsUpdate = true;
+}
+
+// Remove the current tray floor, rim, and physics walls, so a new
+// shape can be built in their place. The infinite ground plane stays;
+// only the walls are per-shape.
+function clearTray() {
+  if (trayFloor) {
+    if (scene) scene.remove(trayFloor);
+    if (trayFloor.geometry) trayFloor.geometry.dispose();
+    if (trayFloor.material) {
+      if (trayFloor.material.map) trayFloor.material.map.dispose();
+      trayFloor.material.dispose();
+    }
+    trayFloor = null;
+  }
+  rimMeshes.forEach(function (m) {
+    if (scene) scene.remove(m);
+    if (m.geometry) m.geometry.dispose();
+    if (m.material) {
+      if (m.material.map) m.material.map.dispose();
+      m.material.dispose();
+    }
+  });
+  rimMeshes = [];
+  wallBodies.forEach(function (b) {
+    if (world) world.removeBody(b);
+  });
+  wallBodies = [];
+}
+
+// Build the tray floor, rim, and physics walls for the current shape.
+// Called once by init, and again by setTrayShape when the shape changes.
+function buildTray() {
+  clearTray();
+  var b = trayBounds();
+  var shape = style.trayShape || "rectangle";
+  // Felt floor.
+  var floorGeo;
+  if (shape === "hexagon") {
+    var R = HEX_RADIUS, hr = R * Math.sqrt(3) / 2;
+    var hex = new THREE.Shape();
+    hex.moveTo(R, 0);
+    hex.lineTo(R / 2, hr);
+    hex.lineTo(-R / 2, hr);
+    hex.lineTo(-R, 0);
+    hex.lineTo(-R / 2, -hr);
+    hex.lineTo(R / 2, -hr);
+    hex.closePath();
+    floorGeo = new THREE.ShapeGeometry(hex);
+    // ShapeGeometry sets UVs to the shape coordinates, not 0 to 1,
+    // so remap them across the hexagon bounding box, matching the
+    // rectangle and square floors.
+    var uv = floorGeo.attributes.uv, pos = floorGeo.attributes.position;
+    for (var i = 0; i < uv.count; i++) {
+      uv.setXY(i, (pos.getX(i) + b.w / 2) / b.w, (pos.getY(i) + b.d / 2) / b.d);
+    }
+    uv.needsUpdate = true;
+  } else {
+    floorGeo = new THREE.PlaneGeometry(b.w, b.d);
+  }
+  var floorTex = makeFeltTexture();
+  applyFeltMap(floorTex);
+  var floorMat = new THREE.MeshStandardMaterial({ map: floorTex, roughness: style.feltDesign === "leather" ? 0.35 : 0.95, metalness: 0 });
+  trayFloor = new THREE.Mesh(floorGeo, floorMat);
+  trayFloor.rotation.x = -Math.PI / 2;
+  trayFloor.receiveShadow = true;
+  scene.add(trayFloor);
+  // Tray rim and physics walls. The rim is the visible raised edge,
+  // gold by default or a wood grain like a real dice tray. The walls
+  // are taller invisible boxes in the same places, so a bouncy die
+  // can never hop over the edge and out of the tray.
+  function rim(w, d, x, z, rotY) {
+    var m = new THREE.Mesh(new THREE.BoxGeometry(w, WALL_H, d), makeRimMaterial());
+    m.position.set(x, WALL_H / 2, z);
+    if (rotY) m.rotation.y = rotY;
+    m.castShadow = true;
+    m.receiveShadow = true;
+    scene.add(m);
+    rimMeshes.push(m);
+  }
+  function wall(w, d, x, z, rotY) {
+    var wb = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Box(new CANNON.Vec3(w / 2, WALL_PHYS_H / 2, d / 2)) });
+    wb.position.set(x, WALL_PHYS_H / 2, z);
+    if (rotY) wb.quaternion.setFromEuler(0, rotY, 0);
+    world.addBody(wb);
+    wallBodies.push(wb);
+  }
+  if (shape === "hexagon") {
+    // Six rim segments, one along each edge. Edge normals point at
+    // 30, 90, 150, 210, 270, and 330 degrees. Each segment is the
+    // edge length plus one rim thickness, so the corners are covered.
+    // Shape y maps to world -z, so the segment centre is (off*nx,
+    // -off*ny) and its long axis is the edge direction.
+    var inR = HEX_RADIUS * Math.sqrt(3) / 2;
+    for (var e = 0; e < 6; e++) {
+      var ang = (30 + e * 60) * Math.PI / 180;
+      var nx = Math.cos(ang), ny = Math.sin(ang);
+      var off = inR + WALL_T / 2;
+      var rot = Math.atan2(nx, -ny);
+      rim(HEX_RADIUS + WALL_T, WALL_T, off * nx, -off * ny, rot);
+      wall(HEX_RADIUS + WALL_T, WALL_T, off * nx, -off * ny, rot);
+    }
+  } else {
+    rim(b.w + WALL_T * 2, WALL_T, 0, -(b.d / 2 + WALL_T / 2));
+    rim(b.w + WALL_T * 2, WALL_T, 0, b.d / 2 + WALL_T / 2);
+    rim(WALL_T, b.d, -(b.w / 2 + WALL_T / 2), 0);
+    rim(WALL_T, b.d, b.w / 2 + WALL_T / 2, 0);
+    wall(b.w + WALL_T * 2, WALL_T, 0, -(b.d / 2 + WALL_T / 2));
+    wall(b.w + WALL_T * 2, WALL_T, 0, b.d / 2 + WALL_T / 2);
+    wall(WALL_T, b.d, -(b.w / 2 + WALL_T / 2), 0);
+    wall(WALL_T, b.d, b.w / 2 + WALL_T / 2, 0);
+  }
+  fitCameraToTray();
+}
 
 function init(container) {
   if (initialized) return true;
@@ -1215,27 +1375,6 @@ function init(container) {
   var camLight = new THREE.DirectionalLight(0xfff2d0, 0.9);
   camLight.position.set(0, 9, 7);
   scene.add(camLight);
-  // Felt floor.
-  var floorGeo = new THREE.PlaneGeometry(TRAY_W, TRAY_D);
-  var floorMat = new THREE.MeshStandardMaterial({ map: makeFeltTexture(), roughness: style.feltDesign === "leather" ? 0.35 : 0.95, metalness: 0 });
-  trayFloor = new THREE.Mesh(floorGeo, floorMat);
-  trayFloor.rotation.x = -Math.PI / 2;
-  trayFloor.receiveShadow = true;
-  scene.add(trayFloor);
-  // Tray rim: four raised boxes around the felt. Gold by default,
-  // or a wood grain (walnut, oak, ebony) like a real dice tray.
-  function rim(w, d, x, z) {
-    var m = new THREE.Mesh(new THREE.BoxGeometry(w, WALL_H, d), makeRimMaterial());
-    m.position.set(x, WALL_H / 2, z);
-    m.castShadow = true;
-    m.receiveShadow = true;
-    scene.add(m);
-    rimMeshes.push(m);
-  }
-  rim(TRAY_W + WALL_T * 2, WALL_T, 0, -(TRAY_D / 2 + WALL_T / 2));
-  rim(TRAY_W + WALL_T * 2, WALL_T, 0, TRAY_D / 2 + WALL_T / 2);
-  rim(WALL_T, TRAY_D, -(TRAY_W / 2 + WALL_T / 2), 0);
-  rim(WALL_T, TRAY_D, TRAY_W / 2 + WALL_T / 2, 0);
   // Physics world.
   world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
   world.allowSleep = true;
@@ -1244,18 +1383,8 @@ function init(container) {
   var ground = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
   ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
   world.addBody(ground);
-  // Physics walls are much taller than the visible rim (which is only
-  // WALL_H high) so a bouncy die can never hop over the edge and out
-  // of the tray. The extra height is invisible.
-  function wall(w, d, x, z) {
-    var b = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Box(new CANNON.Vec3(w / 2, WALL_PHYS_H / 2, d / 2)) });
-    b.position.set(x, WALL_PHYS_H / 2, z);
-    world.addBody(b);
-  }
-  wall(TRAY_W + WALL_T * 2, WALL_T, 0, -(TRAY_D / 2 + WALL_T / 2));
-  wall(TRAY_W + WALL_T * 2, WALL_T, 0, TRAY_D / 2 + WALL_T / 2);
-  wall(WALL_T, TRAY_D, -(TRAY_W / 2 + WALL_T / 2), 0);
-  wall(WALL_T, TRAY_D, TRAY_W / 2 + WALL_T / 2, 0);
+  // Felt floor, rim, and physics walls for the current tray shape.
+  buildTray();
   resize();
   if (window.ResizeObserver) {
     new ResizeObserver(function () { resize(); }).observe(containerEl);
@@ -1288,10 +1417,11 @@ function fitCameraToTray() {
   var aspect = w / h;
   var vHalf = THREE.MathUtils.degToRad(camera.fov / 2);
   var hHalf = Math.atan(Math.tan(vHalf) * aspect);
+  var b = trayBounds();
   // Distance so the tray width fits horizontally, with room for a die at the edge.
-  var distH = (TRAY_W / 2 + 0.6) / Math.tan(hHalf);
+  var distH = (b.halfW + 0.6) / Math.tan(hHalf);
   // Distance so the tray depth fits vertically.
-  var distV = (TRAY_D / 2 + 0.6) / Math.tan(vHalf);
+  var distV = (b.halfD + 0.6) / Math.tan(vHalf);
   var need = Math.max(distH, distV, 10.53);
   // Direction from the look-at point to the default camera position.
   var dir = new THREE.Vector3(0, 8.2, 6.6).normalize();
@@ -1308,11 +1438,12 @@ function animate(time) {
   lastTime = now;
   if (world) world.step(1 / 60, dt, 3);
   // Sync meshes to physics bodies, and catch any die that escaped.
+  var tb = trayBounds();
   dice.forEach(function (d) {
     d.group.position.copy(d.body.position);
     d.group.quaternion.copy(d.body.quaternion);
     var p = d.body.position;
-    if (p.y < -1 || Math.abs(p.x) > 7 || Math.abs(p.z) > 5) {
+    if (p.y < -1 || Math.abs(p.x) > tb.halfW + 2.5 || Math.abs(p.z) > tb.halfD + 2.5) {
       d.body.position.set(randRange(-2, 2), randRange(3.5, 5), randRange(-1.5, 1.5));
       d.body.velocity.set(randRange(-1, 1), randRange(-2, -0.5), randRange(-1, 1));
       d.body.angularVelocity.set(randRange(-6, 6), randRange(-6, 6), randRange(-6, 6));
@@ -1438,7 +1569,9 @@ function applyTray() {
 function applyFelt() {
   if (!trayFloor) return;
   var old = trayFloor.material.map;
-  trayFloor.material.map = makeFeltTexture();
+  var tex = makeFeltTexture();
+  applyFeltMap(tex);
+  trayFloor.material.map = tex;
   // Leather is polished and glossy; the other felts are matte cloth.
   trayFloor.material.roughness = style.feltDesign === "leather" ? 0.35 : 0.95;
   trayFloor.material.needsUpdate = true;
@@ -1468,11 +1601,25 @@ function setStyle(patch) {
   if (patch.tray) style.tray = patch.tray;
   if (patch.designColor) style.designColor = patch.designColor;
   if (typeof patch.designZoom === "number") style.designZoom = Math.max(0.5, Math.min(2, patch.designZoom));
+  var shapeChanged = false;
+  if (patch.trayShape === "rectangle" || patch.trayShape === "square" || patch.trayShape === "hexagon") {
+    if (style.trayShape !== patch.trayShape) shapeChanged = true;
+    style.trayShape = patch.trayShape;
+  }
   saveStyle(style);
   applyFelt();
   applyDieStyle();
   applyTray();
   syncPickers();
+  if (shapeChanged && initialized) buildTray();
+}
+
+// Switch the tray shape (rectangle, square, or hexagon). The shape
+// is saved per device with the other dice styles, and the tray is
+// rebuilt in place when the roller is already open.
+function setTrayShape(shape) {
+  if (shape !== "rectangle" && shape !== "square" && shape !== "hexagon") return;
+  setStyle({ trayShape: shape });
 }
 
 // ---------- pickers ----------
@@ -1501,6 +1648,7 @@ function buildPickers() {
   buildOne("die-color-select", DIE_COLORS, "dieColor");
   buildOne("die-design-select", DIE_DESIGNS, "dieDesign");
   buildOne("tray-select", TRAY_MATERIALS, "tray");
+  buildOne("tray-shape-select", TRAY_SHAPES, "trayShape");
   // Picking "My Design" with nothing uploaded opens the file picker.
   var fd = document.getElementById("felt-design-select");
   if (fd) {
@@ -1589,13 +1737,15 @@ window.HubDice3D = {
   init: init,
   roll: rollDice,
   setStyle: setStyle,
+  setTrayShape: setTrayShape,
   buildPickers: buildPickers,
-  getStyle: function () { return { feltColor: style.feltColor, feltDesign: style.feltDesign, dieColor: style.dieColor, dieDesign: style.dieDesign, tray: style.tray, designColor: style.designColor, designZoom: style.designZoom }; },
+  getStyle: function () { return { feltColor: style.feltColor, feltDesign: style.feltDesign, dieColor: style.dieColor, dieDesign: style.dieDesign, tray: style.tray, designColor: style.designColor, designZoom: style.designZoom, trayShape: style.trayShape }; },
   FELT_COLORS: FELT_COLORS,
   DIE_COLORS: DIE_COLORS,
   FELT_DESIGNS: FELT_DESIGNS,
   DIE_DESIGNS: DIE_DESIGNS,
-  TRAY_MATERIALS: TRAY_MATERIALS
+  TRAY_MATERIALS: TRAY_MATERIALS,
+  TRAY_SHAPES: TRAY_SHAPES
 };
 
 

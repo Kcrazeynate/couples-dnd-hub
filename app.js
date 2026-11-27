@@ -279,6 +279,14 @@
       startBtn.addEventListener("click", function () {
         var c = findCampaign(currentId);
         if (!c) return;
+        // Starting a campaign is doing something, so a visitor is
+        // asked for an account first. A signed-in user gets the
+        // placeholder note: the AI handoff is not wired up yet.
+        if (!currentUser) {
+          closeCampaignDetail();
+          showGate("signup");
+          return;
+        }
         startNote.textContent = "Starting " + c.title + " will send its campaign prompt to your group's AI DM so the AI can run the story. The AI handoff is not wired up yet, so nothing has been sent.";
         startNote.classList.remove("hidden");
         startBtn.disabled = true;
@@ -410,6 +418,12 @@
       enterApp();
       return;
     }
+    var pending = await tryPendingJoin();
+    if (pending === "failed") {
+      showJoinBox();
+      showJoinError("Could not join that campaign. Check the connection and try again.");
+      return;
+    }
     showJoinBox();
   }
 
@@ -461,23 +475,25 @@
   }
 
   // Joining the couples campaign, the bootstrap for the first accounts.
-  // The first member becomes the owner; later joiners are players. This
-  // is temporary: after the RLS flip, joining goes through owner invites
-  // (Phase 3). Whoever signs in first and joins claims the owner seat,
-  // so Nathan should be the first to join.
+  // Whoever signs in first and joins claims the owner seat, so Nathan
+  // should be the first to join.
   async function joinCouplesCampaign() {
-    var existing = await db.from("campaign_members").select("user_id").eq("campaign_id", COUPLES_CAMPAIGN_ID).limit(1);
-    if (existing.error) {
-      showJoinError("Could not join. Check the connection and try again.");
-      return;
-    }
+    var ok = await joinCampaign(COUPLES_CAMPAIGN_ID);
+    if (!ok) showJoinError("Could not join. Check the connection and try again.");
+  }
+
+  // Joining any campaign by id. The first member becomes the owner;
+  // later joiners are players. This is temporary: after the RLS flip,
+  // joining goes through owner invites (Phase 3).
+  async function joinCampaign(id) {
+    var existing = await db.from("campaign_members").select("user_id").eq("campaign_id", id).limit(1);
+    if (existing.error) return false;
     var role = (existing.data && existing.data.length) ? "player" : "owner";
-    var ins = await db.from("campaign_members").insert({ campaign_id: COUPLES_CAMPAIGN_ID, user_id: currentUser.id, role: role });
-    if (ins.error) {
-      showJoinError("Could not join. Check the connection and try again.");
-      return;
-    }
+    var ins = await db.from("campaign_members").insert({ campaign_id: id, user_id: currentUser.id, role: role });
+    if (ins.error) return false;
+    setActiveCampaign(id);
     location.reload();
+    return true;
   }
 
   async function createCampaign(name, visibility, password) {
@@ -509,6 +525,8 @@
 
   function enterApp() {
     $("gate").classList.add("hidden");
+    var home = $("home");
+    if (home) home.classList.add("hidden");
     $("app").classList.remove("hidden");
     var sub = $("campaign-subtitle");
     if (sub && currentCampaign) sub.textContent = currentCampaign.name;
@@ -520,9 +538,9 @@
     var setupMsg = $("gate-setup");
 
     initDb();
-    // Render the campaign select carousel into the Quests tab. The
-    // app opens directly: the sign-in screen first, unless this is a
-    // remembered session, which goes straight into the board.
+    // Render the campaign select carousel into the store window. The
+    // app opens on the home page: the store window first, unless this
+    // is a remembered session, which goes straight into the overview.
     initCampaigns();
 
     if (!configured) {
@@ -533,7 +551,6 @@
       return;
     }
 
-    gate.classList.remove("hidden");
     setAuthMode("signin");
     $("auth-signin-btn").addEventListener("click", tryAuth);
     $("auth-password").addEventListener("keydown", function (e) {
@@ -547,6 +564,16 @@
     });
     $("join-couples-btn").addEventListener("click", joinCouplesCampaign);
     $("create-campaign-btn").addEventListener("click", createCampaignFromGate);
+    // Store window buttons: sign up or sign in opens the gate, and
+    // the gate has a way back to browsing for a visitor.
+    [$("home-signup-btn"), $("home-signup-btn-bottom")].forEach(function (b) {
+      if (b) b.addEventListener("click", function () { showGate("signup"); });
+    });
+    [$("home-signin-link"), $("home-signin-link-bottom")].forEach(function (b) {
+      if (b) b.addEventListener("click", function () { showGate("signin"); });
+    });
+    var backBtn = $("gate-back-btn");
+    if (backBtn) backBtn.addEventListener("click", showStore);
 
     var session = null;
     try {
@@ -558,6 +585,7 @@
       currentUser = session.user;
       var ok = await loadMyMemberships();
       if (!ok) {
+        showGate("signin");
         showAuthError("Could not load your campaigns. Check the connection and try again.");
         return;
       }
@@ -565,11 +593,310 @@
         enterApp();
         return;
       }
+      var pending = await tryPendingJoin();
+      if (pending === "failed") {
+        showGate("signin");
+        showJoinBox();
+        showJoinError("Could not join that campaign. Check the connection and try again.");
+        return;
+      }
+      showGate("signin");
       showJoinBox();
       return;
     }
 
+    showStore();
+  }
+
+  // ---------- home page (store window + overview) ----------
+  //
+  // The home page is the front door. Signed out, the store window
+  // (#home) shows what the Table is, what you can do, the starter
+  // campaigns, public campaigns, and why join. Signed in, the app
+  // opens on the Home tab, which is the overview: what is going on,
+  // the last few moves, the party, and a quick way in. The gate is
+  // only the sign-in screen now, reached from the store buttons or a
+  // join button. Reading the store window never asks for an account.
+
+  var JOIN_INTENT_KEY = "hub-join-intent";
+
+  function showStore() {
+    $("gate").classList.add("hidden");
+    $("app").classList.add("hidden");
+    var home = $("home");
+    if (home) home.classList.remove("hidden");
+    loadPublicCampaigns();
+  }
+
+  function showGate(mode) {
+    var home = $("home");
+    if (home) home.classList.add("hidden");
+    $("app").classList.add("hidden");
+    $("gate").classList.remove("hidden");
+    setAuthMode(mode || "signin");
     showAuthForm();
+    var back = $("gate-back-btn");
+    if (back) back.classList.toggle("hidden", !!currentUser);
+  }
+
+  // Public campaigns for the store window. There is no visibility
+  // column yet, so a campaign is listed unless it is the couples
+  // campaign (Nathan and Angela's own game, not a public listing)
+  // or the host marked it private on this device. Visibility is not
+  // enforced yet, so any campaign can be joined for now.
+  async function loadPublicCampaigns() {
+    var list = $("public-campaigns-list");
+    if (!list) return;
+    if (!configured) {
+      list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
+      return;
+    }
+    var res = await db.from("campaigns").select("id, name, created_at").order("created_at", { ascending: false });
+    if (res.error) {
+      list.innerHTML = '<p class="error">Could not load campaigns.</p>';
+      return;
+    }
+    var rows = (res.data || []).filter(function (c) {
+      if (c.id === COUPLES_CAMPAIGN_ID) return false;
+      try {
+        var settings = JSON.parse(localStorage.getItem("hub-campaign-settings-" + c.id) || "null");
+        if (settings && settings.visibility === "private") return false;
+      } catch (e) {}
+      return true;
+    });
+    if (!rows.length) {
+      list.innerHTML = '<p class="empty">No public campaigns looking for players yet. When a host marks a campaign public, it shows up here.</p>';
+      return;
+    }
+    list.innerHTML = rows.map(function (c) {
+      return '<div class="card"><p class="title">' + escapeHtml(c.name) + '</p>' +
+        '<div class="actions"><button type="button" data-public-join="' + escapeHtml(c.id) + '">Join</button></div></div>';
+    }).join("");
+    list.querySelectorAll("[data-public-join]").forEach(function (btn) {
+      btn.addEventListener("click", function () { requestJoinCampaign(btn.dataset.publicJoin); });
+    });
+  }
+
+  // Joining a public campaign. A visitor who taps Join is asked for
+  // an account first; the campaign they wanted is remembered, so
+  // after sign-in they join it instead of landing on the join box.
+  function requestJoinCampaign(id) {
+    if (!id) return;
+    if (!currentUser) {
+      try { localStorage.setItem(JOIN_INTENT_KEY, id); } catch (e) {}
+      showGate("signup");
+      return;
+    }
+    joinCampaign(id);
+  }
+
+  // The campaign a visitor wanted to join, carried across sign-up
+  // and sign-in. Returns "none" when there is no intent, "joined"
+  // when the join went through (the page reloads), "failed" when the
+  // join did not work, so the caller can fall back to the join box.
+  async function tryPendingJoin() {
+    var id = null;
+    try { id = localStorage.getItem(JOIN_INTENT_KEY); } catch (e) {}
+    if (!id) return "none";
+    try { localStorage.removeItem(JOIN_INTENT_KEY); } catch (e) {}
+    var ok = await joinCampaign(id);
+    return ok ? "joined" : "failed";
+  }
+
+  // ---------- home overview (signed-in Home tab) ----------
+
+  async function loadHomeOverview() {
+    var nameEl = $("home-campaign-name");
+    var picker = $("home-campaign-picker");
+    var glance = $("home-glance");
+    if (!nameEl || !glance) return;
+    if (!configured) {
+      glance.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
+      return;
+    }
+    if (nameEl) nameEl.textContent = currentCampaign ? currentCampaign.name : "Home";
+    if (picker) {
+      if (myCampaigns.length > 1) {
+        picker.innerHTML = '<label for="home-campaign-select">Campaign</label><select id="home-campaign-select">' +
+          myCampaigns.map(function (c) {
+            return '<option value="' + escapeHtml(c.id) + '"' + (currentCampaign && c.id === currentCampaign.id ? " selected" : "") + '>' + escapeHtml(c.name) + '</option>';
+          }).join("") + '</select>';
+        var sel = $("home-campaign-select");
+        if (sel) sel.addEventListener("change", function () { switchCampaign(sel.value); });
+      } else {
+        picker.innerHTML = "";
+      }
+    }
+    loadHomeGlance();
+    loadHomeMoves();
+    loadHomeParty();
+  }
+
+  // What is going on, in a glance: where the party is, the situation,
+  // the current goal, and what is waiting. Drawn from the Campaign
+  // State, which is the couples campaign only for now.
+  async function loadHomeGlance() {
+    var glance = $("home-glance");
+    if (!glance) return;
+    if (campaignId() !== COUPLES_CAMPAIGN_ID) {
+      glance.innerHTML = '<p class="empty">Campaign State is not set up for this campaign yet. The state files on this Table still belong to the Nathan &amp; Angela campaign.</p>';
+      return;
+    }
+    glance.innerHTML = '<p class="empty">Loading...</p>';
+    try {
+      var res = await fetch("campaign-state.json?t=" + Date.now());
+      if (!res.ok) throw new Error("state fetch failed");
+      var s = await res.json();
+      glance.innerHTML = renderGlance(s);
+    } catch (e) {
+      glance.innerHTML = '<p class="error">Could not load what is going on.</p>';
+    }
+  }
+
+  function renderGlance(s) {
+    var inner = "";
+    if (s.location) inner += '<p class="meta">Where: ' + escapeHtml(s.location) + '</p>';
+    if (s.situation) inner += '<p>' + escapeHtml(s.situation) + '</p>';
+    if (s.current_goal) inner += '<p><strong>Current goal:</strong> ' + escapeHtml(s.current_goal) + '</p>';
+    if (s.waiting_on) inner += '<p><strong>Waiting on:</strong> ' + escapeHtml(s.waiting_on) + '</p>';
+    if (s.open_threads && s.open_threads.length) {
+      inner += '<p><strong>Open threads:</strong></p><ul>' + s.open_threads.slice(0, 2).map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join("") + '</ul>';
+    }
+    if (!inner) return '<p class="empty">No state yet.</p>';
+    return '<div class="card">' + inner + '</div>';
+  }
+
+  // The last few moves: the most recent board posts, five at most.
+  // Each move shows who went, what they did, the outcome, and who is
+  // up next. Tapping a move opens the board.
+  async function loadHomeMoves() {
+    var list = $("home-moves");
+    if (!list) return;
+    if (!configured) {
+      list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
+      return;
+    }
+    var res = await db.from("messages").select("author, body, created_at").eq("campaign_id", campaignId()).not("body", "like", "[AI chat]%").order("created_at", { ascending: false }).limit(10);
+    if (res.error) {
+      list.innerHTML = '<p class="error">Could not load the last few moves.</p>';
+      return;
+    }
+    var rows = (res.data || []).filter(function (m) {
+      var tag = messageTag(m.body);
+      return !(tag && (tag.tag === "Scene start" || tag.tag === "Scene end"));
+    });
+    // Who is up next when a fight is on: the combatant whose turn it
+    // is now. Otherwise the turn falls to the DM or the party.
+    var battleNext = null;
+    try {
+      var bRes = await db.from("battle_state").select("current_combatant_id").eq("campaign_id", campaignId()).single();
+      var cRes = await db.from("combatants").select("id, name, initiative").eq("campaign_id", campaignId()).order("initiative", { ascending: false });
+      var combatants = (!cRes.error && cRes.data) ? cRes.data : [];
+      if (combatants.length) {
+        var currentId = (bRes && !bRes.error && bRes.data) ? bRes.data.current_combatant_id : null;
+        var idx = combatants.findIndex(function (c) { return c.id === currentId; });
+        if (idx < 0) idx = 0;
+        battleNext = combatants[idx].name;
+      }
+    } catch (e) {}
+    var moves = rows.slice(0, 5);
+    if (!moves.length) {
+      list.innerHTML = '<p class="empty">No moves yet. Post the first one on the board.</p>';
+      return;
+    }
+    list.innerHTML = moves.map(function (m, i) {
+      var tag = messageTag(m.body);
+      var what = tag ? tag.text : m.body;
+      what = truncateText(what, 160);
+      var outcome = moveOutcome(m, rows, i);
+      var next = moveNext(m, rows, i, battleNext);
+      return '<div class="card home-move" data-home-move>' +
+        '<p class="meta">' + escapeHtml(m.author) + ' - ' + escapeHtml(fmtTime(m.created_at)) + '</p>' +
+        '<p>' + escapeHtml(what) + '</p>' +
+        '<p><strong>Outcome:</strong> ' + escapeHtml(outcome) + '</p>' +
+        '<p><strong>Up next:</strong> ' + escapeHtml(next) + '</p>' +
+        '</div>';
+    }).join("");
+    list.querySelectorAll("[data-home-move]").forEach(function (card) {
+      card.addEventListener("click", function () { switchTab("board"); });
+    });
+  }
+
+  function truncateText(text, len) {
+    var t = String(text || "");
+    if (t.length <= len) return t;
+    return t.slice(0, len).replace(/\s+\S*$/, "") + "...";
+  }
+
+  // The outcome of a move is the DM's reply to it: the closest DM
+  // post after it in time. If the move is the DM's own narration,
+  // the story moved on. If no reply has come yet, the move is still
+  // waiting on the DM.
+  function moveOutcome(move, rows, i) {
+    if (move.author === "Rick") return "The DM moved the story.";
+    for (var j = i - 1; j >= 0; j--) {
+      if (rows[j].author === "Rick") {
+        var tag = messageTag(rows[j].body);
+        return truncateText(tag ? tag.text : rows[j].body, 160);
+      }
+    }
+    return "Waiting for the DM to answer.";
+  }
+
+  // Who is up next after a move: whoever posted next, or, for the
+  // latest move, the turn in the battle, or the DM, or the party.
+  function moveNext(move, rows, i, battleNext) {
+    if (i > 0) return rows[i - 1].author;
+    if (battleNext) return battleNext;
+    return move.author === "Rick" ? "the party" : "the DM";
+  }
+
+  // The party, with portraits. My character first. Tapping a row
+  // opens the Characters tab.
+  async function loadHomeParty() {
+    var list = $("home-party");
+    if (!list) return;
+    if (!configured) {
+      list.innerHTML = '<p class="empty">Setup is not finished yet. See README.md.</p>';
+      return;
+    }
+    var res = await db.from("characters").select("player, name, race, class, level, hp, max_hp, image_url, join_mode, dismissed").eq("campaign_id", campaignId());
+    if (res.error) {
+      list.innerHTML = '<p class="error">Could not load the party.</p>';
+      return;
+    }
+    var rows = (res.data || []).filter(function (c) {
+      return c.join_mode !== "pending" && !c.dismissed;
+    });
+    if (!rows.length) {
+      list.innerHTML = '<p class="empty">No party yet.</p>';
+      return;
+    }
+    var mine = myPlayerKey();
+    if (!mine) {
+      var guessed = guessMyPlayerKey(rows);
+      if (guessed) { setMyPlayerKey(guessed); mine = guessed; }
+    }
+    rows.sort(function (a, b) {
+      if (a.player === mine && b.player !== mine) return -1;
+      if (b.player === mine && a.player !== mine) return 1;
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    });
+    list.innerHTML = rows.map(function (c) {
+      var pic = c.image_url
+        ? '<img class="npc-pic" src="' + escapeHtml(c.image_url) + '" alt="">'
+        : '<div class="npc-pic npc-pic-fallback">' + escapeHtml((c.class || "?").charAt(0)) + '</div>';
+      var hp = (c.hp === null || c.hp === undefined ? "-" : c.hp) + " / " + (c.max_hp === null || c.max_hp === undefined ? "-" : c.max_hp);
+      return '<div class="card home-party-row" data-party-player="' + escapeHtml(c.player) + '">' +
+        '<div class="npc-summary">' + pic +
+        '<div class="npc-id"><span class="name">' + escapeHtml(c.name || "Unnamed") + (c.player === mine ? " (you)" : "") + '</span>' +
+        '<span class="meta">' + escapeHtml(c.race || "") + (c.race && c.class ? " " : "") + escapeHtml(c.class || "") + ' - Level ' + (c.level === null || c.level === undefined ? "-" : c.level) + '</span>' +
+        '<span class="meta">HP ' + hp + '</span>' +
+        '</div></div></div>';
+    }).join("");
+    list.querySelectorAll("[data-party-player]").forEach(function (card) {
+      card.addEventListener("click", function () { switchTab("characters"); });
+    });
   }
 
   // ---------- Supabase ----------
@@ -588,6 +915,7 @@
   // ---------- tabs ----------
 
   var TAB_LOADERS = {
+    home: loadHomeOverview,
     board: loadMessages,
     log: loadLogEntries,
     state: loadState,
@@ -613,7 +941,7 @@
     // Remember the tab within this session, so leaving the app and
     // coming back puts you where you were. sessionStorage is cleared
     // when the tab or app is fully closed, so a full close still
-    // starts at home (Board).
+    // starts at home (Home).
     try { sessionStorage.setItem("hub-current-tab", name); } catch (e) {}
     var loader = TAB_LOADERS[name];
     if (loader) loader();
@@ -704,7 +1032,7 @@
       return;
     }
     if (!res.data.length) {
-      list.innerHTML = '<p class="empty">No messages yet. Say hello to Rick below.</p>';
+      list.innerHTML = '<p class="empty">No messages yet. Say hello to the DM below.</p>';
       return;
     }
     aiChatCache = {};
@@ -1016,7 +1344,7 @@
     var status = $("push-status");
     var btn = $("push-toggle");
     if (!pushSupported()) {
-      status.textContent = "Notifications are not supported in this browser. On iPhone, open the hub from the home screen app and try again.";
+      status.textContent = "Notifications are not supported in this browser. On iPhone, open the Table from the home screen app and try again.";
       btn.disabled = true;
       return;
     }
@@ -1140,7 +1468,7 @@
     // campaign only. Another campaign gets a notice instead of their
     // state; per-campaign state files are a later step.
     if (campaignId() !== COUPLES_CAMPAIGN_ID) {
-      wrap.innerHTML = '<p class="empty">Campaign State is not set up for this campaign yet. The state files on this hub still belong to the Nathan &amp; Angela campaign.</p>';
+      wrap.innerHTML = '<p class="empty">Campaign State is not set up for this campaign yet. The state files on this Table still belong to the Nathan &amp; Angela campaign.</p>';
       if (arch) arch.innerHTML = '<p class="empty">No archive for this campaign yet.</p>';
       return;
     }
@@ -1177,9 +1505,9 @@
       h += '<div class="card"><p class="title">Key facts</p><ul>' + s.key_facts.map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join("") + '</ul></div>';
     }
     if (s.party && s.party.length) {
-      h += '<div class="card"><p class="title">Party</p><ul>' + s.party.map(function (p) { return '<li>' + escapeHtml(p.name) + ' — HP ' + escapeHtml(p.hp) + ', XP ' + p.xp + ', level ' + p.level + '</li>'; }).join("") + '</ul></div>';
+      h += '<div class="card"><p class="title">Party</p><ul>' + s.party.map(function (p) { return '<li>' + escapeHtml(p.name) + ', HP ' + escapeHtml(p.hp) + ', XP ' + p.xp + ', level ' + p.level + '</li>'; }).join("") + '</ul></div>';
     }
-    if (s.last_scene) h += '<p class="hint">Last scene: ' + escapeHtml(s.last_scene) + (s.updated_at ? ' — updated ' + escapeHtml(fmtTime(s.updated_at)) : '') + '</p>';
+    if (s.last_scene) h += '<p class="hint">Last scene: ' + escapeHtml(s.last_scene) + (s.updated_at ? ', updated ' + escapeHtml(fmtTime(s.updated_at)) : '') + '</p>';
     return h || '<p class="empty">No state yet.</p>';
   }
 
@@ -1187,7 +1515,7 @@
     if (!a || !a.length) return '<p class="empty">Nothing archived yet.</p>';
     var items = a.slice().reverse();
     return items.map(function (sc) {
-      var h = '<div class="card"><p class="title">' + escapeHtml(sc.scene) + ' — ' + escapeHtml(sc.date || "") + '</p>';
+      var h = '<div class="card"><p class="title">' + escapeHtml(sc.scene) + ', ' + escapeHtml(sc.date || "") + '</p>';
       if (sc.facts && sc.facts.length) {
         h += '<ul>' + sc.facts.map(function (f) { return '<li>' + escapeHtml(f) + '</li>'; }).join("") + '</ul>';
       }
@@ -5600,6 +5928,11 @@
       btn.addEventListener("click", function () { switchTab(btn.dataset.tab); closeMenu(); });
     });
 
+    // Home tab quick buttons: Board, Dice, Maps, Campaign Log.
+    document.querySelectorAll("[data-home-tab]").forEach(function (btn) {
+      btn.addEventListener("click", function () { switchTab(btn.dataset.homeTab); });
+    });
+
     // Collapsing submenu headers: tapping a group header expands or
     // collapses just that group; the other groups are untouched.
     document.querySelectorAll(".nav-menu-sub-toggle").forEach(function (btn) {
@@ -6040,12 +6373,13 @@
     });
     // Put the user back on the tab they were on when they left, if this
     // is still the same session. A full close clears sessionStorage, so
-    // a fresh start still lands on the Board.
+    // a fresh start still lands on Home, the overview.
     var savedTab = null;
     try { savedTab = sessionStorage.getItem("hub-current-tab"); } catch (e) {}
     if (savedTab && document.getElementById("tab-" + savedTab)) switchTab(savedTab);
-    // A music-start push opens the hub with #music; land straight on the
-    // Music tab instead of the Board. The push itself never starts audio.
+    else switchTab("home");
+    // A music-start push opens the Table with #music; land straight on
+    // the Music tab instead of Home. The push itself never starts audio.
     if (location.hash === "#music") switchTab("music");
     musicUpdateUI();
   }

@@ -449,6 +449,49 @@ header .subtitle {
   outline-offset: 3px;
 }
 
+/* Floating preview toggle: same size and style as the chat button,
+   sitting to the left of the chat button at the same height, with a
+   small gap between them. DM-only and only while signed in, so it
+   starts hidden and is shown by the app once the role is known.
+   When preview is on, the pressed state brightens the border and
+   warms the background, so the toggle reads as active at a glance. */
+.preview-float-btn {
+  position: fixed;
+  right: calc(var(--float-right) + 56px + 12px + 44px + 12px);
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 41;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #342f27;
+  border: 1px solid #d9a441;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.preview-float-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.preview-float-btn:hover {
+  background: #342f27;
+  border-color: #f0c96a;
+}
+
+.preview-float-btn:focus-visible {
+  outline: 3px solid #d9a441;
+  outline-offset: 3px;
+}
+
+.preview-float-btn[aria-pressed="true"] {
+  background: #4a3d24;
+  border-color: #f0c96a;
+}
+
 /* Floating music button: slightly smaller than the dice and chat
    buttons, shifted right of the chat button so it sits an equal
    distance from the dice button and the chat button. Visible in

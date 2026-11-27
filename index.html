@@ -148,18 +148,12 @@
     <section id="tab-home" class="tab-panel active">
       <h2 id="home-campaign-name">Home</h2>
       <div id="home-campaign-picker"></div>
+      <h3>Your party</h3>
+      <div id="home-party" class="list"></div>
       <h3>What's going on</h3>
       <div id="home-glance"></div>
       <h3>Last few moves</h3>
       <div id="home-moves" class="list"></div>
-      <h3>Your party</h3>
-      <div id="home-party" class="list"></div>
-      <h3>Quick way in</h3>
-      <div class="row home-quick">
-        <button type="button" data-home-tab="board">Board</button>
-        <button type="button" data-home-tab="maps">Maps</button>
-        <button type="button" data-home-tab="log">Campaign Log</button>
-      </div>
     </section>
 
     <section id="tab-board" class="tab-panel">
@@ -672,11 +666,12 @@
   <div id="menu-backdrop" class="menu-backdrop hidden"></div>
   <nav id="nav-menu" class="nav-menu hidden" aria-label="Campaign menu">
     <!-- Most-used tabs, always visible, in the order the player
-         reaches for them: Board, Dice, Characters, Battle, Maps, Log. -->
+         reaches for them: Board, Characters, Battle, Maps, Log.
+         Dice is not listed here: the floating dice button, always
+         visible, is the way in. -->
     <div class="nav-menu-btns nav-menu-top">
       <button type="button" data-tab="home" class="tab-btn active">Home</button>
       <button type="button" data-tab="board" class="tab-btn">Board</button>
-      <button type="button" data-tab="dice" class="tab-btn">Dice</button>
       <button type="button" data-tab="characters" class="tab-btn">Characters</button>
       <button type="button" data-tab="battle" class="tab-btn">Battle</button>
       <button type="button" data-tab="maps" class="tab-btn">Maps</button>

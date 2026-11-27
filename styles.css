@@ -107,13 +107,11 @@ p {
    posts stay readable. */
 #bg-art {
   position: fixed;
-  inset: 0;
+  inset: 6%;
   z-index: 0;
   pointer-events: none;
   background-color: #f0dcaa;
   opacity: 0.4;
-  transform: scale(0.88);
-  transform-origin: center;
   -webkit-mask-image: url("assets/bg-battle-mask.png");
   mask-image: url("assets/bg-battle-mask.png");
   -webkit-mask-size: cover;

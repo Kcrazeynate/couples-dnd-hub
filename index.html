@@ -93,16 +93,6 @@
       </form>
     </section>
 
-    <section id="tab-campaigns" class="tab-panel">
-      <h2>Campaigns</h2>
-      <p class="hint">Pick a starter campaign and your AI DM will run the story. Each one is ready to play.</p>
-      <div class="carousel">
-        <div class="carousel-track" id="carousel-track"></div>
-        <button type="button" class="carousel-arrow carousel-prev" id="carousel-prev" aria-label="Previous campaign">&#8249;</button>
-        <button type="button" class="carousel-arrow carousel-next" id="carousel-next" aria-label="Next campaign">&#8250;</button>
-      </div>
-    </section>
-
     <section id="tab-log" class="tab-panel">
       <h2>Campaign Log</h2>
       <div class="log-intro">
@@ -297,6 +287,13 @@
     <section id="tab-quests" class="tab-panel">
       <h2>Quests</h2>
       <p class="hint">Active hooks, leads, and finished quests.</p>
+      <h3>Starter campaigns</h3>
+      <p class="hint">Pick a starter campaign and your AI DM will run the story. Each one is ready to play.</p>
+      <div class="carousel">
+        <div class="carousel-track" id="carousel-track"></div>
+        <button type="button" class="carousel-arrow carousel-prev" id="carousel-prev" aria-label="Previous campaign">&#8249;</button>
+        <button type="button" class="carousel-arrow carousel-next" id="carousel-next" aria-label="Next campaign">&#8250;</button>
+      </div>
       <button type="button" id="quests-edit-toggle" class="edit-toggle-btn" data-mode="interact">Edit list</button>
       <form id="quest-form" class="form" data-mode="interact">
         <label for="quest-title">Title</label>
@@ -550,7 +547,6 @@
       <button type="button" data-tab="maps" class="tab-btn">Maps</button>
       <button type="button" data-tab="log" class="tab-btn">Campaign Log</button>
       <button type="button" data-tab="quests" class="tab-btn">Quests</button>
-      <button type="button" data-tab="campaigns" class="tab-btn">Campaigns</button>
     </div>
     <!-- Collapsing submenus: Modes, AI, More. Each group header is a
          flat row like the tabs; tapping it expands or collapses just
@@ -782,6 +778,6 @@
 </div>
 
 <script type="module" src="dice3d.js?v=46"></script>
-<script src="app.js?v=123"></script>
+<script src="app.js?v=124"></script>
 </body>
 </html>

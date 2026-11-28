@@ -425,6 +425,7 @@
       if (invite === "wrong-code" || invite === "no-code" || invite === "failed") {
         alert(inviteMessage(invite));
       }
+      promptFirstCharacter();
       return;
     }
     var pending = await tryPendingJoin();
@@ -435,6 +436,31 @@
       return;
     }
     showJoinBox();
+  }
+
+  // After a player lands on the home page, if they have no character
+  // in this campaign yet, prompt them to make their first one. DMs
+  // are skipped (they manage NPCs and may already play a character).
+  // The prompt repeats on each sign-in until they have a character.
+  async function promptFirstCharacter() {
+    if (isDm() || !currentUser) return;
+    var res = await db.from("characters").select("player, user_id").eq("campaign_id", campaignId());
+    if (res.error || !res.data) return;
+    var mine = myPlayerKey();
+    var has = res.data.some(function (c) {
+      return (c.user_id && c.user_id === currentUser.id) ||
+             (mine && c.player === mine);
+    });
+    if (has) return;
+    var key = "";
+    if (currentUser.email) {
+      key = String(currentUser.email).split("@")[0].toLowerCase()
+        .replace(/[^a-z0-9_-]/g, "-").replace(/^-+|-+$/g, "");
+    }
+    if (!key) return;
+    if (confirm("You don't have a character yet. Make your first character?")) {
+      openCharModal(key, null);
+    }
   }
 
   async function tryAuth() {

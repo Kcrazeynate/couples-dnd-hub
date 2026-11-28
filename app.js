@@ -3938,6 +3938,7 @@
     var playerKey = $("char-player").value;
     var row = {
       campaign_id: campaignId(),
+      user_id: currentUser.id,
       player: playerKey,
       name: $("char-name").value.trim() || null,
       image_url: $("char-image").value.trim() || null,

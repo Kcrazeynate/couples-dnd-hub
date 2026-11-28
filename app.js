@@ -2895,9 +2895,9 @@
       '<option value="sylvie"' + (follow === "sylvie" ? " selected" : "") + '>Sylvie</option>' +
       '<option value="party"' + (follow === "party" ? " selected" : "") + '>Party</option>' +
       '</select> &mdash; the map opens centered on them. Drag to pan around. Tap a name below to glide to them.</p>' +
-      '<div class="area-map-viewport"><div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '?v=' + AREA_IMG_VERSION + '" alt="Area map">' +
+      '<div class="area-map-holder"><button type="button" class="area-fullscreen-btn">Full screen</button><div class="area-map-viewport"><div class="area-map-wrap"><img class="area-map-img" src="' + escapeHtml(currentAreaMapUrl) + '?v=' + AREA_IMG_VERSION + '" alt="Area map">' +
       '<div id="area-tokens" class="area-tokens"></div>' +
-      '<div id="area-drag-label" class="area-drag-label hidden"></div></div></div></div>' +
+      '<div id="area-drag-label" class="area-drag-label hidden"></div></div></div></div></div>' +
       '<p class="hint">1 square = 5 feet. Tap a token to see who it is. Turn on Edit list to move tokens, only the DM moves them. Drop a token anywhere in a square, a corner, an edge, or the middle. Fighters not on the map yet can be placed from the Battle tab.</p>' +
       '<div id="area-key" class="area-key"></div>';
     content.querySelector("img").addEventListener("click", function () {
@@ -2907,6 +2907,13 @@
     if (followSel) followSel.addEventListener("change", function () {
       localStorage.setItem("hub-map-follow", followSel.value);
       centerAreaOnFollow(true);
+    });
+    var fsBtn = content.querySelector(".area-fullscreen-btn");
+    if (fsBtn) fsBtn.addEventListener("click", function () {
+      var holder = content.querySelector(".area-map-holder");
+      if (!holder) return;
+      var on = holder.classList.toggle("area-fullscreen");
+      fsBtn.textContent = on ? "Exit full screen" : "Full screen";
     });
     // Fixed scale, no zoom: the wrap is grid x rows squares at
     // AREA_CELL_PX each, so a square reads on a phone and you pan.

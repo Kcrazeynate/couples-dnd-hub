@@ -1656,6 +1656,37 @@ button.danger:hover {
   overscroll-behavior: contain;
 }
 
+/* Area map full screen: the holder pins to the viewport so the map
+   fills the screen (phone especially), and the button stays on top
+   to exit. */
+.area-map-holder { position: relative; }
+.area-fullscreen-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 30;
+  background: rgba(33, 25, 16, 0.92);
+  color: #f0c96a;
+  border: 1px solid #d9a441;
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.area-map-holder.area-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: #211910;
+}
+.area-map-holder.area-fullscreen .area-map-viewport {
+  height: 100dvh;
+  max-height: none;
+  width: 100vw;
+  margin: 0;
+  border-radius: 0;
+}
+
 /* A token with a portrait shows the face instead of the initial. The side
    is the border colour (gold for the party, red for enemies); the face
    fills the circle, cropped to the head and shoulders. */

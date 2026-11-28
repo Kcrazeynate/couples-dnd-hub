@@ -254,21 +254,19 @@ p {
   box-sizing: border-box;
 }
 
-/* Page background battle art: the good-vs-evil line art as a mask,
-   showing in the design color over the dark charcoal page. The art is
-   a white-on-transparent mask, so the design color shows through the
-   lines and the charcoal page shows through the rest. It is split
-   into two halves (assets/bg-battle-left.png, good, and
-   assets/bg-battle-right.png, evil), each 2x upscaled from its half
-   of the original, and each shown on its own side of the screen at
-   near-natural size, vertically centred. That is the sharpness fix:
-   one wide image stretched with cover to fill a large viewport had
-   to zoom about 2.1x on a 2560px screen, which is what made it
-   pixelated. A half is at most about 1.1x its natural width here,
-   and the upscaled file is downscaled to that, so the lines stay
-   crisp. The halves do not stretch to full height on purpose: doing
-   that would zoom them again. The fade band covers the middle behind
-   the boards so posts stay readable. */
+/* Page background battle art: the generated leather battle scene,
+   shown in full colour. It is split into two halves
+   (assets/bg-battle-left.png, good, and assets/bg-battle-right.png,
+   evil), each 2x upscaled from its half of the original, and each
+   shown on its own side of the screen at near-natural size,
+   vertically centred. That is the sharpness fix: one wide image
+   stretched with cover to fill a large viewport had to zoom about
+   2.1x on a 2560px screen, which is what made it pixelated. A half
+   is at most about 1.1x its natural width here, and the upscaled
+   file is downscaled to that, so the lines stay crisp. The halves
+   do not stretch to full height on purpose: doing that would zoom
+   them again. The fade band covers the middle behind the boards so
+   posts stay readable. */
 #bg-art-left,
 #bg-art-right {
   position: fixed;
@@ -280,24 +278,19 @@ p {
   pointer-events: none;
   background-color: #3a2f1e;
   opacity: 1;
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 #bg-art-left {
   left: 0;
-  -webkit-mask-image: url("assets/bg-battle-left.png");
-  mask-image: url("assets/bg-battle-left.png");
+  background-image: url("assets/bg-battle-left.png");
 }
 
 #bg-art-right {
   right: 0;
-  -webkit-mask-image: url("assets/bg-battle-right.png");
-  mask-image: url("assets/bg-battle-right.png");
+  background-image: url("assets/bg-battle-right.png");
 }
 
 #bg-fade {

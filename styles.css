@@ -1205,7 +1205,7 @@ button.danger:hover {
   width: 160px;
   max-width: 45%;
   aspect-ratio: 2 / 3;
-  object-fit: contain;
+  object-fit: cover;
   background: #342f27;
   border-radius: 12px;
   border: 1px solid #57503f;
@@ -1216,7 +1216,7 @@ button.danger:hover {
 .npc-img {
   width: 96px;
   height: 144px;
-  object-fit: contain;
+  object-fit: cover;
   background: #342f27;
   border-radius: 8px;
   border: 1px solid #57503f;
@@ -2311,7 +2311,7 @@ header {
 
 /* NPC companions */
 .npc-summary { display: flex; gap: 12px; align-items: center; }
-.npc-pic { width: 64px; height: 96px; object-fit: contain; background: #342f27; border: 1px solid #4a4033; border-radius: 6px; flex: none; }
+.npc-pic { width: 64px; height: 96px; object-fit: cover; background: #342f27; border: 1px solid #4a4033; border-radius: 6px; flex: none; }
 .npc-pic-fallback { display: flex; align-items: center; justify-content: center; font-size: 32px; color: #d9a441; font-weight: 700; }
 .npc-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .npc-id .name { font-size: 1.1rem; font-weight: 700; }

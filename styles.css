@@ -255,42 +255,42 @@ p {
 }
 
 /* Page background battle art: the generated leather battle scene,
-   shown in full colour. It is split into two halves
-   (assets/bg-battle-left.png, good, and assets/bg-battle-right.png,
-   evil), each 2x upscaled from its half of the original, and each
-   shown on its own side of the screen at near-natural size,
-   vertically centred. That is the sharpness fix: one wide image
-   stretched with cover to fill a large viewport had to zoom about
-   2.1x on a 2560px screen, which is what made it pixelated. A half
-   is at most about 1.1x its natural width here, and the upscaled
-   file is downscaled to that, so the lines stay crisp. The halves
-   do not stretch to full height on purpose: doing that would zoom
-   them again. The fade band covers the middle behind the boards so
-   posts stay readable. */
+   shown in full colour, filling the screen. It is split into two
+   halves (assets/bg-battle-left.png, good, and
+   assets/bg-battle-right.png, evil), each 2x upscaled from its half
+   of the original. Each half fills its side of the viewport
+   (50vw by full height) with background-size cover, so the art
+   fills the screen on any size. The halves are anchored to the
+   centre seam (left half shows its right edge, right half shows
+   its left edge) so the two leaders meet in the middle. The divs
+   are pinned top and bottom to the viewport, not centred with a
+   transform, so they stay put when the mobile browser chrome
+   shows or hides. The fade band covers the middle behind the
+   boards so posts stay readable. */
 #bg-art-left,
 #bg-art-right {
   position: fixed;
-  top: 50%;
-  transform: translateY(-50%);
-  width: min(46vw, 900px);
-  aspect-ratio: 792 / 672;
+  top: 0;
+  bottom: 0;
+  width: 50vw;
   z-index: 0;
   pointer-events: none;
   background-color: #3a2f1e;
   opacity: 1;
-  background-size: contain;
-  background-position: center;
+  background-size: cover;
   background-repeat: no-repeat;
 }
 
 #bg-art-left {
   left: 0;
   background-image: url("assets/bg-battle-left.png");
+  background-position: right center;
 }
 
 #bg-art-right {
   right: 0;
   background-image: url("assets/bg-battle-right.png");
+  background-position: left center;
 }
 
 #bg-fade {

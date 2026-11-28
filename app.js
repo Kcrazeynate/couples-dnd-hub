@@ -441,17 +441,34 @@
   // After a player lands on the home page, if they have no character
   // in this campaign yet, prompt them to make their first one. DMs
   // are skipped (they manage NPCs and may already play a character).
-  // The prompt repeats on each sign-in until they have a character.
+  // If they already have a character in another campaign and they
+  // just joined this one, offer to move it here instead of making a
+  // new one: a move abandons the old party. The create prompt repeats
+  // on each sign-in until they have a character; the move offer runs
+  // once per join, and the Characters tab has a button for later.
   async function promptFirstCharacter() {
     if (isDm() || !currentUser) return;
-    var res = await db.from("characters").select("player, user_id").eq("campaign_id", campaignId());
+    var res = await db.from("characters").select("id, player, user_id").eq("campaign_id", campaignId());
     if (res.error || !res.data) return;
     var mine = myPlayerKey();
-    var has = res.data.some(function (c) {
+    var hasHere = res.data.some(function (c) {
       return (c.user_id && c.user_id === currentUser.id) ||
              (mine && c.player === mine);
     });
-    if (has) return;
+    if (hasHere) return;
+    // No character here. Do they have one in another campaign?
+    var all = await db.from("characters").select("id, name, player, campaign_id").eq("user_id", currentUser.id);
+    var elsewhere = (all.data || []).filter(function (c) { return c.campaign_id !== campaignId(); });
+    if (elsewhere.length) {
+      var justJoined = false;
+      try { justJoined = localStorage.getItem("hub-just-joined-" + campaignId()) === "1"; } catch (e) {}
+      if (justJoined) {
+        try { localStorage.removeItem("hub-just-joined-" + campaignId()); } catch (e) {}
+        await offerCharacterMove(elsewhere[0]);
+      }
+      return;
+    }
+    // No character anywhere: prompt to make the first one.
     var key = "";
     if (currentUser.email) {
       key = String(currentUser.email).split("@")[0].toLowerCase()
@@ -461,6 +478,35 @@
     if (confirm("You don't have a character yet. Make your first character?")) {
       openCharModal(key, null);
     }
+  }
+
+  // Offer to move the player's existing character into this campaign.
+  // A move abandons the old party: the character leaves that campaign
+  // and the player leaves its membership. The target must be between
+  // missions (no Active quests); the new DM still approves the sheet,
+  // which lands as pending. The move_character() function enforces
+  // all of this server-side too.
+  async function offerCharacterMove(char) {
+    if (!char || !currentCampaign) return;
+    var oldName = "your old campaign";
+    var cn = await db.from("campaigns").select("name").eq("id", char.campaign_id).single();
+    if (!cn.error && cn.data && cn.data.name) oldName = cn.data.name;
+    var q = await db.from("quests").select("id").eq("campaign_id", campaignId()).eq("status", "Active").limit(1);
+    if (q.error) return;
+    if (q.data && q.data.length) {
+      alert("This campaign is in the middle of a mission. You can move " + (char.name || "your character") + " here once they are between missions. Use the Characters tab to move it later.");
+      return;
+    }
+    var label = char.name ? char.name + " (" + playerLabel(char.player) + ")" : playerLabel(char.player);
+    if (!confirm("You have " + label + " in " + oldName + ". Move it here? This leaves your party in " + oldName + ". The new DM will approve it.")) return;
+    var res = await db.rpc("move_character", { p_character_id: char.id, p_target_campaign_id: campaignId() });
+    if (res.error) {
+      alert("Could not move your character: " + (res.error.message || "try again."));
+      return;
+    }
+    setMyPlayerKey(char.player);
+    alert(label + " moved here. It is pending the DM's approval.");
+    location.reload();
   }
 
   async function tryAuth() {
@@ -705,6 +751,10 @@
     var ins = await db.from("campaign_members").insert({ campaign_id: id, user_id: currentUser.id, role: role });
     if (ins.error) return false;
     setActiveCampaign(id);
+    // Remember that this campaign was just joined, so the sign-in
+    // flow can offer to move the player's character here (abandoning
+    // their old party). The flag is consumed once, on the next load.
+    try { localStorage.setItem("hub-just-joined-" + id, "1"); } catch (e) {}
     location.reload();
     return true;
   }
@@ -3204,6 +3254,42 @@
     }).join("");
     bindCharCards();
     renderPendingCharacters(pending);
+    renderMoveCharacterButton();
+  }
+
+  // If a player has a character in another campaign but none here,
+  // offer a "Move my character here" button at the top of the
+  // Characters tab, so they can move it later if they declined the
+  // prompt when they joined. DMs do not get the button.
+  async function renderMoveCharacterButton() {
+    var list = $("characters-list");
+    if (!list || isDm() || !currentUser) return;
+    if (list.querySelector("[data-move-character]")) return;
+    var mine = myPlayerKey();
+    if (mine && charByPlayer[mine]) return;
+    var all = null;
+    try {
+      var res = await db.from("characters").select("id, name, player, campaign_id").eq("user_id", currentUser.id);
+      if (res.error || !res.data) return;
+      all = res.data;
+    } catch (e) { return; }
+    var elsewhere = (all || []).filter(function (c) { return c.campaign_id !== campaignId(); });
+    if (!elsewhere.length) return;
+    var char = elsewhere[0];
+    var oldName = "another campaign";
+    try {
+      var cn = await db.from("campaigns").select("name").eq("id", char.campaign_id).single();
+      if (!cn.error && cn.data && cn.data.name) oldName = cn.data.name;
+    } catch (e) {}
+    var label = char.name ? char.name + " (" + playerLabel(char.player) + ")" : playerLabel(char.player);
+    var card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = '<p class="title">Your character is in ' + escapeHtml(oldName) + '</p>' +
+      '<p>' + escapeHtml(label) + ' lives with you. Move it here to play in this campaign. This leaves your party in ' + escapeHtml(oldName) + '.</p>' +
+      '<div class="actions"><button type="button" data-move-character="' + char.id + '">Move ' + escapeHtml(char.name || "my character") + ' here</button></div>';
+    list.insertBefore(card, list.firstChild);
+    var btn = card.querySelector("[data-move-character]");
+    if (btn) btn.addEventListener("click", function () { offerCharacterMove(char); });
   }
 
   // ---------- Character approval (DM approves new characters) ----------

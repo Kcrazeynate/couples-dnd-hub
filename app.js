@@ -465,7 +465,11 @@
       return;
     }
     if (authMode === "signup") {
-      var res = await db.auth.signUp({ email: email, password: password });
+      var res = await db.auth.signUp({
+        email: email,
+        password: password,
+        options: { emailRedirectTo: INVITE_BASE_URL }
+      });
       if (res.error) {
         showAuthError(friendlyAuthError(res.error));
         return;
